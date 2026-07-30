@@ -10,4 +10,4 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 20260731 | Cyber insights metrics & visualization plan (Moody → cyber) | 2026-07-31 | pending | [20260731-cyber-insights-metrics](./quick/20260731-cyber-insights-metrics/) |
+| 20260731 | Cyber insights metrics & visualization plan (Moody → cyber) | 2026-07-31 | 2dadf90 | [20260731-cyber-insights-metrics](./quick/20260731-cyber-insights-metrics/) |
