@@ -1,7 +1,7 @@
 import { Button, Chip, Typography } from '@heroui/react'
 import { ArrowLeft, Check } from 'lucide-react'
 import { useState } from 'react'
-import { CYBER_FLOW_STAGES, cyberFlowIndex } from '../constants/cyberFlow'
+import { CYBER_FLOW_STAGES, cyberFlowIndex, nextFlowStageTitle } from '../constants/cyberFlow'
 import {
   filterCyberCases,
   useCyberUwStore,
@@ -192,7 +192,174 @@ export function CyberStageAdvanceCard({
   onPas,
   onSignal,
   compact = false,
+  activeTab = 'workflow',
 }: {
+  c: CyberCase
+  onOpenGaps: () => void
+  onRequestDecision: (d: Exclude<CyberDecision, 'pending'>) => void
+  onPas: () => void
+  onSignal: () => void
+  /** Quiet strip under case tabs — not a full-bleed hero banner. */
+  compact?: boolean
+  /** Current case canvas tab — avoids redundant CTAs on Gap board. */
+  activeTab?: 'workflow' | 'gaps' | 'dossier' | 'pas'
+}) {
+  const advanceWorkflowStage = useCyberUwStore((s) => s.advanceWorkflowStage)
+  const materialOpen = openMaterialGaps(c.gaps)
+  const scanning = c.signalStatus === 'scanning'
+  const pending = c.decision === 'pending'
+  const idx = cyberFlowIndex(c)
+  const nextTitle = nextFlowStageTitle(idx)
+  const onGapsTab = activeTab === 'gaps'
+  const shell = compact
+    ? 'wb-action-card wb-action-card--compact wb-advance-row !mt-0'
+    : 'wb-action-card !mt-0'
+
+  if (c.pasStatus === 'synced') {
+    return (
+      <div className={shell}>
+        <p className="wb-action-card__lead !mb-0">Case complete — policy admin synced.</p>
+      </div>
+    )
+  }
+
+  if (!pending) {
+    return (
+      <div className={shell}>
+        <div className="wb-advance-row__inner">
+          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1">
+            Decision locked ({c.decision}). Push to policy admin when ready.
+          </p>
+          <Button
+            variant="primary"
+            size="sm"
+            className="wb-advance-cta shrink-0"
+            isDisabled={c.pasStatus === 'pushing'}
+            onPress={onPas}
+          >
+            {c.pasStatus === 'pushing' ? 'Pushing…' : 'Proceed to policy admin'}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (materialOpen.length > 0) {
+    /* Already on Gap board — status only; primary actions live on the card below. */
+    if (onGapsTab) {
+      return (
+        <div className={`${shell} wb-advance-row--status`}>
+          <div className="wb-advance-row__inner">
+            <Chip size="sm" variant="soft" color="danger" className="shrink-0 capitalize">
+              {materialOpen.length} open
+            </Chip>
+            <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+              Sign off below — Resolve or Refer each material gap.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className={`${shell} wb-advance-row--action`}>
+        <div className="wb-advance-row__inner">
+          <div className="min-w-0 flex-1">
+            <p className="wb-action-card__lead !mb-0 font-semibold text-slate-900">
+              {materialOpen.length} material gap{materialOpen.length === 1 ? '' : 's'} need sign-off
+            </p>
+            {!compact ? (
+              <p className="wb-action-card__hint !mt-1">
+                Resolve or Refer on the Gap board before Risk Review.
+              </p>
+            ) : null}
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
+            onPress={onOpenGaps}
+          >
+            Review focused gaps
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (idx < 4 && nextTitle) {
+    return (
+      <div className={`${shell} wb-advance-row--action`}>
+        <div className="wb-advance-row__inner">
+          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+            Next: {nextTitle}
+          </p>
+          <Button
+            variant="primary"
+            size="sm"
+            className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
+            onPress={() => advanceWorkflowStage(c.id)}
+          >
+            Continue to {nextTitle}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${shell} wb-advance-row--action`}>
+      <div className="wb-advance-row__inner">
+        <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+          AI recommends {c.recommendation.toUpperCase()}
+        </p>
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          <Button
+            variant="primary"
+            size="sm"
+            className="wb-advance-cta wb-advance-cta--emphasis"
+            isDisabled={scanning}
+            onPress={() => onRequestDecision('quote')}
+          >
+            Quote
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            isDisabled={scanning}
+            onPress={() => onRequestDecision('refer')}
+          >
+            Refer
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            isDisabled={scanning}
+            onPress={() => onRequestDecision('decline')}
+          >
+            Decline
+          </Button>
+          <Button size="sm" variant="ghost" isDisabled={scanning} onPress={onSignal}>
+            {scanning ? 'Scanning…' : 'Re-ingest'}
+          </Button>
+          {!compact ? (
+            <>
+              <Chip size="sm" variant="soft">
+                Tier {c.tier} assist
+              </Chip>
+              <CaseMetaChip kind="limit">{money(c.limitRequestedUsd)}</CaseMetaChip>
+            </>
+          ) : (
+            <Chip size="sm" variant="soft">
+              Tier {c.tier}
+            </Chip>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+: {
   c: CyberCase
   onOpenGaps: () => void
   onRequestDecision: (d: Exclude<CyberDecision, 'pending'>) => void
@@ -201,9 +368,12 @@ export function CyberStageAdvanceCard({
   /** Quiet strip under tabs — not a full-bleed hero banner. */
   compact?: boolean
 }) {
+  const advanceWorkflowStage = useCyberUwStore((s) => s.advanceWorkflowStage)
   const materialOpen = openMaterialGaps(c.gaps)
   const scanning = c.signalStatus === 'scanning'
   const pending = c.decision === 'pending'
+  const idx = cyberFlowIndex(c)
+  const nextTitle = nextFlowStageTitle(idx)
   const shell = compact ? 'wb-action-card wb-action-card--compact !mt-0' : 'wb-action-card !mt-0'
 
   if (c.pasStatus === 'synced') {
@@ -242,12 +412,12 @@ export function CyberStageAdvanceCard({
         <div className={compact ? 'flex flex-wrap items-center gap-2' : undefined}>
           <div className={compact ? 'min-w-0 flex-1' : undefined}>
             <p className={`wb-action-card__lead ${compact ? '!mb-0' : ''}`}>
-              Proceed locked — finish focused sign-offs / review {materialOpen.length} material gap
-              {materialOpen.length === 1 ? '' : 's'}.
+              Finish focused sign-offs — {materialOpen.length} material gap
+              {materialOpen.length === 1 ? '' : 's'} open.
             </p>
             {!compact ? (
               <p className="wb-action-card__hint">
-                One open critical/high gap at a time — Resolve or Refer before Quote.
+                Resolve or Refer each gap, then continue to Risk Review.
               </p>
             ) : null}
           </div>
@@ -259,6 +429,27 @@ export function CyberStageAdvanceCard({
             onPress={onOpenGaps}
           >
             Review focused gaps
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (idx < 4 && nextTitle) {
+    return (
+      <div className={shell}>
+        <div className={compact ? 'flex flex-wrap items-center gap-2' : undefined}>
+          <p className={`wb-action-card__lead ${compact ? '!mb-0 min-w-0 flex-1' : ''}`}>
+            {CYBER_FLOW_STAGES[idx]?.title ?? 'Stage'} — continue to {nextTitle}.
+          </p>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth={!compact}
+            className="wb-advance-cta shrink-0"
+            onPress={() => advanceWorkflowStage(c.id)}
+          >
+            Continue to {nextTitle}
           </Button>
         </div>
       </div>

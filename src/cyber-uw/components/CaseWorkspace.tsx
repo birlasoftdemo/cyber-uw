@@ -1,9 +1,20 @@
 import { Button, Chip, Tabs, Typography } from '@heroui/react'
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import { ArrowRight, ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { AiBadge } from '../../shared/workbench/AiBadge'
 import { CYBER_FLOW_STAGES, cyberFlowIndex } from '../constants/cyberFlow'
 import { GAP_REFER_ASSIGNEES } from '../constants/gapReferAssignees'
+import { exposureChipColor, riskReviewForCase } from '../data/riskReviewDemo'
+import { CHART_COLORS } from '../insights/types'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase } from '../types'
 import { openMaterialGaps } from '../utils/gapDisposition'
@@ -25,13 +36,11 @@ function StageSection({
   title,
   stageIndex,
   currentIndex,
-  research,
   children,
 }: {
   title: string
   stageIndex: number
   currentIndex: number
-  research: string
   children: ReactNode
 }) {
   const isCurrent = stageIndex === currentIndex
@@ -70,13 +79,177 @@ function StageSection({
           aria-hidden
         />
       </button>
-      {expanded ? (
-        <div className="mt-3">
-          <p className="mb-3 text-xs font-medium text-slate-500">{research}</p>
-          {children}
-        </div>
-      ) : null}
+      {expanded ? <div className="mt-3">{children}</div> : null}
     </section>
+  )
+}
+
+function RiskReviewPanel({ c }: { c: CyberCase }) {
+  const demo = riskReviewForCase(c)
+  const [riskTab, setRiskTab] = useState<'threats' | 'impacts'>('threats')
+  const [agentRunning, setAgentRunning] = useState(false)
+  const [impactsExpanded, setImpactsExpanded] = useState(false)
+
+  const runImpactAgent = () => {
+    setAgentRunning(true)
+    window.setTimeout(() => {
+      setAgentRunning(false)
+      setImpactsExpanded(true)
+    }, 1400)
+  }
+
+  const impactRows = impactsExpanded ? demo.impacts.agentDetail : demo.impacts.shortList
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <TierBadge tier={c.tier} />
+        <AiBadge label={`AI ${c.recommendation}`} />
+      </div>
+
+      <Tabs
+        selectedKey={riskTab}
+        onSelectionChange={(k) => setRiskTab(k as 'threats' | 'impacts')}
+        className="case-drawer-tabs"
+      >
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Risk review">
+            <Tabs.Tab id="threats">Assess threats</Tabs.Tab>
+            <Tabs.Tab id="impacts">Assess impacts</Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+      </Tabs>
+
+      {riskTab === 'threats' ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-slate-900">Threat exposure</span>
+            <Chip size="sm" variant="soft" color={exposureChipColor(demo.threats.exposure)} className="capitalize">
+              {demo.threats.exposure}
+            </Chip>
+          </div>
+          <p className="text-sm text-slate-700">{demo.threats.summary}</p>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Risks exposed to</p>
+            <ul className="mt-2 space-y-1.5">
+              {demo.threats.risksExposed.map((r) => (
+                <li
+                  key={r}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                >
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-sm font-semibold text-slate-900">Parameter contribution to threat</p>
+            <div className="mt-2 h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={demo.threats.contributions}
+                  layout="vertical"
+                  margin={{ top: 4, right: 12, left: 8, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="parameter"
+                    width={128}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip
+                    formatter={(value, _name, item) => [
+                      `${value}`,
+                      (item?.payload as { note?: string } | undefined)?.note ?? 'Degree',
+                    ]}
+                  />
+                  <Bar dataKey="degree" name="Degree" radius={[0, 4, 4, 0]} fill={CHART_COLORS.rose} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Sources</p>
+            <ul className="mt-2 space-y-2">
+              {demo.threats.sources.map((s) => (
+                <li key={s.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <p className="font-semibold text-slate-900">{s.label}</p>
+                  <p className="mt-0.5 text-slate-600">{s.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-slate-700">
+            Loss severity and coverage impact from this dossier — short list first.
+          </p>
+          <ul className="space-y-2">
+            {impactRows.map((item) => (
+              <li key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color={item.category === 'loss' ? 'danger' : 'accent'}
+                    className="capitalize"
+                  >
+                    {item.category}
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color={
+                      item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'
+                    }
+                    className="capitalize"
+                  >
+                    {item.severity}
+                  </Chip>
+                  <span className="font-semibold text-slate-900">{item.title}</span>
+                </div>
+                <p className="mt-1.5 text-slate-700">{item.blurb}</p>
+                {impactsExpanded ? (
+                  <p className="mt-2 border-t border-slate-100 pt-2 text-slate-600">{item.detail}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+
+          {!impactsExpanded ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ai-cta"
+              isDisabled={agentRunning}
+              onPress={runImpactAgent}
+            >
+              {agentRunning ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Agent expanding impacts…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} />
+                  Expand · Run agent for full list
+                </>
+              )}
+            </Button>
+          ) : (
+            <p className="text-xs text-slate-500">
+              Full impact list generated from dossier parameters, appetite rules, and sector playbook.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -98,7 +271,6 @@ function WorkflowTab({
       <CyberProgressStepper c={c} />
 
       <div>
-        <p className="wb-eyebrow">Underwriter workflow</p>
         <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
           Stages
         </h2>
@@ -108,7 +280,6 @@ function WorkflowTab({
         title={CYBER_FLOW_STAGES[0].title}
         stageIndex={0}
         currentIndex={idx}
-        research={CYBER_FLOW_STAGES[0].subtext}
       >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
@@ -134,7 +305,6 @@ function WorkflowTab({
         title={CYBER_FLOW_STAGES[1].title}
         stageIndex={1}
         currentIndex={idx}
-        research={CYBER_FLOW_STAGES[1].subtext}
       >
         <div className="flex flex-wrap items-center gap-2">
           <Chip size="sm" variant="soft" color={materialOpen.length ? 'danger' : 'success'}>
@@ -168,41 +338,14 @@ function WorkflowTab({
         title={CYBER_FLOW_STAGES[2].title}
         stageIndex={2}
         currentIndex={idx}
-        research={CYBER_FLOW_STAGES[2].subtext}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <TierBadge tier={c.tier} />
-          <AiBadge label={`AI ${c.recommendation}`} />
-          <Chip size="sm" variant="soft" color="warning">
-            Tier ≠ premium
-          </Chip>
-        </div>
-        <ul className="mt-3 space-y-2">
-          {c.appetiteHits.map((h) => (
-            <li key={h.ruleId} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-900">{h.label}</span>
-                <Chip
-                  size="sm"
-                  variant="soft"
-                  color={h.outcome === 'pass' ? 'success' : h.outcome === 'refer' ? 'warning' : 'danger'}
-                  className="capitalize"
-                >
-                  {h.outcome}
-                </Chip>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{h.ruleId}</p>
-              <p className="mt-1 text-slate-700">{h.detail}</p>
-            </li>
-          ))}
-        </ul>
+        <RiskReviewPanel c={c} />
       </StageSection>
 
       <StageSection
         title={CYBER_FLOW_STAGES[3].title}
         stageIndex={3}
         currentIndex={idx}
-        research={CYBER_FLOW_STAGES[3].subtext}
       >
         {hotVendors.length ? (
           <ul className="space-y-2">
@@ -230,7 +373,6 @@ function WorkflowTab({
         title={CYBER_FLOW_STAGES[4].title}
         stageIndex={4}
         currentIndex={idx}
-        research={CYBER_FLOW_STAGES[4].subtext}
       >
         <DecisionAidCard c={c} onOpenPas={onOpenPas} />
       </StageSection>
@@ -358,6 +500,7 @@ function DecisionAidCard({ c, onOpenPas }: { c: CyberCase; onOpenPas: () => void
 function GapsTab({ c }: { c: CyberCase }) {
   const resolveGap = useCyberUwStore((s) => s.resolveGap)
   const referGap = useCyberUwStore((s) => s.referGap)
+  const setWorkflowStage = useCyberUwStore((s) => s.setWorkflowStage)
   const [referring, setReferring] = useState(false)
   const [assignee, setAssignee] = useState<(typeof GAP_REFER_ASSIGNEES)[number]['label']>(
     GAP_REFER_ASSIGNEES[0].label,
@@ -373,14 +516,13 @@ function GapsTab({ c }: { c: CyberCase }) {
       : '')
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-5 pb-8">
       <div>
-        <p className="wb-eyebrow">Stage · One gap at a time</p>
         <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
-          Verify · Focused sign-off
+          Gap board
         </h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Agentic focus clears each material gap before Proceed unlocks.
+        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-600">
+          One material gap at a time. Resolve or Refer to clear Verify.
         </p>
       </div>
 
@@ -391,7 +533,7 @@ function GapsTab({ c }: { c: CyberCase }) {
               {focus.severity} · {focusIndex} of {materialOpen.length}
             </Chip>
           </div>
-          <h3 className="dashboard-section-title text-base text-slate-900">{focus.control}</h3>
+          <h3 className="dashboard-section-title text-lg text-slate-900">{focus.control}</h3>
 
           <div className="ai-panel mt-3 p-4 text-sm">
             <p className="ai-panel__hint mb-0 text-xs font-semibold uppercase tracking-wide">AI note</p>
@@ -474,14 +616,23 @@ function GapsTab({ c }: { c: CyberCase }) {
       ) : (
         <section className="wb-stage-card wb-stage-card--past border border-emerald-200 bg-emerald-50/40">
           <Chip size="sm" variant="soft" color="success">
-            All material gaps signed
+            Verification completed
           </Chip>
           <h3 className="dashboard-section-title mt-2 text-base text-slate-900">
-            Proceed unlocked
+            Verification completed
           </h3>
           <p className="mt-2 text-sm text-slate-600">
-            Focused sign-off is complete. Use the advance strip to continue to Tier / Decide.
+            All material gaps are signed off. Continue to Risk Review on the workflow.
           </p>
+          <Button
+            size="sm"
+            variant="primary"
+            className="mt-4 ai-cta"
+            onPress={() => setWorkflowStage(c.id, 2)}
+          >
+            Continue to Risk Review
+            <ArrowRight size={14} />
+          </Button>
         </section>
       )}
     </div>
@@ -779,9 +930,10 @@ export function CaseWorkspace() {
           </Tabs.ListContainer>
         </div>
 
-        <div className="wb-cyber-advance-strip shrink-0 border-b border-slate-200/80 bg-slate-50/90 px-3 py-2 md:px-4">
+        <div className="wb-cyber-advance-strip shrink-0 border-b border-slate-200/80 px-3 py-2.5 md:px-4">
           <CyberStageAdvanceCard
             compact
+            activeTab={activeTab}
             c={c}
             onOpenGaps={() => setTab('gaps')}
             onRequestDecision={(d) => setPendingDecision(d)}
