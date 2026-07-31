@@ -1,7 +1,6 @@
-import { Button, Chip, Tabs, Typography } from '@heroui/react'
+import { Button, Tabs, Typography } from '@heroui/react'
 import { ChevronDown } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { AiBadge } from '../../shared/workbench/AiBadge'
 import {
   CYBER_FLOW_STAGES,
   canLeaveReviewPlatform,
@@ -14,14 +13,12 @@ import {
   bucketLabel,
   type QualificationBucketId,
 } from '../constants/qualificationBuckets'
+import { moduleLabel } from '../data/dossierPackage'
 import {
   platformOutcomeFromCards,
   platformOutcomeLabel,
 } from '../data/platformDemo'
-import { moduleLabel } from '../data/dossierPackage'
 import {
-  exposureChipColor,
-  judgmentChipColor,
   requiredRiskItemIds,
   riskReviewForCase,
   type RiskActionItem,
@@ -37,10 +34,7 @@ import type {
 import { isOpenMaterialGap, openMaterialGaps } from '../utils/gapDisposition'
 import {
   CaseMetaChips,
-  gapChipColor,
   money,
-  TierBadge,
-  UwDecisionChip,
 } from './CyberPrimitives'
 import {
   CyberProgressStepper,
@@ -83,12 +77,12 @@ function StageSection({
       >
         <span className="wb-stage-card__index">{stageIndex + 1}</span>
         <h3 className="dashboard-section-title text-base text-slate-900">{title}</h3>
-        {isCurrent && <span className="wb-stepper-badge--current">Current stage</span>}
-        {isPast && (
-          <Chip size="sm" variant="soft" color="success">
-            Complete
-          </Chip>
-        )}
+        {isCurrent ? (
+          <span className="text-xs font-semibold text-slate-500">Active</span>
+        ) : null}
+        {isPast ? (
+          <span className="text-xs font-semibold text-emerald-700">Completed</span>
+        ) : null}
         <ChevronDown
           size={16}
           className={`ml-auto shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
@@ -110,9 +104,11 @@ function GapInlineActions({ caseId, gap }: { caseId: string; gap: ControlGap }) 
 
   if (gap.disposition !== 'open') {
     return (
-      <Chip size="sm" variant="soft" color={gap.disposition === 'resolved' ? 'success' : 'warning'}>
-        {gap.disposition === 'resolved' ? 'Resolved' : `Referred · ${gap.referredTo ?? ''}`}
-      </Chip>
+      <p className="mt-2 text-xs font-medium text-slate-600">
+        {gap.disposition === 'resolved'
+          ? 'Resolved'
+          : `Referred${gap.referredTo ? ` · ${gap.referredTo}` : ''}`}
+      </p>
     )
   }
 
@@ -193,52 +189,36 @@ function FeedbackStageBody({ c }: { c: CyberCase }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Chip size="sm" variant="soft" color={hasOpen ? 'danger' : 'success'}>
-          {hasOpen
-            ? `${materialOpen.length} open material gap${materialOpen.length === 1 ? '' : 's'}`
-            : 'No open material gaps'}
-        </Chip>
-      </div>
+      <p className="text-sm text-slate-600">
+        {hasOpen
+          ? `${materialOpen.length} open material gap${materialOpen.length === 1 ? '' : 's'} — Resolve or Refer below.`
+          : 'No open material gaps.'}
+      </p>
 
       {byBucket.map(({ bucket, openMaterial, pendingPreview, cleared, restOpen }) => {
         const expanded = expandedBuckets[bucket.id] ?? false
         const showRest = expanded ? restOpen : []
         const pendingShown = [...pendingPreview, ...showRest]
-        const met = cleared.length + (openMaterial.length === 0 ? c.gaps.filter((g) => g.qualificationBucket === bucket.id && g.disposition === 'open' && !isOpenMaterialGap(g)).length : 0)
 
         return (
           <div key={bucket.id} className="wb-qual-bucket">
             <div className="wb-qual-bucket__head">
               <h4 className="text-sm font-semibold text-slate-900">{bucket.label}</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {openMaterial.length ? (
-                  <Chip size="sm" variant="soft" color="danger">
-                    {openMaterial.length} pending
-                  </Chip>
-                ) : (
-                  <Chip size="sm" variant="soft" color="success">
-                    Clear
-                  </Chip>
-                )}
-                {met > 0 && openMaterial.length === 0 ? (
-                  <Chip size="sm" variant="soft" color="success">
-                    {cleared.length || 'Signed'} cleared
-                  </Chip>
-                ) : null}
-              </div>
+              <p className="text-xs font-medium text-slate-500">
+                {openMaterial.length
+                  ? `${openMaterial.length} pending`
+                  : cleared.length
+                    ? 'Clear'
+                    : 'Clear'}
+              </p>
             </div>
 
             {pendingShown.length ? (
               <ul className="wb-qual-bucket__list">
                 {pendingShown.map((g) => (
                   <li key={g.id} className="wb-qual-row">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Chip size="sm" variant="soft" color={gapChipColor(g.severity)} className="capitalize">
-                        {g.severity}
-                      </Chip>
-                      <span className="text-sm font-semibold text-slate-900">{g.control}</span>
-                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{g.control}</p>
+                    <p className="mt-0.5 text-xs capitalize text-slate-500">{g.severity}</p>
                     <p className="mt-1.5 text-sm text-slate-700">
                       Attested “{g.attested}” vs signal “{g.signal}”
                     </p>
@@ -301,32 +281,16 @@ function RiskItemCard({
 
   return (
     <li className="wb-risk-item">
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip size="sm" variant="soft" color="accent">
-          {bucketLabel(item.bucket)}
-        </Chip>
-        <Chip
-          size="sm"
-          variant="soft"
-          color={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'}
-          className="capitalize"
-        >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+        <p className="text-xs capitalize text-slate-500">
           {item.severity}
-        </Chip>
-        {item.required ? (
-          <Chip size="sm" variant="soft" color="warning">
-            Required
-          </Chip>
-        ) : null}
-        {signed ? (
-          <Chip size="sm" variant="soft" color={judgmentChipColor(status)} className="capitalize">
-            {status}
-          </Chip>
-        ) : null}
+          {item.required ? ' · Required' : ''}
+          {signed ? ` · ${status}` : ''}
+        </p>
       </div>
-      <p className="mt-2 text-sm font-semibold text-slate-900">{item.title}</p>
-      <p className="mt-1 text-sm text-slate-700">{item.summary}</p>
-      <p className="mt-1.5 text-xs text-slate-500">{item.detail}</p>
+      <p className="mt-1.5 text-sm text-slate-700">{item.summary}</p>
+      <p className="mt-1 text-xs text-slate-500">{item.detail}</p>
 
       {!signed ? (
         <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
@@ -408,27 +372,26 @@ function RiskReviewPanel({ c }: { c: CyberCase }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <TierBadge tier={c.tier} />
-        <AiBadge label={`AI ${c.recommendation}`} />
-        <Chip size="sm" variant="soft" color={exposureChipColor(demo.exposure)} className="capitalize">
-          {demo.exposure} exposure
-        </Chip>
-        <Chip size="sm" variant="soft" color={unsigned ? 'warning' : 'success'}>
-          {unsigned ? `${unsigned} required unsigned` : 'Required judgments signed'}
-        </Chip>
-      </div>
       <p className="text-sm text-slate-700">{demo.summary}</p>
+      <p className="text-xs text-slate-500">
+        {demo.exposure.charAt(0).toUpperCase() + demo.exposure.slice(1)} exposure
+        {' · '}
+        AI {c.recommendation}
+        {' · '}
+        {unsigned
+          ? `${unsigned} required unsigned`
+          : 'Required judgments signed'}
+      </p>
 
       <Tabs
         selectedKey={riskTab}
         onSelectionChange={(k) => setRiskTab(k as 'threats' | 'impacts')}
-        className="case-drawer-tabs"
+        className="wb-segmented-tabs"
       >
         <Tabs.ListContainer>
           <Tabs.List aria-label="Review Risk">
-            <Tabs.Tab id="threats">Assess threats</Tabs.Tab>
-            <Tabs.Tab id="impacts">Assess impacts</Tabs.Tab>
+            <Tabs.Tab id="threats">Assess threat</Tabs.Tab>
+            <Tabs.Tab id="impacts">Assess impact</Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
       </Tabs>
@@ -471,17 +434,11 @@ function PlatformStageBody({ c }: { c: CyberCase }) {
           const pending = card.signOff === 'pending'
           return (
             <li key={card.id} className="wb-platform-card">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="text-sm font-semibold text-slate-900">{card.label}</span>
-                {!pending ? (
-                  <Chip size="sm" variant="soft" color={card.signOff === 'block' ? 'danger' : 'warning'} className="capitalize">
-                    {card.signOff}
-                  </Chip>
-                ) : (
-                  <Chip size="sm" variant="soft" color="accent">
-                    Needs sign-off
-                  </Chip>
-                )}
+                <span className="text-xs capitalize text-slate-500">
+                  {pending ? 'Needs sign-off' : card.signOff}
+                </span>
               </div>
               <p className="mt-2 text-sm text-slate-800">{card.finding}</p>
               <p className="mt-1 text-xs text-slate-500">{card.portfolioMeaning}</p>
@@ -590,22 +547,18 @@ function ClosureCard({ c }: { c: CyberCase }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <AiBadge label={`AI ${c.recommendation}`} />
-        <UwDecisionChip value={c.decision} />
-        {c.decision !== 'pending' ? (
-          <Chip size="sm" variant="soft" color={aligned ? 'success' : 'warning'}>
-            {aligned ? 'Matches AI' : 'Overrides AI'}
-          </Chip>
-        ) : null}
-      </div>
+      <p className="text-sm text-slate-600">
+        AI {c.recommendation}
+        {c.decision !== 'pending' ? ` · UW ${c.decision}` : ' · UW pending'}
+        {c.decision !== 'pending' ? (aligned ? ' · Matches AI' : ' · Overrides AI') : ''}
+      </p>
 
       <ul className="wb-closure-checklist">
         {checklist.map((row) => (
           <li key={row.id} className={`wb-closure-row ${row.ok ? 'wb-closure-row--ok' : 'wb-closure-row--open'}`}>
-            <Chip size="sm" variant="soft" color={row.ok ? 'success' : 'warning'}>
+            <span className="shrink-0 text-xs font-semibold text-slate-500">
               {row.ok ? 'Signed' : 'Open'}
-            </Chip>
+            </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900">{row.label}</p>
               <p className="text-xs text-slate-600">{row.detail}</p>
@@ -617,13 +570,7 @@ function ClosureCard({ c }: { c: CyberCase }) {
       {reasonCodes.length ? (
         <div>
           <p className="text-sm font-semibold text-slate-900">Reason codes</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {reasonCodes.map((code) => (
-              <Chip key={code} size="sm" variant="soft">
-                {code}
-              </Chip>
-            ))}
-          </div>
+          <p className="mt-1.5 font-mono text-xs text-slate-600">{reasonCodes.join(' · ')}</p>
         </div>
       ) : (
         <p className="text-sm text-slate-600">No blocking reason codes — floors and platform clear.</p>
@@ -722,9 +669,7 @@ function DossierTab({ c }: { c: CyberCase }) {
             {c.packageDocs.map((doc) => (
               <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <span className="font-medium text-slate-900">{doc.name}</span>
-                <Chip size="sm" variant="soft">
-                  {doc.kind}
-                </Chip>
+                <span className="text-xs capitalize text-slate-500">{doc.kind}</span>
               </li>
             ))}
           </ul>
@@ -769,25 +714,13 @@ function DossierTab({ c }: { c: CyberCase }) {
             const status = c.riskJudgments[item.id]?.status
             return (
               <li key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip size="sm" variant="soft" className="capitalize">
-                    {item.kind}
-                  </Chip>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'}
-                    className="capitalize"
-                  >
-                    {item.severity}
-                  </Chip>
-                  {status && status !== 'pending' ? (
-                    <Chip size="sm" variant="soft" color={judgmentChipColor(status)} className="capitalize">
-                      {status}
-                    </Chip>
-                  ) : null}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="font-semibold text-slate-900">{item.title}</p>
+                  <p className="text-xs capitalize text-slate-500">
+                    {item.kind} · {item.severity}
+                    {status && status !== 'pending' ? ` · ${status}` : ''}
+                  </p>
                 </div>
-                <p className="mt-1.5 font-semibold text-slate-900">{item.title}</p>
                 <p className="mt-1 text-xs text-slate-500">Referenced in · {item.cite}</p>
               </li>
             )
@@ -800,17 +733,11 @@ function DossierTab({ c }: { c: CyberCase }) {
         <ul className="space-y-2">
           {c.platformCards.map((card) => (
             <li key={card.id} className="wb-platform-card">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="text-sm font-semibold text-slate-900">{card.label}</span>
-                {card.signOff !== 'pending' ? (
-                  <Chip size="sm" variant="soft" color={card.signOff === 'block' ? 'danger' : 'warning'} className="capitalize">
-                    {card.signOff}
-                  </Chip>
-                ) : (
-                  <Chip size="sm" variant="soft">
-                    Unsigned
-                  </Chip>
-                )}
+                <span className="text-xs capitalize text-slate-500">
+                  {card.signOff !== 'pending' ? card.signOff : 'Unsigned'}
+                </span>
               </div>
               <p className="mt-2 text-sm text-slate-800">{card.finding}</p>
               <p className="mt-1 text-xs text-slate-500">{card.portfolioMeaning}</p>
@@ -904,9 +831,7 @@ export function CaseWorkspace() {
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="wb-ref-pill">{c.id}</span>
                 <CaseMetaChips lob={c.sector} name={c.broker} limitUsd={c.limitRequestedUsd} />
-                <Chip size="sm" variant="soft">
-                  {dispositionLabel}
-                </Chip>
+                <span className="text-xs font-medium text-slate-500">{dispositionLabel}</span>
               </div>
             </div>
             <Button

@@ -1214,6 +1214,57 @@
     display: none;
   }
 
+  /* Segmented control — white elevated pill on slate track (Assess threats / impacts) */
+  .wb-segmented-tabs .tabs__list-container {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .wb-segmented-tabs .tabs__list-container > .tabs__list {
+    width: auto;
+    max-width: 100%;
+    gap: 0.125rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    background: #f1f5f9;
+    padding: 0.25rem;
+    box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.03);
+  }
+
+  .wb-segmented-tabs .tabs__list-container .tabs__tab {
+    height: 2.125rem;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
+    padding-inline: 1.125rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: #64748b;
+    box-shadow: none;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .wb-segmented-tabs .tabs__list-container .tabs__tab:hover:not([data-selected='true']) {
+    color: #334155;
+  }
+
+  .wb-segmented-tabs .tabs__list-container .tabs__tab[data-selected='true'] {
+    color: #0f172a;
+    background: #ffffff;
+    font-weight: 600;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.06),
+      0 2px 6px rgba(15, 23, 42, 0.06);
+  }
+
+  .wb-segmented-tabs .tabs__list-container .tabs__separator {
+    display: none;
+  }
+
   .wb-sidebar-profile {
     border: none;
     background: transparent;
