@@ -1,26 +1,42 @@
 import { Button, Chip, Tabs, Typography } from '@heroui/react'
-import { ArrowRight, ChevronDown, Loader2, Sparkles } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { AiBadge } from '../../shared/workbench/AiBadge'
-import { CYBER_FLOW_STAGES, cyberFlowIndex } from '../constants/cyberFlow'
+import {
+  CYBER_FLOW_STAGES,
+  canLeaveReviewPlatform,
+  canLeaveReviewRisk,
+  cyberFlowIndex,
+} from '../constants/cyberFlow'
 import { GAP_REFER_ASSIGNEES } from '../constants/gapReferAssignees'
-import { exposureChipColor, riskReviewForCase } from '../data/riskReviewDemo'
-import { CHART_COLORS } from '../insights/types'
+import {
+  QUALIFICATION_BUCKETS,
+  bucketLabel,
+  type QualificationBucketId,
+} from '../constants/qualificationBuckets'
+import {
+  platformOutcomeFromCards,
+  platformOutcomeLabel,
+} from '../data/platformDemo'
+import { moduleLabel } from '../data/dossierPackage'
+import {
+  exposureChipColor,
+  judgmentChipColor,
+  requiredRiskItemIds,
+  riskReviewForCase,
+  type RiskActionItem,
+} from '../data/riskReviewDemo'
 import { useCyberUwStore } from '../store/cyberUwStore'
-import type { CyberCase } from '../types'
-import { openMaterialGaps } from '../utils/gapDisposition'
+import type {
+  ControlGap,
+  CyberCase,
+  PlatformCard,
+  PlatformSignOff,
+  RiskJudgmentStatus,
+} from '../types'
+import { isOpenMaterialGap, openMaterialGaps } from '../utils/gapDisposition'
 import {
   CaseMetaChips,
-  gapBorder,
   gapChipColor,
   money,
   TierBadge,
@@ -79,33 +95,330 @@ function StageSection({
           aria-hidden
         />
       </button>
-      {expanded ? <div className="mt-3">{children}</div> : null}
+      {expanded ? <div className="mt-4">{children}</div> : null}
     </section>
   )
+}
+
+function GapInlineActions({ caseId, gap }: { caseId: string; gap: ControlGap }) {
+  const resolveGap = useCyberUwStore((s) => s.resolveGap)
+  const referGap = useCyberUwStore((s) => s.referGap)
+  const [referring, setReferring] = useState(false)
+  const [assignee, setAssignee] = useState<(typeof GAP_REFER_ASSIGNEES)[number]['label']>(
+    GAP_REFER_ASSIGNEES[0].label,
+  )
+
+  if (gap.disposition !== 'open') {
+    return (
+      <Chip size="sm" variant="soft" color={gap.disposition === 'resolved' ? 'success' : 'warning'}>
+        {gap.disposition === 'resolved' ? 'Resolved' : `Referred · ${gap.referredTo ?? ''}`}
+      </Chip>
+    )
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <Button size="sm" variant="primary" onPress={() => resolveGap(caseId, gap.id)}>
+        Resolve
+      </Button>
+      {referring ? (
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
+          <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
+            Refer to
+            <select
+              className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900"
+              value={assignee}
+              onChange={(e) =>
+                setAssignee(e.target.value as (typeof GAP_REFER_ASSIGNEES)[number]['label'])
+              }
+            >
+              {GAP_REFER_ASSIGNEES.map((a) => (
+                <option key={a.id} value={a.label}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => {
+                referGap(caseId, gap.id, assignee)
+                setReferring(false)
+              }}
+            >
+              Confirm refer
+            </Button>
+            <Button size="sm" variant="ghost" onPress={() => setReferring(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          size="sm"
+          variant="secondary"
+          onPress={() => {
+            setAssignee(GAP_REFER_ASSIGNEES[0].label)
+            setReferring(true)
+          }}
+        >
+          Refer
+        </Button>
+      )}
+    </div>
+  )
+}
+
+/** Feedback — gaps by qualification bucket; Resolve / Refer inline. */
+function FeedbackStageBody({ c }: { c: CyberCase }) {
+  const materialOpen = openMaterialGaps(c.gaps)
+  const hasOpen = materialOpen.length > 0
+  const [expandedBuckets, setExpandedBuckets] = useState<Record<string, boolean>>({})
+
+  const byBucket = QUALIFICATION_BUCKETS.map((b) => {
+    const all = c.gaps.filter((g) => g.qualificationBucket === b.id)
+    const materialInBucket = all.filter(isOpenMaterialGap)
+    const cleared = all.filter((g) => g.disposition !== 'open')
+    return {
+      bucket: b,
+      all,
+      openMaterial: materialInBucket,
+      pendingPreview: materialInBucket.slice(0, 2),
+      cleared,
+      restOpen: materialInBucket.slice(2),
+    }
+  }).filter((row) => row.all.length > 0)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Chip size="sm" variant="soft" color={hasOpen ? 'danger' : 'success'}>
+          {hasOpen
+            ? `${materialOpen.length} open material gap${materialOpen.length === 1 ? '' : 's'}`
+            : 'No open material gaps'}
+        </Chip>
+      </div>
+
+      {byBucket.map(({ bucket, openMaterial, pendingPreview, cleared, restOpen }) => {
+        const expanded = expandedBuckets[bucket.id] ?? false
+        const showRest = expanded ? restOpen : []
+        const pendingShown = [...pendingPreview, ...showRest]
+        const met = cleared.length + (openMaterial.length === 0 ? c.gaps.filter((g) => g.qualificationBucket === bucket.id && g.disposition === 'open' && !isOpenMaterialGap(g)).length : 0)
+
+        return (
+          <div key={bucket.id} className="wb-qual-bucket">
+            <div className="wb-qual-bucket__head">
+              <h4 className="text-sm font-semibold text-slate-900">{bucket.label}</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {openMaterial.length ? (
+                  <Chip size="sm" variant="soft" color="danger">
+                    {openMaterial.length} pending
+                  </Chip>
+                ) : (
+                  <Chip size="sm" variant="soft" color="success">
+                    Clear
+                  </Chip>
+                )}
+                {met > 0 && openMaterial.length === 0 ? (
+                  <Chip size="sm" variant="soft" color="success">
+                    {cleared.length || 'Signed'} cleared
+                  </Chip>
+                ) : null}
+              </div>
+            </div>
+
+            {pendingShown.length ? (
+              <ul className="wb-qual-bucket__list">
+                {pendingShown.map((g) => (
+                  <li key={g.id} className="wb-qual-row">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Chip size="sm" variant="soft" color={gapChipColor(g.severity)} className="capitalize">
+                        {g.severity}
+                      </Chip>
+                      <span className="text-sm font-semibold text-slate-900">{g.control}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm text-slate-700">
+                      Attested “{g.attested}” vs signal “{g.signal}”
+                    </p>
+                    {g.rfiDraft ? (
+                      <p className="mt-1 text-xs text-slate-500">{g.rfiDraft}</p>
+                    ) : null}
+                    <GapInlineActions caseId={c.id} gap={g} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-3.5 py-2.5 text-sm text-emerald-900">
+                All cleared in this bucket — attestation and signal aligned for material controls.
+              </p>
+            )}
+
+            {restOpen.length > 0 ? (
+              <button
+                type="button"
+                className="wb-qual-bucket__more"
+                onClick={() =>
+                  setExpandedBuckets((s) => ({ ...s, [bucket.id]: !expanded }))
+                }
+              >
+                {expanded ? 'Show fewer' : `Show ${restOpen.length} more in this bucket`}
+              </button>
+            ) : null}
+
+            {cleared.length > 0 && openMaterial.length > 0 ? (
+              <p className="border-t border-slate-100 px-3.5 py-2 text-xs text-slate-500">
+                {cleared.length} previously signed in this bucket
+              </p>
+            ) : null}
+          </div>
+        )
+      })}
+
+      {!hasOpen ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-3.5 py-3 text-sm text-emerald-950">
+          Feedback complete — continue to Review Risk when ready.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function RiskItemCard({
+  caseId,
+  item,
+  status,
+}: {
+  caseId: string
+  item: RiskActionItem
+  status: RiskJudgmentStatus | undefined
+}) {
+  const signRiskItem = useCyberUwStore((s) => s.signRiskItem)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const signed = status && status !== 'pending'
+
+  return (
+    <li className="wb-risk-item">
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip size="sm" variant="soft" color="accent">
+          {bucketLabel(item.bucket)}
+        </Chip>
+        <Chip
+          size="sm"
+          variant="soft"
+          color={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'}
+          className="capitalize"
+        >
+          {item.severity}
+        </Chip>
+        {item.required ? (
+          <Chip size="sm" variant="soft" color="warning">
+            Required
+          </Chip>
+        ) : null}
+        {signed ? (
+          <Chip size="sm" variant="soft" color={judgmentChipColor(status)} className="capitalize">
+            {status}
+          </Chip>
+        ) : null}
+      </div>
+      <p className="mt-2 text-sm font-semibold text-slate-900">{item.title}</p>
+      <p className="mt-1 text-sm text-slate-700">{item.summary}</p>
+      <p className="mt-1.5 text-xs text-slate-500">{item.detail}</p>
+
+      {!signed ? (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+          <Button
+            size="sm"
+            variant="primary"
+            onPress={() => signRiskItem(caseId, item.id, 'accepted')}
+          >
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={() => signRiskItem(caseId, item.id, 'escalated')}
+          >
+            Escalate
+          </Button>
+          {noteOpen ? (
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end">
+              <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
+                Note
+                <input
+                  className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Optional rationale"
+                />
+              </label>
+              <Button
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                  signRiskItem(caseId, item.id, 'noted', note.trim() || undefined)
+                  setNoteOpen(false)
+                  setNote('')
+                }}
+              >
+                Save note
+              </Button>
+              <Button size="sm" variant="ghost" onPress={() => setNoteOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="ghost" onPress={() => setNoteOpen(true)}>
+              Note
+            </Button>
+          )}
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
+function groupByBucket(items: RiskActionItem[]): { bucket: QualificationBucketId; items: RiskActionItem[] }[] {
+  const map = new Map<QualificationBucketId, RiskActionItem[]>()
+  for (const item of items) {
+    const list = map.get(item.bucket) ?? []
+    list.push(item)
+    map.set(item.bucket, list)
+  }
+  return QUALIFICATION_BUCKETS.filter((b) => map.has(b.id)).map((b) => ({
+    bucket: b.id,
+    items: map.get(b.id)!,
+  }))
 }
 
 function RiskReviewPanel({ c }: { c: CyberCase }) {
   const demo = riskReviewForCase(c)
   const [riskTab, setRiskTab] = useState<'threats' | 'impacts'>('threats')
-  const [agentRunning, setAgentRunning] = useState(false)
-  const [impactsExpanded, setImpactsExpanded] = useState(false)
+  const required = requiredRiskItemIds(demo)
+  const unsigned = required.filter((id) => {
+    const j = c.riskJudgments[id]
+    return !j || j.status === 'pending'
+  }).length
 
-  const runImpactAgent = () => {
-    setAgentRunning(true)
-    window.setTimeout(() => {
-      setAgentRunning(false)
-      setImpactsExpanded(true)
-    }, 1400)
-  }
-
-  const impactRows = impactsExpanded ? demo.impacts.agentDetail : demo.impacts.shortList
+  const threatGroups = groupByBucket(demo.threats)
+  const impactGroups = groupByBucket(demo.impacts)
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <TierBadge tier={c.tier} />
         <AiBadge label={`AI ${c.recommendation}`} />
+        <Chip size="sm" variant="soft" color={exposureChipColor(demo.exposure)} className="capitalize">
+          {demo.exposure} exposure
+        </Chip>
+        <Chip size="sm" variant="soft" color={unsigned ? 'warning' : 'success'}>
+          {unsigned ? `${unsigned} required unsigned` : 'Required judgments signed'}
+        </Chip>
       </div>
+      <p className="text-sm text-slate-700">{demo.summary}</p>
 
       <Tabs
         selectedKey={riskTab}
@@ -113,644 +426,402 @@ function RiskReviewPanel({ c }: { c: CyberCase }) {
         className="case-drawer-tabs"
       >
         <Tabs.ListContainer>
-          <Tabs.List aria-label="Risk review">
+          <Tabs.List aria-label="Review Risk">
             <Tabs.Tab id="threats">Assess threats</Tabs.Tab>
             <Tabs.Tab id="impacts">Assess impacts</Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
       </Tabs>
 
-      {riskTab === 'threats' ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-slate-900">Threat exposure</span>
-            <Chip size="sm" variant="soft" color={exposureChipColor(demo.threats.exposure)} className="capitalize">
-              {demo.threats.exposure}
+      {(riskTab === 'threats' ? threatGroups : impactGroups).map((group) => (
+        <div key={group.bucket} className="wb-qual-bucket">
+          <div className="wb-qual-bucket__head">
+            <h4 className="text-sm font-semibold text-slate-900">{bucketLabel(group.bucket)}</h4>
+          </div>
+          <ul className="space-y-2 p-2.5">
+            {group.items.map((item) => (
+              <RiskItemCard
+                key={item.id}
+                caseId={c.id}
+                item={item}
+                status={c.riskJudgments[item.id]?.status}
+              />
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PlatformStageBody({ c }: { c: CyberCase }) {
+  const signPlatformCard = useCyberUwStore((s) => s.signPlatformCard)
+  const outcome = platformOutcomeFromCards(c.platformCards)
+
+  const actions: Exclude<PlatformSignOff, 'pending'>[] = ['watch', 'terms', 'block', 'escalate']
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-600">
+        Interrelated and concentration risk — sign each dependency before Closure. Not a raw vendor count.
+      </p>
+
+      <ul className="space-y-3">
+        {c.platformCards.map((card: PlatformCard) => {
+          const pending = card.signOff === 'pending'
+          return (
+            <li key={card.id} className="wb-platform-card">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-slate-900">{card.label}</span>
+                {!pending ? (
+                  <Chip size="sm" variant="soft" color={card.signOff === 'block' ? 'danger' : 'warning'} className="capitalize">
+                    {card.signOff}
+                  </Chip>
+                ) : (
+                  <Chip size="sm" variant="soft" color="accent">
+                    Needs sign-off
+                  </Chip>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-slate-800">{card.finding}</p>
+              <p className="mt-1 text-xs text-slate-500">{card.portfolioMeaning}</p>
+              {card.termEffect ? (
+                <p className="mt-1 text-xs font-medium text-amber-900">Terms: {card.termEffect}</p>
+              ) : null}
+
+              {pending ? (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                  {actions.map((a) => (
+                    <Button
+                      key={a}
+                      size="sm"
+                      variant={a === 'block' ? 'danger' : a === 'watch' ? 'primary' : 'secondary'}
+                      className="capitalize"
+                      onPress={() =>
+                        signPlatformCard(
+                          c.id,
+                          card.id,
+                          a,
+                          a === 'terms' ? 'Contingent BI / waiting period discuss with broker' : undefined,
+                        )
+                      }
+                    >
+                      {a === 'watch' ? 'Watch' : a === 'terms' ? 'Terms' : a === 'block' ? 'Block' : 'Escalate'}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+
+      <p className="text-sm font-medium text-slate-800">{platformOutcomeLabel(outcome)}</p>
+    </div>
+  )
+}
+
+function ClosureCard({ c }: { c: CyberCase }) {
+  const materialOpen = openMaterialGaps(c.gaps)
+  const demo = riskReviewForCase(c)
+  const required = requiredRiskItemIds(demo)
+  const riskOk = canLeaveReviewRisk(required, c.riskJudgments)
+  const platformOk = canLeaveReviewPlatform(c.platformCards)
+  const platformOutcome = platformOutcomeFromCards(c.platformCards)
+  const blockingRules = c.appetiteHits.filter((h) => h.outcome !== 'pass')
+  const topRule = blockingRules[0]
+  const aligned = c.decision !== 'pending' && c.decision === c.recommendation
+
+  const checklist: { id: string; label: string; ok: boolean; detail: string }[] = [
+    {
+      id: 'floors',
+      label: 'Control floors',
+      ok: materialOpen.length === 0,
+      detail:
+        materialOpen.length === 0
+          ? 'Access / endpoint / recoverability signed in Feedback'
+          : `${materialOpen.length} material gap(s) still open`,
+    },
+    {
+      id: 'ransom',
+      label: 'Ransomware readiness',
+      ok: riskOk || materialOpen.length === 0,
+      detail: riskOk ? 'Threat / impact judgments owned' : 'Required Review Risk items unsigned',
+    },
+    {
+      id: 'appetite',
+      label: 'Appetite & limit fit',
+      ok: true,
+      detail: topRule ? `${topRule.outcome.toUpperCase()} — ${topRule.ruleId}` : 'Appetite clear',
+    },
+    {
+      id: 'threats',
+      label: 'Review Risk · threats',
+      ok: demo.threats.filter((t) => t.required).every((t) => {
+        const j = c.riskJudgments[t.id]
+        return j && j.status !== 'pending'
+      }),
+      detail: 'Accept / Escalate / Note on required threats',
+    },
+    {
+      id: 'impacts',
+      label: 'Review Risk · impacts',
+      ok: demo.impacts.filter((t) => t.required).every((t) => {
+        const j = c.riskJudgments[t.id]
+        return j && j.status !== 'pending'
+      }),
+      detail: 'Accept / Escalate / Note on required impacts',
+    },
+    {
+      id: 'platform',
+      label: 'Review Platform',
+      ok: platformOk,
+      detail: platformOutcomeLabel(platformOutcome),
+    },
+  ]
+
+  const reasonCodes = [
+    ...materialOpen.map((g) => `GAP:${g.id}`),
+    ...blockingRules.map((h) => h.ruleId),
+    platformOutcome !== 'clear' && platformOutcome !== 'pending' ? `PLT:${platformOutcome}` : null,
+  ]
+    .filter(Boolean)
+    .slice(0, 5) as string[]
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <AiBadge label={`AI ${c.recommendation}`} />
+        <UwDecisionChip value={c.decision} />
+        {c.decision !== 'pending' ? (
+          <Chip size="sm" variant="soft" color={aligned ? 'success' : 'warning'}>
+            {aligned ? 'Matches AI' : 'Overrides AI'}
+          </Chip>
+        ) : null}
+      </div>
+
+      <ul className="wb-closure-checklist">
+        {checklist.map((row) => (
+          <li key={row.id} className={`wb-closure-row ${row.ok ? 'wb-closure-row--ok' : 'wb-closure-row--open'}`}>
+            <Chip size="sm" variant="soft" color={row.ok ? 'success' : 'warning'}>
+              {row.ok ? 'Signed' : 'Open'}
             </Chip>
-          </div>
-          <p className="text-sm text-slate-700">{demo.threats.summary}</p>
-
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Risks exposed to</p>
-            <ul className="mt-2 space-y-1.5">
-              {demo.threats.risksExposed.map((r) => (
-                <li
-                  key={r}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                >
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-sm font-semibold text-slate-900">Parameter contribution to threat</p>
-            <div className="mt-2 h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={demo.threats.contributions}
-                  layout="vertical"
-                  margin={{ top: 4, right: 12, left: 8, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="parameter"
-                    width={128}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <Tooltip
-                    formatter={(value, _name, item) => [
-                      `${value}`,
-                      (item?.payload as { note?: string } | undefined)?.note ?? 'Degree',
-                    ]}
-                  />
-                  <Bar dataKey="degree" name="Degree" radius={[0, 4, 4, 0]} fill={CHART_COLORS.rose} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900">{row.label}</p>
+              <p className="text-xs text-slate-600">{row.detail}</p>
             </div>
-          </div>
+          </li>
+        ))}
+      </ul>
 
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Sources</p>
-            <ul className="mt-2 space-y-2">
-              {demo.threats.sources.map((s) => (
-                <li key={s.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <p className="font-semibold text-slate-900">{s.label}</p>
-                  <p className="mt-0.5 text-slate-600">{s.detail}</p>
-                </li>
-              ))}
-            </ul>
+      {reasonCodes.length ? (
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Reason codes</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {reasonCodes.map((code) => (
+              <Chip key={code} size="sm" variant="soft">
+                {code}
+              </Chip>
+            ))}
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-slate-700">
-            Loss severity and coverage impact from this dossier — short list first.
-          </p>
-          <ul className="space-y-2">
-            {impactRows.map((item) => (
-              <li key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={item.category === 'loss' ? 'danger' : 'accent'}
-                    className="capitalize"
-                  >
-                    {item.category}
-                  </Chip>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={
-                      item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'
-                    }
-                    className="capitalize"
-                  >
-                    {item.severity}
-                  </Chip>
-                  <span className="font-semibold text-slate-900">{item.title}</span>
-                </div>
-                <p className="mt-1.5 text-slate-700">{item.blurb}</p>
-                {impactsExpanded ? (
-                  <p className="mt-2 border-t border-slate-100 pt-2 text-slate-600">{item.detail}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+        <p className="text-sm text-slate-600">No blocking reason codes — floors and platform clear.</p>
+      )}
 
-          {!impactsExpanded ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="ai-cta"
-              isDisabled={agentRunning}
-              onPress={runImpactAgent}
-            >
-              {agentRunning ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  Agent expanding impacts…
-                </>
-              ) : (
-                <>
-                  <Sparkles size={14} />
-                  Expand · Run agent for full list
-                </>
-              )}
-            </Button>
-          ) : (
-            <p className="text-xs text-slate-500">
-              Full impact list generated from dossier parameters, appetite rules, and sector playbook.
-            </p>
-          )}
+      {c.decision !== 'pending' ? (
+        <div className="space-y-2">
+          {c.decisionReason ? (
+            <p className="text-sm text-slate-700">{c.decisionReason}</p>
+          ) : null}
         </div>
+      ) : (
+        <p className="text-sm text-slate-600">
+          Lock Quote, Refer, or Decline in the bar above when the checklist is ready.
+        </p>
       )}
     </div>
   )
 }
 
-function WorkflowTab({
-  c,
-  onOpenGaps,
-  onOpenPas,
-}: {
-  c: CyberCase
-  onOpenGaps: () => void
-  onOpenPas: () => void
-}) {
+function WorkflowTab({ c }: { c: CyberCase }) {
   const idx = cyberFlowIndex(c)
-  const materialOpen = openMaterialGaps(c.gaps)
-  const hotVendors = c.vendors.filter((v) => v.bookCount >= 25)
 
   return (
     <div className="space-y-4 pb-8">
-      <CyberProgressStepper c={c} />
-
       <div>
         <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
           Stages
         </h2>
       </div>
 
-      <StageSection
-        title={CYBER_FLOW_STAGES[0].title}
-        stageIndex={0}
-        currentIndex={idx}
-      >
+      <StageSection title={CYBER_FLOW_STAGES[0].title} stageIndex={0} currentIndex={idx}>
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Broker</dt>
+            <dt className="text-xs font-medium text-slate-500">Broker</dt>
             <dd className="mt-1 text-sm font-semibold text-slate-900">{c.broker}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Completeness</dt>
+            <dt className="text-xs font-medium text-slate-500">Completeness</dt>
             <dd className="mt-1 text-sm font-semibold text-slate-900">{c.completenessPct}%</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Revenue</dt>
+            <dt className="text-xs font-medium text-slate-500">Revenue</dt>
             <dd className="mt-1 text-sm font-semibold text-slate-900">{money(c.revenueUsd)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Limit</dt>
+            <dt className="text-xs font-medium text-slate-500">Limit</dt>
             <dd className="mt-1 text-sm font-semibold text-slate-900">{money(c.limitRequestedUsd)}</dd>
           </div>
         </dl>
       </StageSection>
 
-      <StageSection
-        title={CYBER_FLOW_STAGES[1].title}
-        stageIndex={1}
-        currentIndex={idx}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip size="sm" variant="soft" color={materialOpen.length ? 'danger' : 'success'}>
-            {materialOpen.length} open material gap{materialOpen.length === 1 ? '' : 's'}
-          </Chip>
-          <span className="text-sm text-slate-600">Signal score {c.signalScore}/100 (mock)</span>
-        </div>
-        {materialOpen.length > 0 ? (
-          <ul className="mt-3 space-y-2">
-            {materialOpen.slice(0, 3).map((g) => (
-              <li
-                key={g.id}
-                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950"
-              >
-                <strong>{g.control}:</strong> attested “{g.attested}” vs signal “{g.signal}”
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-slate-600">
-            No open material gaps — focused sign-off complete.
-          </p>
-        )}
-        <Button size="sm" variant="secondary" className="mt-3" onPress={onOpenGaps}>
-          Open Gap board
-          <ArrowRight size={14} />
-        </Button>
+      <StageSection title={CYBER_FLOW_STAGES[1].title} stageIndex={1} currentIndex={idx}>
+        <FeedbackStageBody c={c} />
       </StageSection>
 
-      <StageSection
-        title={CYBER_FLOW_STAGES[2].title}
-        stageIndex={2}
-        currentIndex={idx}
-      >
+      <StageSection title={CYBER_FLOW_STAGES[2].title} stageIndex={2} currentIndex={idx}>
         <RiskReviewPanel c={c} />
       </StageSection>
 
-      <StageSection
-        title={CYBER_FLOW_STAGES[3].title}
-        stageIndex={3}
-        currentIndex={idx}
-      >
-        {hotVendors.length ? (
-          <ul className="space-y-2">
-            {c.vendors.map((v) => (
-              <li
-                key={v.vendor}
-                className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${
-                  v.bookCount >= 25 ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-slate-200 bg-white'
-                }`}
-              >
-                <span>
-                  <strong>{v.vendor}</strong>
-                  <span className="text-slate-500"> · {v.category}</span>
-                </span>
-                <span className="font-semibold">{v.bookCount} on book</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-slate-600">No vendor above watch threshold (≥25).</p>
-        )}
+      <StageSection title={CYBER_FLOW_STAGES[3].title} stageIndex={3} currentIndex={idx}>
+        <PlatformStageBody c={c} />
       </StageSection>
 
-      <StageSection
-        title={CYBER_FLOW_STAGES[4].title}
-        stageIndex={4}
-        currentIndex={idx}
-      >
-        <DecisionAidCard c={c} onOpenPas={onOpenPas} />
+      <StageSection title={CYBER_FLOW_STAGES[4].title} stageIndex={4} currentIndex={idx}>
+        <ClosureCard c={c} />
       </StageSection>
-    </div>
-  )
-}
-
-function DecisionAidCard({ c, onOpenPas }: { c: CyberCase; onOpenPas: () => void }) {
-  const critical = c.gaps.filter((g) => g.severity === 'critical')
-  const high = c.gaps.filter((g) => g.severity === 'high')
-  const hotVendors = c.vendors.filter((v) => v.bookCount >= 25)
-  const blockingRules = c.appetiteHits.filter((h) => h.outcome !== 'pass')
-  const aligned = c.decision !== 'pending' && c.decision === c.recommendation
-
-  const quoteMeans = [
-    critical.length === 0
-      ? 'No critical control gaps on the board'
-      : `You accept ${critical.length} critical gap(s) despite AI caution`,
-    `Tier ${c.tier} assist is guidance only — not a bound premium`,
-    hotVendors.length
-      ? `Book watch: ${hotVendors.map((v) => v.vendor).join(', ')}`
-      : 'No shared-vendor watch above threshold',
-  ]
-
-  const referMeans = [
-    ...blockingRules.filter((h) => h.outcome === 'refer').map((h) => h.label),
-    ...critical.map((g) => `Gap: ${g.control}`),
-    ...high.slice(0, 2).map((g) => `Gap: ${g.control}`),
-  ].slice(0, 4)
-
-  const declineMeans = blockingRules
-    .filter((h) => h.outcome === 'decline')
-    .map((h) => h.detail)
-    .concat(critical.map((g) => g.control))
-    .slice(0, 4)
-
-  return (
-    <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-slate-700">{c.dossierSummary}</p>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Score</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{c.signalScore}</p>
-          <p className="text-xs text-slate-500">Mock posture / 100</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Gaps</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
-            {critical.length}
-            <span className="text-base font-medium text-slate-500"> crit</span>
-          </p>
-          <p className="text-xs text-slate-500">{high.length} high · Tier {c.tier}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Book</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{hotVendors.length}</p>
-          <p className="text-xs text-slate-500">Shared-vendor watches</p>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-900">Decision aid</p>
-          <AiBadge label={`AI ${c.recommendation}`} />
-          <UwDecisionChip value={c.decision} />
-          {c.decision !== 'pending' ? (
-            <Chip size="sm" variant="soft" color={aligned ? 'success' : 'warning'}>
-              {aligned ? 'Matches AI' : 'Overrides AI'}
-            </Chip>
-          ) : null}
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <div>
-            <p className="text-xs font-semibold text-emerald-800">If you Quote</p>
-            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-700">
-              {quoteMeans.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-900">If you Refer</p>
-            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-700">
-              {(referMeans.length ? referMeans : ['No forced referral rules — use for judgment calls']).map(
-                (line) => (
-                  <li key={line}>{line}</li>
-                ),
-              )}
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-red-800">If you Decline</p>
-            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-700">
-              {(declineMeans.length
-                ? declineMeans
-                : ['No hard decline floor fired — decline only with clear rationale']
-              ).map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip size="sm" variant="soft" color="default" className="capitalize">
-          Policy admin system {c.pasStatus}
-        </Chip>
-        {c.decision !== 'pending' ? (
-          <Button size="sm" variant="secondary" className="ai-cta" onPress={onOpenPas}>
-            Sync to policy admin system
-            <ArrowRight size={14} />
-          </Button>
-        ) : (
-          <p className="text-xs text-slate-500">
-            Use Quote / Refer / Decline in the toolbar, or the purple AI pill in the queue.
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function GapsTab({ c }: { c: CyberCase }) {
-  const resolveGap = useCyberUwStore((s) => s.resolveGap)
-  const referGap = useCyberUwStore((s) => s.referGap)
-  const setWorkflowStage = useCyberUwStore((s) => s.setWorkflowStage)
-  const [referring, setReferring] = useState(false)
-  const [assignee, setAssignee] = useState<(typeof GAP_REFER_ASSIGNEES)[number]['label']>(
-    GAP_REFER_ASSIGNEES[0].label,
-  )
-
-  const materialOpen = openMaterialGaps(c.gaps)
-  const focus = materialOpen[0]
-  const focusIndex = focus ? 1 : 0
-  const aiNote =
-    focus?.rfiDraft?.trim() ||
-    (focus
-      ? `Attested “${focus.attested}” does not match signal “${focus.signal}”.`
-      : '')
-
-  return (
-    <div className="space-y-5 pb-8">
-      <div>
-        <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
-          Gap board
-        </h2>
-        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-600">
-          One material gap at a time. Resolve or Refer to clear Verify.
-        </p>
-      </div>
-
-      {focus ? (
-        <section className={`wb-stage-card wb-stage-card--current border ${gapBorder(focus.severity)}`}>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Chip size="sm" variant="soft" color={gapChipColor(focus.severity)} className="capitalize">
-              {focus.severity} · {focusIndex} of {materialOpen.length}
-            </Chip>
-          </div>
-          <h3 className="dashboard-section-title text-lg text-slate-900">{focus.control}</h3>
-
-          <div className="ai-panel mt-3 p-4 text-sm">
-            <p className="ai-panel__hint mb-0 text-xs font-semibold uppercase tracking-wide">AI note</p>
-            <p className="mt-2 text-slate-900">{aiNote}</p>
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Attested</p>
-              <p className="mt-2 text-base font-semibold text-slate-900">{focus.attested}</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signal</p>
-              <p className="mt-2 text-base font-semibold text-slate-900">{focus.signal}</p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <p className="w-full text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Sign off
-            </p>
-            <Button
-              size="sm"
-              variant="primary"
-              onPress={() => {
-                setReferring(false)
-                resolveGap(c.id, focus.id)
-              }}
-            >
-              Resolve
-            </Button>
-            {referring ? (
-              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
-                <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
-                  Refer to
-                  <select
-                    className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-                    value={assignee}
-                    onChange={(e) =>
-                      setAssignee(e.target.value as (typeof GAP_REFER_ASSIGNEES)[number]['label'])
-                    }
-                  >
-                    {GAP_REFER_ASSIGNEES.map((a) => (
-                      <option key={a.id} value={a.label}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => {
-                      referGap(c.id, focus.id, assignee)
-                      setReferring(false)
-                    }}
-                  >
-                    Confirm refer
-                  </Button>
-                  <Button size="sm" variant="ghost" onPress={() => setReferring(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                onPress={() => {
-                  setAssignee(GAP_REFER_ASSIGNEES[0].label)
-                  setReferring(true)
-                }}
-              >
-                Refer
-              </Button>
-            )}
-          </div>
-        </section>
-      ) : (
-        <section className="wb-stage-card wb-stage-card--past border border-emerald-200 bg-emerald-50/40">
-          <Chip size="sm" variant="soft" color="success">
-            Verification completed
-          </Chip>
-          <h3 className="dashboard-section-title mt-2 text-base text-slate-900">
-            Verification completed
-          </h3>
-          <p className="mt-2 text-sm text-slate-600">
-            All material gaps are signed off. Continue to Risk Review on the workflow.
-          </p>
-          <Button
-            size="sm"
-            variant="primary"
-            className="mt-4 ai-cta"
-            onPress={() => setWorkflowStage(c.id, 2)}
-          >
-            Continue to Risk Review
-            <ArrowRight size={14} />
-          </Button>
-        </section>
-      )}
     </div>
   )
 }
 
 function DossierTab({ c }: { c: CyberCase }) {
-  const critical = c.gaps.filter((g) => g.severity === 'critical' || g.severity === 'high')
-  const hotVendors = c.vendors.filter((v) => v.bookCount >= 25)
-  const ruleHits = c.appetiteHits.filter((h) => h.outcome !== 'pass')
-  const openRequests = c.gaps.filter((g) => g.rfiDraft).length
-  const aligned = c.decision !== 'pending' && c.decision === c.recommendation
+  const demo = riskReviewForCase(c)
+  const riskItems = [...demo.threats, ...demo.impacts]
+
+  const signalsByModule = new Map<string, typeof c.formSignals>()
+  for (const row of c.formSignals) {
+    const list = signalsByModule.get(row.moduleId) ?? []
+    list.push(row)
+    signalsByModule.set(row.moduleId, list)
+  }
 
   return (
     <div className="space-y-4 pb-8">
       <div>
-        <p className="wb-eyebrow">Decision artifact</p>
         <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
-          Underwriter dossier
+          Dossier
         </h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          One place to defend Quote, Refer, or Decline — evidence, rules, and next step.
-        </p>
+        <p className="mt-1 text-sm text-slate-600">Ingested package — form, signals, and references.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="wb-panel p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Disposition</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <AiBadge label={`AI ${c.recommendation}`} />
-            <UwDecisionChip value={c.decision} />
-          </div>
-          {c.decision !== 'pending' ? (
-            <p className="mt-2 text-xs text-slate-600">
-              {aligned ? 'UW locked in line with AI.' : 'UW overrode AI — rationale required below.'}
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-slate-500">No UW lock yet.</p>
-          )}
-        </div>
-        <div className="wb-panel p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Why it matters</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {critical.length} material gap{critical.length === 1 ? '' : 's'}
-          </p>
-          <p className="text-xs text-slate-500">{ruleHits.length} appetite pressures · Tier {c.tier}</p>
-        </div>
-        <div className="wb-panel p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            Broker follow-ups
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {openRequests} request{openRequests === 1 ? '' : 's'} for information
-          </p>
-          <p className="text-xs text-slate-500">Drafted on the Gap board</p>
-        </div>
-        <div className="wb-panel p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Book risk</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {hotVendors.length ? hotVendors.map((v) => v.vendor).join(', ') : 'None above watch'}
-          </p>
-          <p className="text-xs text-slate-500">Shared vendors ≥ 25 on book</p>
-        </div>
-      </div>
-
-      <div className="wb-panel space-y-4 p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <TierBadge tier={c.tier} />
-          <Chip size="sm" variant="soft" color="warning">
-            Tier is assist — not premium
-          </Chip>
-        </div>
-        <p className="text-base leading-relaxed text-slate-800">{c.dossierSummary}</p>
-        {c.decisionReason ? (
-          <div className="ai-panel text-sm text-slate-800">
-            <p className="ai-panel__hint">UW rationale (locked)</p>
-            {c.decisionReason}
-          </div>
+      <section className="wb-panel p-5">
+        <h3 className="text-sm font-semibold text-slate-900">Package documents</h3>
+        {c.packageDocs.length ? (
+          <ul className="mt-3 divide-y divide-slate-100">
+            {c.packageDocs.map((doc) => (
+              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                <span className="font-medium text-slate-900">{doc.name}</span>
+                <Chip size="sm" variant="soft">
+                  {doc.kind}
+                </Chip>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="text-sm text-slate-500">
-            Confirm Quote / Refer / Decline to lock rationale into this dossier.
-          </p>
+          <p className="mt-2 text-sm text-slate-500">No documents attached.</p>
         )}
-        {critical.length > 0 ? (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Material gaps to cite
-            </p>
-            <ul className="mt-2 space-y-1.5">
-              {critical.map((g) => (
-                <li key={g.id} className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-sm text-red-950">
-                  <strong>{g.control}</strong>
-                  <span className="text-red-800/80"> — {g.signal}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        {ruleHits.length > 0 ? (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Appetite rules to cite
-            </p>
-            <ul className="mt-2 space-y-1.5">
-              {ruleHits.map((h) => (
-                <li key={h.ruleId} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <span className="font-semibold text-slate-900">{h.label}</span>
-                  <span className="text-slate-600"> — {h.detail}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
+      </section>
 
-      <div className="wb-panel p-5">
-        <p className="wb-eyebrow mb-3">Audit trail</p>
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-900">Form signals</h3>
+        {[...signalsByModule.entries()].map(([moduleId, rows]) => (
+          <div key={moduleId} className="wb-qual-bucket">
+            <div className="wb-qual-bucket__head">
+              <h4 className="text-sm font-semibold text-slate-900">{moduleLabel(moduleId)}</h4>
+            </div>
+            <ul className="wb-qual-bucket__list">
+              {rows.map((row) => (
+                <li key={row.id} className="wb-qual-row">
+                  <p className="text-sm font-semibold text-slate-900">{row.label}</p>
+                  <p className="mt-1 text-sm text-slate-800">
+                    <span className="text-slate-500">Attested · </span>
+                    {row.answer}
+                  </p>
+                  {row.signal ? (
+                    <p className="mt-1 text-sm text-amber-950">
+                      <span className="font-medium">Signal · </span>
+                      {row.signal}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+
+      <section className="wb-panel p-5">
+        <h3 className="text-sm font-semibold text-slate-900">Threats & impacts</h3>
+        <p className="mt-1 text-xs text-slate-500">Referenced against form modules and platform deps.</p>
+        <ul className="mt-3 space-y-2">
+          {riskItems.map((item) => {
+            const status = c.riskJudgments[item.id]?.status
+            return (
+              <li key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip size="sm" variant="soft" className="capitalize">
+                    {item.kind}
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'success'}
+                    className="capitalize"
+                  >
+                    {item.severity}
+                  </Chip>
+                  {status && status !== 'pending' ? (
+                    <Chip size="sm" variant="soft" color={judgmentChipColor(status)} className="capitalize">
+                      {status}
+                    </Chip>
+                  ) : null}
+                </div>
+                <p className="mt-1.5 font-semibold text-slate-900">{item.title}</p>
+                <p className="mt-1 text-xs text-slate-500">Referenced in · {item.cite}</p>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-900">Platform dependencies</h3>
         <ul className="space-y-2">
+          {c.platformCards.map((card) => (
+            <li key={card.id} className="wb-platform-card">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-slate-900">{card.label}</span>
+                {card.signOff !== 'pending' ? (
+                  <Chip size="sm" variant="soft" color={card.signOff === 'block' ? 'danger' : 'warning'} className="capitalize">
+                    {card.signOff}
+                  </Chip>
+                ) : (
+                  <Chip size="sm" variant="soft">
+                    Unsigned
+                  </Chip>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-slate-800">{card.finding}</p>
+              <p className="mt-1 text-xs text-slate-500">{card.portfolioMeaning}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="wb-panel p-5">
+        <h3 className="text-sm font-semibold text-slate-900">Audit trail</h3>
+        <ul className="mt-3 space-y-2">
           {[...c.audit].reverse().map((a, i) => (
             <li key={`${a.at}-${i}`} className="rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
               <p className="font-medium text-slate-900">{a.action}</p>
@@ -760,72 +831,8 @@ function DossierTab({ c }: { c: CyberCase }) {
             </li>
           ))}
         </ul>
-      </div>
+      </section>
     </div>
-  )
-}
-
-function PasTab({ c }: { c: CyberCase }) {
-  return (
-    <div className="space-y-4 pb-8">
-      <div>
-        <p className="wb-eyebrow">Integration</p>
-        <h2 className="font-display text-xl font-semibold tracking-tight text-slate-900">
-          Policy admin system (mock)
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Approve-before-send — same discipline as broker outbound in the submission workbench.
-        </p>
-      </div>
-      <div className="wb-panel space-y-4 p-5">
-        {c.decision === 'pending' ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            Policy admin sync locked until Quote / Refer / Decline is confirmed.
-          </div>
-        ) : null}
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">UW decision</dt>
-            <dd className="mt-2 text-lg font-semibold capitalize text-slate-900">{c.decision}</dd>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Adapter status</dt>
-            <dd className="mt-2 text-lg font-semibold capitalize text-slate-900">{c.pasStatus}</dd>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Payload preview</dt>
-            <dd className="mt-2 font-mono text-sm leading-relaxed text-slate-700">
-              {`{ "submissionId": "${c.id}", "status": "${c.decision}", "tier": ${c.tier}, "signalScore": ${c.signalScore} }`}
-            </dd>
-          </div>
-        </dl>
-      </div>
-    </div>
-  )
-}
-
-function TabLabel({
-  children,
-  count,
-  danger,
-}: {
-  children: string
-  count?: number
-  danger?: boolean
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {children}
-      {count != null && count > 0 ? (
-        <span
-          className={`inline-flex min-w-[1.15rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-            danger ? 'bg-red-500 text-white' : 'bg-amber-100 text-amber-900'
-          }`}
-        >
-          {count}
-        </span>
-      ) : null}
-    </span>
   )
 }
 
@@ -837,7 +844,6 @@ export function CaseWorkspace() {
     setTab,
     runMockSignal,
     applyDecision,
-    pushToPas,
     listDecisionPrompt,
     clearListDecisionPrompt,
   } = useCyberUwStore()
@@ -871,25 +877,21 @@ export function CaseWorkspace() {
     return 'Hard control floor failed at requested limit; decline or restructure.'
   }
 
-  const criticalCount = c.gaps.filter((g) => g.severity === 'critical').length
-
   const closeConfirm = () => {
     setPendingDecision(null)
     clearListDecisionPrompt()
   }
 
   const dispositionLabel =
-    c.pasStatus === 'synced'
-      ? 'Synced'
-      : c.decision === 'pending'
-        ? 'UW Pending'
-        : `UW ${c.decision.charAt(0).toUpperCase()}${c.decision.slice(1)}`
+    c.decision === 'pending'
+      ? 'UW Pending'
+      : `UW ${c.decision.charAt(0).toUpperCase()}${c.decision.slice(1)}`
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
       <Tabs
         selectedKey={activeTab}
-        onSelectionChange={(key) => setTab(String(key) as typeof activeTab)}
+        onSelectionChange={(key) => setTab(String(key) as 'workflow' | 'dossier')}
         className="case-drawer-tabs flex min-h-0 flex-1 flex-col"
       >
         <div className="shrink-0 border-b border-slate-200 bg-white/80 px-4 pt-3 md:px-6">
@@ -919,45 +921,32 @@ export function CaseWorkspace() {
           <Tabs.ListContainer>
             <Tabs.List aria-label="Cyber case sections">
               <Tabs.Tab id="workflow">Workflow</Tabs.Tab>
-              <Tabs.Tab id="gaps">
-                <TabLabel count={criticalCount} danger>
-                  Gap board
-                </TabLabel>
-              </Tabs.Tab>
               <Tabs.Tab id="dossier">Dossier</Tabs.Tab>
-              <Tabs.Tab id="pas">Policy admin</Tabs.Tab>
             </Tabs.List>
           </Tabs.ListContainer>
         </div>
 
         <div className="wb-cyber-advance-strip shrink-0 border-b border-slate-200/80 px-3 py-2.5 md:px-4">
+          {activeTab === 'workflow' ? (
+            <div className="wb-progress-stepper-chrome wb-progress-stepper-chrome--inline mb-2.5">
+              <CyberProgressStepper c={c} />
+            </div>
+          ) : null}
           <CyberStageAdvanceCard
             compact
             activeTab={activeTab}
             c={c}
-            onOpenGaps={() => setTab('gaps')}
             onRequestDecision={(d) => setPendingDecision(d)}
-            onPas={() => pushToPas(c.id)}
             onSignal={() => runMockSignal(c.id)}
           />
         </div>
 
         <div className="case-drawer-surface min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
           <Tabs.Panel id="workflow" className="pt-1">
-            <WorkflowTab
-              c={c}
-              onOpenGaps={() => setTab('gaps')}
-              onOpenPas={() => setTab('pas')}
-            />
-          </Tabs.Panel>
-          <Tabs.Panel id="gaps" className="pt-1">
-            <GapsTab c={c} />
+            <WorkflowTab c={c} />
           </Tabs.Panel>
           <Tabs.Panel id="dossier" className="pt-1">
             <DossierTab c={c} />
-          </Tabs.Panel>
-          <Tabs.Panel id="pas" className="pt-1">
-            <PasTab c={c} />
           </Tabs.Panel>
         </div>
       </Tabs>
