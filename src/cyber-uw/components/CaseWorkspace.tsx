@@ -6,7 +6,7 @@ import { CYBER_FLOW_STAGES, cyberFlowIndex } from '../constants/cyberFlow'
 import { GAP_REFER_ASSIGNEES } from '../constants/gapReferAssignees'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase } from '../types'
-import { isOpenMaterialGap, openMaterialGaps } from '../utils/gapDisposition'
+import { openMaterialGaps } from '../utils/gapDisposition'
 import {
   CaseMetaChips,
   gapBorder,
