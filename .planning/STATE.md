@@ -1,10 +1,14 @@
 # Project State
 
-Last activity: 2026-07-31 - Completed quick task 260731-f4h: Simplify Manage Submissions outtake ACTIONS
+Last activity: 2026-07-31 - Exploration: cyber stage UX + dual demo spines → Phase 1 added
 
 ### Blockers/Concerns
 
 None.
+
+### Roadmap Evolution
+
+- Phase 1 added: Cyber workflow UI polish (dual demo spines, Proceed + HITL, feel-target polish)
 
 ### Quick Tasks Completed
 

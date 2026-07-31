@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sketch 001 — Verify stage card</title>
+  <link rel="stylesheet" href="../themes/default.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+    .toolbar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.92);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(8px);
+    }
+    .toolbar h1 { font-size: var(--text-sm); margin: 0 1rem 0 0; font-weight: 600; }
+    .tab {
+      border: 1px solid var(--color-border);
+      background: #fff;
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--color-text-muted);
+    }
+    .tab[aria-selected="true"] {
+      background: var(--color-text);
+      color: #fff;
+      border-color: var(--color-text);
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 1rem;
+      max-width: 1100px;
+      margin: 1rem auto;
+      padding: 0 1rem 2rem;
+    }
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; }
+    }
+    .stepper {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+      height: fit-content;
+    }
+    .step {
+      display: flex; gap: 0.6rem; align-items: flex-start;
+      padding: 0.45rem 0;
+      opacity: 0.45;
+    }
+    .step.current { opacity: 1; }
+    .step.done { opacity: 0.7; }
+    .dot {
+      width: 1.5rem; height: 1.5rem; border-radius: 999px;
+      display: grid; place-items: center;
+      font-size: 0.65rem; font-weight: 700;
+      background: #e2e8f0; color: #475569; flex-shrink: 0;
+    }
+    .step.current .dot { background: var(--color-primary); color: #fff; }
+    .step.done .dot { background: var(--color-success); color: #fff; }
+    .step strong { display: block; font-size: var(--text-sm); }
+    .step span { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--color-border);
+      background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+    }
+    .eyebrow {
+      font-size: 0.625rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #94a3b8; margin: 0 0 0.25rem;
+    }
+    .card-head h2 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; }
+    .card-head p { margin: 0.35rem 0 0; font-size: var(--text-sm); color: var(--color-text-muted); }
+    .body { padding: 1.25rem; }
+    .compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;
+    }
+    .col {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem;
+      background: #f8fafc;
+    }
+    .col h3 { margin: 0 0 0.5rem; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
+    .col .val { font-size: var(--text-sm); font-weight: 600; }
+    .gap {
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .gap.signed {
+      border-color: #a7f3d0;
+      background: #ecfdf5;
+    }
+    .gap-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+    .chip {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      padding: 0.15rem 0.45rem; border-radius: 999px;
+      background: #ffe4e6; color: #be123c;
+    }
+    .chip.ok { background: #d1fae5; color: #047857; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    button.btn {
+      border: 1px solid var(--color-border);
+      background: #fff;
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.8rem;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.btn.primary {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+    }
+    button.btn.primary:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+    button.btn.ghost { background: transparent; }
+    .footer {
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--color-border);
+      background: #f8fafc;
+    }
+    .hint { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .focus-card {
+      border: 2px solid var(--color-primary);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      background: #fff;
+      box-shadow: var(--shadow-md);
+    }
+    .ai {
+      margin: 0.75rem 0;
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      font-size: var(--text-sm);
+      color: #1e3a8a;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    th, td { text-align: left; padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
+    .sticky-foot {
+      position: sticky; bottom: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 1rem; padding: 0.85rem 1rem;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+    }
+    .status { font-size: var(--text-xs); font-weight: 600; }
+    .status.locked { color: var(--color-warning); }
+    .status.open { color: var(--color-success); }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Sketch 001 · Verify stage</h1>
+    <button class="tab" data-tab="a" aria-selected="true">A · Split compare</button>
+    <button class="tab" data-tab="b" aria-selected="false">B · Focused stack</button>
+    <button class="tab" data-tab="c" aria-selected="false">C · Dense board</button>
+  </div>
+
+  <div class="shell">
+    <aside class="stepper" aria-label="Journey">
+      <div class="step done"><span class="dot">✓</span><div><strong>Intake</strong><span>Package complete</span></div></div>
+      <div class="step current"><span class="dot">2</span><div><strong>Verify</strong><span>Attest vs signal</span></div></div>
+      <div class="step"><span class="dot">3</span><div><strong>Tier</strong><span>Appetite assist</span></div></div>
+      <div class="step"><span class="dot">4</span><div><strong>Book</strong><span>Vendor watch</span></div></div>
+      <div class="step"><span class="dot">5</span><div><strong>Decide</strong><span>Quote → PAS</span></div></div>
+    </aside>
+
+    <!-- VARIANT A -->
+    <section class="panel active" id="panel-a" data-variant="a">
+      <article class="card">
+        <header class="card-head">
+          <p class="eyebrow">Stage 2 · HITL</p>
+          <h2>Verify control claims</h2>
+          <p>Compare insured attestation to external signal. Sign off each material gap, then Proceed.</p>
+        </header>
+        <div class="body">
+          <div class="compare">
+            <div class="col">
+              <h3>Attested</h3>
+              <p class="val">MFA: Okta enforced · All users</p>
+              <p class="val" style="margin-top:0.5rem">EDR: CrowdStrike Falcon</p>
+            </div>
+            <div class="col">
+              <h3>Signal (mock)</h3>
+              <p class="val">MFA: Coverage gaps in contractor SSO</p>
+              <p class="val" style="margin-top:0.5rem">EDR: Agent missing on 12 endpoints</p>
+            </div>
+          </div>
+          <div class="gap" data-gap="mfa">
+            <div class="gap-top">
+              <div>
+                <strong>MFA coverage</strong>
+                <p class="hint" style="margin:0.25rem 0 0">Critical · Attest claims full coverage; signal shows contractor SSO holes.</p>
+              </div>
+              <span class="chip" data-chip>Open</span>
+            </div>
+            <div class="actions">
+              <button class="btn" data-sign="resolve" data-gap="mfa">Resolve</button>
+              <button class="btn" data-sign="refer" data-gap="mfa">Refer</button>
+            </div>
+          </div>
+          <div class="gap" data-gap="edr">
+            <div class="gap-top">
+              <div>
+                <strong>EDR completeness</strong>
+                <p class="hint" style="margin:0.25rem 0 0">High · 12 endpoints without Falcon agent.</p>
+              </div>
+              <span class="chip" data-chip>Open</span>
+            </div>
+            <div class="actions">
+              <button class="btn" data-sign="resolve" data-gap="edr">Resolve</button>
+              <button class="btn" data-sign="refer" data-gap="edr">Refer</button>
+            </div>
+          </div>
+        </div>
+        <footer class="footer">
+          <span class="status locked" data-status>Proceed locked — sign off open gaps</span>
+          <button class="btn primary" data-proceed disabled>Proceed to Tier</button>
+        </footer>
+      </article>
+    </section>
+
+    <!-- VARIANT B -->
+    <section class="panel" id="panel-b" data-variant="b">
+      <article class="card">
+        <header class="card-head">
+          <p class="eyebrow">Stage 2 · One gap at a time</p>
+          <h2>Verify · Focused sign-off</h2>
+          <p>Agentic focus: clear the material gap, then unlock Proceed.</p>
+        </header>
+        <div class="body">
+          <div class="focus-card" data-focus>
+            <div class="gap-top">
+              <div>
+                <span class="chip">Critical · 1 of 2</span>
+                <h3 style="margin:0.5rem 0 0;font-size:1.05rem">MFA coverage mismatch</h3>
+              </div>
+            </div>
+            <div class="ai">AI note: Insured attested Okta-enforced MFA for all users. Signal scan shows contractor SSO without MFA — material for healthcare SaaS at $5M limit.</div>
+            <div class="compare" style="margin-top:0.75rem">
+              <div class="col"><h3>Attested</h3><p class="val">Okta · all users</p></div>
+              <div class="col"><h3>Signal</h3><p class="val">Contractor SSO gaps</p></div>
+            </div>
+            <div class="actions">
+              <button class="btn primary" data-b-sign="resolve">Sign off · Resolve</button>
+              <button class="btn" data-b-sign="refer">Refer to specialist</button>
+            </div>
+          </div>
+        </div>
+        <footer class="footer">
+          <span class="status locked" data-b-status>Proceed locked — finish focused sign-offs</span>
+          <button class="btn primary" data-b-proceed disabled>Proceed to Tier</button>
+        </footer>
+      </article>
+    </section>
+
+    <!-- VARIANT C -->
+    <section class="panel" id="panel-c" data-variant="c">
+      <article class="card">
+        <header class="card-head">
+          <p class="eyebrow">Stage 2 · Desk density</p>
+          <h2>Gap board · Verify</h2>
+          <p>Workbench-dense table; sticky Proceed when all material gaps signed.</p>
+        </header>
+        <div class="body">
+          <table>
+            <thead>
+              <tr><th>Control</th><th>Attested</th><th>Signal</th><th>Sev</th><th>Sign-off</th></tr>
+            </thead>
+            <tbody>
+              <tr data-row="mfa">
+                <td><strong>MFA</strong></td>
+                <td>Okta all users</td>
+                <td>Contractor SSO holes</td>
+                <td><span class="chip">Crit</span></td>
+                <td class="actions" style="margin:0">
+                  <button class="btn" data-c-sign="mfa">Sign off</button>
+                </td>
+              </tr>
+              <tr data-row="edr">
+                <td><strong>EDR</strong></td>
+                <td>CrowdStrike</td>
+                <td>12 agents missing</td>
+                <td><span class="chip">High</span></td>
+                <td class="actions" style="margin:0">
+                  <button class="btn" data-c-sign="edr">Sign off</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Backups</strong></td>
+                <td>Immutable · 30d</td>
+                <td>Aligned</td>
+                <td><span class="chip ok">Info</span></td>
+                <td class="hint">No action</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sticky-foot">
+            <span class="status locked" data-c-status>2 material gaps open</span>
+            <button class="btn primary" data-c-proceed disabled>Proceed to Tier</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab')
+    const panels = document.querySelectorAll('.panel')
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)))
+        panels.forEach((p) => p.classList.toggle('active', p.id === 'panel-' + tab.dataset.tab))
+      })
+    })
+
+    function unlock(statusEl, proceedBtn, openCount) {
+      if (openCount <= 0) {
+        statusEl.textContent = 'Signed off — Proceed unlocked'
+        statusEl.classList.remove('locked')
+        statusEl.classList.add('open')
+        proceedBtn.disabled = false
+      }
+    }
+
+    // Variant A
+    const aOpen = new Set(['mfa', 'edr'])
+    document.querySelectorAll('[data-sign]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.gap
+        const card = document.querySelector('.gap[data-gap="' + id + '"]')
+        if (!card || !aOpen.has(id)) return
+        aOpen.delete(id)
+        card.classList.add('signed')
+        card.querySelector('[data-chip]').textContent = btn.dataset.sign === 'refer' ? 'Referred' : 'Resolved'
+        card.querySelector('[data-chip]').classList.add('ok')
+        card.querySelector('.actions').innerHTML = '<span class="hint">Signed by James Park · demo</span>'
+        unlock(document.querySelector('#panel-a [data-status]'), document.querySelector('#panel-a [data-proceed]'), aOpen.size)
+      })
+    })
+
+    // Variant B — two focused gaps in sequence
+    let bStep = 0
+    const bGaps = [
+      { title: 'MFA coverage mismatch', note: 'Insured attested Okta-enforced MFA for all users. Signal scan shows contractor SSO without MFA.' },
+      { title: 'EDR completeness', note: '12 endpoints without Falcon agent — material at requested limit.' },
+    ]
+    function renderB() {
+      const focus = document.querySelector('[data-focus]')
+      if (bStep >= bGaps.length) {
+        focus.innerHTML = '<p style="margin:0;font-weight:600">All material gaps signed.</p><p class="hint">Proceed to Tier is unlocked.</p>'
+        unlock(document.querySelector('[data-b-status]'), document.querySelector('[data-b-proceed]'), 0)
+        return
+      }
+      const g = bGaps[bStep]
+      focus.querySelector('h3').textContent = g.title
+      focus.querySelector('.chip').textContent = 'Critical · ' + (bStep + 1) + ' of ' + bGaps.length
+      focus.querySelector('.ai').textContent = 'AI note: ' + g.note
+    }
+    document.querySelectorAll('[data-b-sign]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        bStep += 1
+        renderB()
+      })
+    })
+
+    // Variant C
+    const cOpen = new Set(['mfa', 'edr'])
+    document.querySelectorAll('[data-c-sign]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.cSign
+        if (!cOpen.has(id)) return
+        cOpen.delete(id)
+        const row = document.querySelector('[data-row="' + id + '"]')
+        row.querySelector('td:last-child').innerHTML = '<span class="chip ok">Signed</span>'
+        const st = document.querySelector('[data-c-status]')
+        st.textContent = cOpen.size ? cOpen.size + ' material gaps open' : 'All material gaps signed'
+        unlock(st, document.querySelector('[data-c-proceed]'), cOpen.size)
+      })
+    })
+
+    document.querySelectorAll('[data-proceed], [data-b-proceed], [data-c-proceed]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return
+        btn.textContent = 'Advanced → Tier'
+        btn.disabled = true
+      })
+    })
+  </script>
+</body>
+</html>
