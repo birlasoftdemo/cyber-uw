@@ -36,4 +36,4 @@ None.
 | 5 | Move AI search/filters and New Submission into Decision Workbench header | 2026-07-31 | a9ea578 | — |
 | 260731-q6e | Polish Manage Submissions & form builder: remove New Submission CTA; Shared/Templates selected pill black; empty modules default; minimal broker preview | 2026-07-31 | d7ecddb | [260731-q6e-polish-manage-submissions-form-builder-r](./quick/260731-q6e-polish-manage-submissions-form-builder-r/) |
 | 260731-qzs | Move stage stepper New→Closure inline above Continue CTA in advance strip | 2026-07-31 | 0386066 | [260731-qzs-move-stage-stepper-new-closure-inline-ab](./quick/260731-qzs-move-stage-stepper-new-closure-inline-ab/) |
-| 260731-rn4 | Declutter workflow pills/chips — Review Risk meta as prose, drop item chip clusters | 2026-07-31 | TBD | [260731-rn4-declutter-workflow-review-risk-pills-chi](./quick/260731-rn4-declutter-workflow-review-risk-pills-chi/) |
+| 260731-rn4 | Declutter workflow pills/chips — Review Risk meta as prose, drop item chip clusters | 2026-07-31 | 4d46172 | [260731-rn4-declutter-workflow-review-risk-pills-chi](./quick/260731-rn4-declutter-workflow-review-risk-pills-chi/) |
