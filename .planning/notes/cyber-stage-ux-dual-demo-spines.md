@@ -36,3 +36,7 @@ context: /gsd-explore — client demo polish for cyber UW workflow
 
 ## Audience
 External client demo of software built for cyber underwriting ops.
+
+## Sketch decisions
+
+- **001 Verify stage card → Winner B (Focused stack):** one material gap at a time, AI note + Resolve/Refer, Proceed unlocks after focused HITL.

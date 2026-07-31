@@ -13,4 +13,4 @@ Hybrid guided-agentic journey + polished UW workbench. Feel target from insuranc
 
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
-| 001 | verify-stage-card | How should Verify (attest vs signal) + Proceed/HITL feel on a stage card? | null | [stage, verify, hitl, demo] |
+| 001 | verify-stage-card | How should Verify (attest vs signal) + Proceed/HITL feel on a stage card? | B · Focused stack | [stage, verify, hitl, demo] |

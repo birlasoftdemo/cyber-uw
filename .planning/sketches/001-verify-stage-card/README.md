@@ -2,7 +2,7 @@
 sketch: 001
 name: verify-stage-card
 question: "How should Verify (attest vs signal) + Proceed/HITL feel on a stage card?"
-winner: null
+winner: B
 tags: [stage, verify, hitl, demo]
 ---
 
@@ -11,6 +11,10 @@ tags: [stage, verify, hitl, demo]
 ## Design Question
 
 How should the **Verify** stage present attest-vs-signal gaps, human sign-off, and Proceed — for a client demo that must feel both agentic and like a real UW desk?
+
+## Winner
+
+**B: Focused gap stack** — one material gap at a time with AI note + sign-off strip; Proceed unlocks after focused HITL.
 
 ## How to View
 
@@ -21,7 +25,7 @@ open .planning/sketches/001-verify-stage-card/index.html
 ## Variants
 
 - **A: Split compare rail** — Attested | Signal columns, gap list, Resolve/Refer then Proceed
-- **B: Focused gap stack** — One material gap at a time with AI note + sign-off strip
+- **B: Focused gap stack** — One material gap at a time with AI note + sign-off strip ← **winner**
 - **C: Desk denser board** — Compact table of gaps with inline sign-off; Proceed sticky footer
 
 ## What to Look For
