@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-07-31T13:38:35.063Z"
+last_updated: "2026-07-31T13:56:09.222Z"
 last_activity: 2026-07-31
-last_activity_desc: "Completed quick task 260731-q6e: Polish Manage Submissions & form builder"
+last_activity_desc: "Completed quick task 260731-qzs: Stage stepper above Continue CTA"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -15,7 +15,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-07-31 - Completed quick task 260731-q6e: Polish Manage Submissions & form builder
+Last activity: 2026-07-31 - Completed quick task 260731-qzs: Stage stepper above Continue CTA
 
 ### Blockers/Concerns
 
@@ -35,3 +35,4 @@ None.
 | 20260731 | Cyber insights metrics & visualization plan (Moody → cyber) | 2026-07-31 | 2dadf90 | [20260731-cyber-insights-metrics](./quick/20260731-cyber-insights-metrics/) |
 | 5 | Move AI search/filters and New Submission into Decision Workbench header | 2026-07-31 | a9ea578 | — |
 | 260731-q6e | Polish Manage Submissions & form builder: remove New Submission CTA; Shared/Templates selected pill black; empty modules default; minimal broker preview | 2026-07-31 | d7ecddb | [260731-q6e-polish-manage-submissions-form-builder-r](./quick/260731-q6e-polish-manage-submissions-form-builder-r/) |
+| 260731-qzs | Move stage stepper New→Closure inline above Continue CTA in advance strip | 2026-07-31 | 0386066 | [260731-qzs-move-stage-stepper-new-closure-inline-ab](./quick/260731-qzs-move-stage-stepper-new-closure-inline-ab/) |
