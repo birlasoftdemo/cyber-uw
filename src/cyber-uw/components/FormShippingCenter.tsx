@@ -1,5 +1,5 @@
 import { Button, Chip, Tabs } from '@heroui/react'
-import { Eye, FilePlus2, Send, Shield } from 'lucide-react'
+import { Eye, Send, Shield } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { showInfoToast, showSuccessToast } from '../../shared/utils/toast'
 import { defaultModuleIds } from '../constants/formModules'
@@ -186,12 +186,11 @@ export interface ReturnedOuttakePrefill {
 }
 
 interface Props {
-  onNewSubmission: (prefill?: ReturnedOuttakePrefill) => void
   /** Returned outtake → Decision Workbench Workflow (closure path). */
   onProceedToClosure: (prefill: ReturnedOuttakePrefill) => void
 }
 
-export function FormShippingCenter({ onNewSubmission, onProceedToClosure }: Props) {
+export function FormShippingCenter({ onProceedToClosure }: Props) {
   const [tab, setTab] = useState<'outtakes' | 'packages'>('outtakes')
   const [outtakeFilter, setOuttakeFilter] = useState<OuttakeFilter>('all')
   const [packageFilter, setPackageFilter] = useState<PackageFilter>('all')
@@ -343,6 +342,7 @@ export function FormShippingCenter({ onNewSubmission, onProceedToClosure }: Prop
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 px-1 pb-2">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <Tabs
+            className="case-drawer-tabs"
             selectedKey={tab}
             onSelectionChange={(k) => {
               const next = k as typeof tab
@@ -358,10 +358,6 @@ export function FormShippingCenter({ onNewSubmission, onProceedToClosure }: Prop
           </Tabs>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onPress={() => onNewSubmission()}>
-            <FilePlus2 size={14} />
-            New Submission
-          </Button>
           <Button size="sm" variant="primary" onPress={() => openBuilder()}>
             <Send size={14} />
             Dispatch New Form
