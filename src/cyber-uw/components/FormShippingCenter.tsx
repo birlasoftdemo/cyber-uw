@@ -1,5 +1,5 @@
 import { Button, Chip, Tabs } from '@heroui/react'
-import { Ban, Copy, Eye, FilePlus2, Send, Shield } from 'lucide-react'
+import { Eye, FilePlus2, Send, Shield } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { showInfoToast, showSuccessToast } from '../../shared/utils/toast'
 import { defaultModuleIds } from '../constants/formModules'
@@ -243,22 +243,6 @@ export function FormShippingCenter({ onNewSubmission, onProceedToClosure }: Prop
     } catch {
       showInfoToast('Could not copy link')
     }
-  }
-
-  const revoke = (id: string) => {
-    setOuttakes((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: 'revoked' as const } : o)),
-    )
-    showInfoToast('Outtake revoked')
-  }
-
-  const markReturned = (id: string) => {
-    setOuttakes((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: 'returned' as const } : o)),
-    )
-    showSuccessToast('Outtake marked returned')
-    setOuttakeFilter('returned')
-    setTab('outtakes')
   }
 
   const openBuilder = (packageId?: string) => {
