@@ -38,6 +38,7 @@ None.
 | 260731-q6e | Polish Manage Submissions & form builder: remove New Submission CTA; Shared/Templates selected pill black; empty modules default; minimal broker preview | 2026-07-31 | d7ecddb | [260731-q6e-polish-manage-submissions-form-builder-r](./quick/260731-q6e-polish-manage-submissions-form-builder-r/) |
 | 260731-qzs | Move stage stepper New→Closure inline above Continue CTA in advance strip | 2026-07-31 | 0386066 | [260731-qzs-move-stage-stepper-new-closure-inline-ab](./quick/260731-qzs-move-stage-stepper-new-closure-inline-ab/) |
 | 260731-rn4 | Declutter workflow pills/chips — Review Risk meta as prose, drop item chip clusters | 2026-07-31 | 4d46172 | [260731-rn4-declutter-workflow-review-risk-pills-chi](./quick/260731-rn4-declutter-workflow-review-risk-pills-chi/) |
+| 260811-t7l | Write Apple-style product launch video script showcasing AI value propositions | 2026-08-11 | 54e84d5 | [260811-t7l-write-a-script-for-an-apple-style-produc](./quick/260811-t7l-write-a-script-for-an-apple-style-produc/) |
 
 ## Performance Metrics
 
