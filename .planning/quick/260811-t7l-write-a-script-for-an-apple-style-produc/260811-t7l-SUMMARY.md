@@ -74,7 +74,7 @@ Each task was committed atomically:
 2. **Task 2: Self-audit script against product locks** - `e205740` (docs)
 3. **VO band tune** - `54e84d5` (docs) — spoken word count into ~110 band
 
-**Plan metadata:** (pending final docs commit)
+**Plan metadata:** `d27b4cf` (docs: complete plan)
 
 ## Files Created/Modified
 
