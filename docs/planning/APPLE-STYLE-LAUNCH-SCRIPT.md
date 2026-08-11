@@ -103,7 +103,7 @@ Non-negotiables (do not invent alternate brand names in VO or on-screen copy):
 | Timecode | 0:57–1:04 (~7s) |
 | Visual | Referral Inbox: Remind / Resolve / Return. Confidence on open chase — no email ping-pong montage. |
 | On-screen copy | Centralized chase. |
-| VO | Referral chase lives in one inbox. Not five. |
+| VO | Referral chase lives in one inbox only. Not five. |
 | AI proof | Referral orchestration confidence |
 
 ### 9. Human locks it. — HITL
@@ -156,7 +156,7 @@ Know the book before you bind. Stacked exposure. Estimated ALE.
 
 Quote. Refer. Decline. An AI recommendation with confidence.
 
-Referral chase lives in one inbox. Not five.
+Referral chase lives in one inbox only. Not five.
 
 Human-in-the-loop. The underwriter binds. Every override stays explainable.
 
@@ -164,7 +164,7 @@ Approve before send to policy admin. Sync when you’re ready.
 
 Agents assist. Underwriter binds. Every override is explainable.
 
-**Spoken word count (VO lines only):** 111 words.
+**Spoken word count (VO lines only):** 110 words.
 
 ## Audit checklist
 
@@ -172,7 +172,7 @@ Agents assist. Underwriter binds. Every override is explainable.
 - PASS — Demo spine order preserved: queue (Ch.2) → gap board (Ch.4) → appetite/tier (Ch.5) → accumulation (Ch.6) → HITL (Ch.9) → PAS (Ch.10).
 - PASS — VO and on-screen copy never say the product issues a bound premium, takes insurance risk, or replaces the underwriter; tier language stays guidance; HITL owns the bind.
 - PASS — Locked tagline appears verbatim in closer on-screen copy: Agents assist · underwriter binds · every override is explainable.
-- PASS — Spoken VO is roughly 111 words (target 110–160); AI proof beats retained.
+- PASS — Spoken VO is roughly 110 words (target 110–160); AI proof beats retained.
 - PASS — Remotion handoff notes present below; script remains usable standalone without Remotion edits or render.
 - PASS — Positioning stays Birlasoft IP accelerator for MGA buyers; no competitor or prior-platform brand names in VO/on-screen copy.
 
