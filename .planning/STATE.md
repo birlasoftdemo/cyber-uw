@@ -3,9 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-08-11T15:32:00.000Z"
+stopped_at: Completed 260811-t7l Apple-style launch script
+last_updated: "2026-08-11T16:00:00.000Z"
 last_activity: 2026-08-11
-last_activity_desc: "Planned quick task 260811-t7l: Apple-style launch video script"
+last_activity_desc: "Completed quick task 260811-t7l: Apple-style launch video script"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -15,7 +16,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-08-11 - Planned quick task 260811-t7l: Apple-style launch video script
+Last activity: 2026-08-11 - Completed quick task 260811-t7l: Apple-style launch video script
 
 ### Blockers/Concerns
 
@@ -37,3 +38,19 @@ None.
 | 260731-q6e | Polish Manage Submissions & form builder: remove New Submission CTA; Shared/Templates selected pill black; empty modules default; minimal broker preview | 2026-07-31 | d7ecddb | [260731-q6e-polish-manage-submissions-form-builder-r](./quick/260731-q6e-polish-manage-submissions-form-builder-r/) |
 | 260731-qzs | Move stage stepper New→Closure inline above Continue CTA in advance strip | 2026-07-31 | 0386066 | [260731-qzs-move-stage-stepper-new-closure-inline-ab](./quick/260731-qzs-move-stage-stepper-new-closure-inline-ab/) |
 | 260731-rn4 | Declutter workflow pills/chips — Review Risk meta as prose, drop item chip clusters | 2026-07-31 | 4d46172 | [260731-rn4-declutter-workflow-review-risk-pills-chi](./quick/260731-rn4-declutter-workflow-review-risk-pills-chi/) |
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 260811-t7l P01 | 10min | 2 tasks | 1 files |
+
+## Decisions
+
+- [Phase ?]: Script-only Apple launch VO; no Remotion edits; HITL owns bind; tier is guidance only
+
+## Session
+
+**Last session:** 2026-08-11T15:53:49.891Z
+**Stopped at:** Completed 260811-t7l Apple-style launch script
+**Resume file:** None
