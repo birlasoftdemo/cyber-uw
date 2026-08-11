@@ -166,6 +166,15 @@ Agents assist. Underwriter binds. Every override is explainable.
 
 **Spoken word count (VO lines only):** 111 words.
 
+## Audit checklist
+
+- PASS — All seven AI value props appear as distinct beats: recommendation chips (Ch.7); Ideal vs Detected cite-back (Ch.4); agent thinking on ingest (Ch.3); AI search across queue (Ch.2); Risk ALE / stacked exposure (Ch.6); appetite/tier assist (Ch.5); referral orchestration confidence (Ch.8).
+- PASS — Demo spine order preserved: queue (Ch.2) → gap board (Ch.4) → appetite/tier (Ch.5) → accumulation (Ch.6) → HITL (Ch.9) → PAS (Ch.10).
+- PASS — VO and on-screen copy never say the product issues a bound premium, takes insurance risk, or replaces the underwriter; tier language stays guidance; HITL owns the bind.
+- PASS — Locked tagline appears verbatim in closer on-screen copy: Agents assist · underwriter binds · every override is explainable.
+- PASS — Spoken VO is roughly 111 words (target 110–160); AI proof beats retained.
+- PASS — Remotion handoff notes present below; script remains usable standalone without Remotion edits or render.
+- PASS — Positioning stays Birlasoft IP accelerator for MGA buyers; no competitor or prior-platform brand names in VO/on-screen copy.
 
 ## Remotion handoff notes
 
