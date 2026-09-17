@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed 260811-t7l Apple-style launch script
-last_updated: "2026-08-11T16:00:00.000Z"
-last_activity: 2026-08-11
-last_activity_desc: "Completed quick task 260811-t7l: Apple-style launch video script"
+status: planning
+stopped_at: Planned quick 260917-p0f (sketch 002 + Risk Analysis copy/composition)
+last_updated: "2026-09-17T18:05:00.000Z"
+last_activity: 2026-09-17
+last_activity_desc: "Quick plan 260917-p0f: sketch 002 + dual-region Risk Analysis + shared cite panel"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -16,11 +16,16 @@ progress:
 
 # Project State
 
-Last activity: 2026-08-11 - Completed quick task 260811-t7l: Apple-style launch video script
+Last activity: 2026-09-17 - Planned quick 260917-p0f (sketch 002 + Risk Analysis desk)
 
 ### Blockers/Concerns
 
 None.
+
+### Open design
+
+- Quick **260917-p0f** planned: sketch 002 + copy locks + dual-region composition — execute next
+- Seed: thematic doc/screenshot evidence formats (after sketch 002; out of 260917-p0f scope)
 
 ### Roadmap Evolution
 
@@ -49,9 +54,10 @@ None.
 ## Decisions
 
 - [Phase ?]: Script-only Apple launch VO; no Remotion edits; HITL owns bind; tier is guidance only
+- [2026-09-17]: Risk Analysis — objective dual proof (market spatial + capacity ledger); shared cite slide-in; no bias/tension framing
 
 ## Session
 
-**Last session:** 2026-08-11T15:53:49.891Z
-**Stopped at:** Completed 260811-t7l Apple-style launch script
-**Resume file:** None
+**Last session:** 2026-09-17T18:05:00.000Z
+**Stopped at:** Planned quick 260917-p0f (sketch 002 + Risk Analysis copy/composition)
+**Resume file:** `.planning/quick/260917-p0f-complete-pending-stages-including-sketch/260917-p0f-PLAN.md`
