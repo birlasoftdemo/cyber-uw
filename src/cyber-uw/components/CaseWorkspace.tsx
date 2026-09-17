@@ -1,5 +1,22 @@
-import { Button, Checkbox, Tabs, Typography } from '@heroui/react'
-import { ChevronDown, Lock, RefreshCw } from 'lucide-react'
+import { Button, Tabs, Typography } from '@heroui/react'
+import {
+  CalendarCheck2,
+  CalendarRange,
+  ChevronDown,
+  CircleDollarSign,
+  ClipboardCheck,
+  FileStack,
+  Landmark,
+  Lock,
+  Pencil,
+  PencilOff,
+  Percent,
+  RefreshCw,
+  Scale,
+  ShieldAlert,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   CYBER_FLOW_STAGES,
@@ -9,30 +26,36 @@ import {
   needsManagerCosign,
 } from '../constants/cyberFlow'
 import {
-  allAnswerKeysForCase,
-  answersSignedForCase,
+  INELIGIBLE_ORGANIZATION_ACTIVITIES,
   riskSectionReportsForCase,
   sectionReportsForCase,
   type TriageFinding,
 } from '../data/cyberTriageRules'
+import { PACKAGE_DOC_KINDS, openPackageDocument } from '../data/dossierPackage'
 import { RiskVizPanel } from './RiskVizCharts'
+import {
+  RiskEvidenceCitePanel,
+  type RiskEvidenceCiteRow,
+  type RiskEvidenceCiteSource,
+} from './RiskEvidenceCitePanel'
 import { SecurityRatingPanel } from './SecurityRatingPanel'
+import { carrierExposureForCase } from '../data/riskVizDemo'
+import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberTier, RiskJudgmentStatus } from '../types'
 import { missingDocsForCase } from '../utils/missingDocs'
-import { money } from './CyberPrimitives'
+import { decisionLabel, money } from './CyberPrimitives'
 import {
   CyberProgressStepper,
   CyberStageAdvanceCard,
 } from './CyberWorkbenchDesk'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
+import { DocumentsCompleteModal } from './DocumentsCompleteModal'
 import {
   IngestQuestionGrid,
   QuestionMetaGrid,
   ReviewQuestionGrid,
-  SignSectionButton,
-  TriageRuleBanner,
 } from './QuestionFields'
 import {
   DiscussionReferModal,
@@ -41,6 +64,7 @@ import {
 
 function StageSection({
   title,
+  icon: Icon,
   stageIndex,
   currentIndex,
   forceExpand,
@@ -48,6 +72,7 @@ function StageSection({
   children,
 }: {
   title: string
+  icon?: LucideIcon
   stageIndex: number
   currentIndex: number
   forceExpand?: boolean
@@ -78,16 +103,21 @@ function StageSection({
         className="flex w-full flex-wrap items-center gap-2 text-left"
       >
         <span className="wb-stage-card__index">{stageIndex + 1}</span>
-        <h3 className="dashboard-section-title text-base text-slate-900">{title}</h3>
-        {isCurrent ? (
-          <span className="text-xs font-semibold text-slate-500">Active</span>
+        {Icon ? (
+          <span className="cuw-stage-glyph" aria-hidden>
+            <Icon size={15} strokeWidth={1.75} />
+          </span>
         ) : null}
+        <h3 className="cuw-type-title text-[1.05rem]">{title}</h3>
         {isPast ? (
-          <span className="text-xs font-semibold text-emerald-700">Completed</span>
+          <span className="cuw-type-kicker" style={{ color: 'var(--cuw-ink-pass)' }}>
+            Completed
+          </span>
         ) : null}
         <ChevronDown
           size={16}
-          className={`ml-auto shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`ml-auto shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--cuw-ink-tertiary)' }}
           aria-hidden
         />
       </button>
@@ -136,37 +166,50 @@ function TriageFindingCard({
         aria-expanded={expanded}
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
       >
-        <p className="min-w-0 flex-1 text-sm font-semibold text-slate-900">{finding.title}</p>
-        <span className="font-mono text-[10px] font-semibold text-slate-500">{finding.ruleId}</span>
-        <span className="text-xs capitalize text-slate-500">{finding.severity}</span>
-        {finding.required ? (
-          <span className="text-xs font-medium text-slate-500">Required</span>
+        <span className="cuw-glyph" aria-hidden>
+          {finding.required ? (
+          <ShieldAlert size={14} strokeWidth={1.75} />
+        ) : (
+          <Scale size={14} strokeWidth={1.75} />
+        )}
+        </span>
+        <p className="cuw-type-title min-w-0 flex-1 text-[0.9375rem]">{finding.title}</p>
+        <span className="cuw-type-label font-mono">{finding.ruleId}</span>
+        <span className="cuw-type-label capitalize">{finding.severity}</span>
+        {signed ? (
+          <span className="cuw-type-caption font-semibold">{judgmentLabel(status)}</span>
         ) : null}
-        <span className="text-xs font-semibold text-slate-600">{judgmentLabel(status)}</span>
         <ChevronDown
           size={14}
-          className={`shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--cuw-ink-tertiary)' }}
           aria-hidden
         />
       </button>
 
       {expanded ? (
         <div className="mt-2 border-t border-slate-100 pt-2">
-          <p className="text-sm text-slate-700">{finding.summary}</p>
+          <p className="cuw-type-body">{finding.summary}</p>
+          <p className="cuw-type-caption mt-1">{finding.detail}</p>
           <div className="wb-gap-compare mt-3" role="group" aria-label="Attested versus detected">
             <div className="wb-gap-pane wb-gap-pane--ideal">
               <div className="wb-gap-pane__meta">
                 <span className="wb-gap-pane__label">Attested</span>
+                <span className="wb-gap-pane__chip wb-gap-pane__chip--floor">From package</span>
               </div>
               <p className="wb-gap-pane__value">{finding.attested}</p>
             </div>
             <div className="wb-gap-pane wb-gap-pane--watch">
               <div className="wb-gap-pane__meta">
                 <span className="wb-gap-pane__label">Detected</span>
+                <span className="wb-gap-pane__chip">Ingest / signal</span>
               </div>
               <p className="wb-gap-pane__value">{finding.detected}</p>
             </div>
           </div>
+          <p className="cuw-type-caption mt-2">
+            Suggested · {finding.suggested === 'approve' ? 'Approve' : finding.suggested === 'escalate' ? 'Escalate' : 'Ignore'}
+          </p>
 
           {!signed ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -218,7 +261,7 @@ function TriageFindingCard({
 
 function RiskInformationStageBody({ c }: { c: CyberCase }) {
   const reports = riskSectionReportsForCase(c)
-  const answersSigned = Boolean(c.packageSignOff?.signedOffAt) && answersSignedForCase(c, allAnswerKeysForCase(c))
+  const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
   const [sectionKey, setSectionKey] = useState(reports[0]?.section.id ?? '')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -231,6 +274,11 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
 
   return (
     <div className="space-y-4">
+      <details className="cuw-type-caption">
+        <summary className="cursor-pointer font-semibold">Eligibility exclusions</summary>
+        <p className="mt-1">{INELIGIBLE_ORGANIZATION_ACTIVITIES.join('; ')}</p>
+      </details>
+
       {reports.length ? (
         <Tabs
           selectedKey={sectionKey}
@@ -253,24 +301,26 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
       ) : null}
 
       {selected ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h4 className="text-sm font-semibold text-slate-900">{selected.section.title}</h4>
-          {answersSigned ? (
-            <TriageRuleBanner fields={selected.fields} findings={findings} />
-          ) : null}
+        <div className="cuw-panel">
+          {documentsComplete ? null : (
+            <p className="cuw-type-caption mb-3">
+              Mark Documents Complete on Policy Documents to unlock this section.
+            </p>
+          )}
+
           {selected.fields.length ? (
-            <div className="mt-3">
-              <ReviewQuestionGrid
-                sectionId={selected.section.id}
-                fields={selected.fields}
-                showTriage={answersSigned}
-              />
-            </div>
-          ) : null}
+            <ReviewQuestionGrid
+              sectionId={selected.section.id}
+              fields={selected.fields}
+              showTriage={documentsComplete}
+            />
+          ) : (
+            <p className="cuw-type-caption">No structured answers extracted for this section.</p>
+          )}
         </div>
       ) : null}
 
-      {answersSigned && findings.length ? (
+      {documentsComplete && findings.length ? (
         <ul className="space-y-2">
           {findings.map((finding) => (
             <TriageFindingCard
@@ -335,6 +385,9 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
           {within ? 'Within junior UW authority' : 'Over authority. Manager approval needed.'}
         </span>
       </div>
+      <p className="text-xs text-slate-600">
+        Confirm limit, SIR, and pricing tier before Quote (PAS-style delegated authority).
+      </p>
       <div className="wb-q-grid">
         <label className="wb-q-cell text-xs font-medium text-slate-600">
           Aggregate limit (USD)
@@ -422,7 +475,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
       ) : null}
       {existing?.signedOffAt ? (
         <p className="text-xs text-emerald-800">
-          Signed {new Date(existing.signedOffAt).toLocaleString()}
+          Signed {new Date(existing.signedOffAt).toLocaleString()}. Quote enabled.
         </p>
       ) : null}
     </div>
@@ -430,9 +483,30 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
 }
 
 function QuoteReadyCard({ c }: { c: CyberCase }) {
+  const aligned = c.decision !== 'pending' && c.decision === c.recommendation
+  const finOk = isFinancialSignOffComplete(c.financialSignOff)
+
   return (
     <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        Financial underwriting only. Record limit, SIR, and tier, then lock Quote, Escalate, or
+        Decline.
+        {c.decision !== 'pending'
+          ? ` AI ${decisionLabel(c.recommendation)} · UW ${decisionLabel(c.decision)}${aligned ? ' · Matches AI' : ' · Overrides AI'}`
+          : ` AI ${decisionLabel(c.recommendation)} · UW pending`}
+      </p>
+
       <FinancialSignOffPanel c={c} />
+
+      {finOk ? (
+        <p className="text-xs text-emerald-800">
+          Financial authority recorded. Quote / Escalate / Decline are enabled in the bar above.
+        </p>
+      ) : (
+        <p className="text-sm text-slate-600">
+          Record financial sign off, then lock Quote, Escalate, or Decline in the bar above.
+        </p>
+      )}
 
       {c.decision !== 'pending' && c.decisionReason ? (
         <p className="text-sm text-slate-700">{c.decisionReason}</p>
@@ -445,7 +519,13 @@ function UwLockedStage({ title }: { title: string }) {
   return (
     <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3.5 py-3">
       <Lock size={16} className="mt-0.5 shrink-0 text-slate-400" />
-      <p className="text-sm font-semibold text-slate-800">{title} (UW only)</p>
+      <div>
+        <p className="cuw-type-title">{title} (UW only)</p>
+        <p className="cuw-type-caption mt-0.5">
+          Ops owns Policy Documents. Risk Information, Risk Analysis, and Get Quote Ready stay with
+          the underwriter.
+        </p>
+      </div>
     </div>
   )
 }
@@ -465,22 +545,23 @@ function policyPeriod(c: CyberCase): { start: string; end: string } {
   return { start: startIso, end: end.toISOString() }
 }
 
-function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
+function PolicyDocumentsStageBody({
+  c,
+  onRequestDocumentsComplete,
+}: {
+  c: CyberCase
+  onRequestDocumentsComplete: () => void
+}) {
   const missing = missingDocsForCase(c)
   const runMockSignal = useCyberUwStore((s) => s.runMockSignal)
   const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
-  const togglePackageDocAccepted = useCyberUwStore((s) => s.togglePackageDocAccepted)
-  const signOffPackage = useCyberUwStore((s) => s.signOffPackage)
-  const signSectionAnswers = useCyberUwStore((s) => s.signSectionAnswers)
+  const setPackageDocKind = useCyberUwStore((s) => s.setPackageDocKind)
   const scanning = c.signalStatus === 'scanning'
   const [ingestReferDraft, setIngestReferDraft] = useState<DiscussionReferDraft | null>(null)
+  const [editingSections, setEditingSections] = useState<Record<string, boolean>>({})
   const reports = sectionReportsForCase(c)
-  const accepted = new Set(c.packageSignOff?.acceptedDocIds ?? [])
-  const allChecked = c.packageDocs.length > 0 && c.packageDocs.every((d) => accepted.has(d.id))
-  const signed = Boolean(c.packageSignOff?.signedOffAt)
-  const answerKeys = allAnswerKeysForCase(c)
-  const answersOk = answersSignedForCase(c, answerKeys)
-  const canSign = allChecked && missing.length === 0 && c.completenessPct >= 80 && answersOk && !signed
+  const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
+  const canComplete = missing.length === 0 && c.completenessPct >= 80 && !documentsComplete
   const period = policyPeriod(c)
 
   const openIngestRefer = () => {
@@ -502,79 +583,113 @@ function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
     <div className="space-y-4">
       <QuestionMetaGrid
         items={[
-          { label: 'Start date', value: formatPolicyDate(period.start) },
-          { label: 'End date', value: formatPolicyDate(period.end) },
-          { label: 'Completeness', value: `${c.completenessPct}%` },
-          { label: 'Requested limit', value: money(c.limitRequestedUsd) },
+          { label: 'Start date', value: formatPolicyDate(period.start), icon: CalendarRange },
+          { label: 'End date', value: formatPolicyDate(period.end), icon: CalendarCheck2 },
+          { label: 'Completeness', value: `${c.completenessPct}%`, icon: Percent },
+          { label: 'Requested limit', value: money(c.limitRequestedUsd), icon: Landmark },
         ]}
       />
 
       <section>
         <h4 className="text-sm font-semibold text-slate-900">Package documents</h4>
         {c.packageDocs.length ? (
-          <ul className="mt-2 divide-y divide-slate-100">
-            {c.packageDocs.map((doc) => (
-              <li
-                key={doc.id}
-                id={`dossier-anchor-${doc.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md py-2 text-sm transition"
-              >
-                <Checkbox
-                  isSelected={accepted.has(doc.id)}
-                  isDisabled={signed}
-                  onChange={(selected) => togglePackageDocAccepted(c.id, doc.id, selected)}
-                  aria-label={`Accept ${doc.name}`}
-                >
-                  <Checkbox.Content>
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <span className="font-medium text-slate-900">{doc.name}</span>
-                  </Checkbox.Content>
-                </Checkbox>
-                <span className="text-xs capitalize text-slate-500">{doc.kind}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="wb-pkg-table-wrap mt-2">
+          <table className="wb-pkg-table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Type of doc</th>
+                <th>View</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.packageDocs.map((doc) => {
+                const kinds = PACKAGE_DOC_KINDS.includes(doc.kind as (typeof PACKAGE_DOC_KINDS)[number])
+                  ? PACKAGE_DOC_KINDS
+                  : ([doc.kind, ...PACKAGE_DOC_KINDS] as readonly string[])
+                return (
+                  <tr key={doc.id} id={`dossier-anchor-${doc.id}`}>
+                    <td className="font-medium text-slate-900" title={doc.name}>
+                      {doc.name}
+                    </td>
+                    <td>
+                      <select
+                        className="wb-q-cell__input"
+                        value={doc.kind}
+                        aria-label={`Type of ${doc.name}`}
+                        onChange={(e) => setPackageDocKind(c.id, doc.id, e.target.value)}
+                      >
+                        {kinds.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {kind}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="wb-pkg-view"
+                        onClick={() => openPackageDocument(doc)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          </div>
         ) : (
           <p className="mt-2 text-sm text-slate-500">No documents attached.</p>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {signed ? (
+          {documentsComplete ? (
             <p className="text-xs font-medium text-emerald-800">
-              Package signed off
+              Documents complete
               {c.packageSignOff?.signedOffBy ? ` · ${c.packageSignOff.signedOffBy}` : ''}
               {c.packageSignOff?.signedOffAt
                 ? ` · ${formatPolicyDate(c.packageSignOff.signedOffAt)}`
                 : ''}
             </p>
           ) : (
-            <Button size="sm" variant="primary" isDisabled={!canSign} onPress={() => signOffPackage(c.id)}>
-              Sign off ingested package
+            <Button
+              size="sm"
+              variant="primary"
+              isDisabled={!canComplete}
+              onPress={onRequestDocumentsComplete}
+            >
+              Documents Complete
             </Button>
           )}
         </div>
       </section>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold text-slate-900">Extracted fields</h4>
-          {!answersOk ? (
-            <Button size="sm" variant="secondary" onPress={() => signSectionAnswers(c.id, answerKeys)}>
-              Sign all answers
-            </Button>
-          ) : null}
-        </div>
+        <h4 className="text-sm font-semibold text-slate-900">Extracted fields</h4>
         {reports.map((report) => {
-          const keys = report.fields.map((f) => f.key ?? `${report.section.id}::${f.label}`)
-          const sectionSigned = answersSignedForCase(c, keys)
+          const editing = Boolean(editingSections[report.section.id])
           return (
             <div key={report.section.id} className="wb-qual-bucket">
               <div className="wb-qual-bucket__head">
                 <h5 className="text-sm font-semibold text-slate-900">{report.section.title}</h5>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-medium text-slate-500">Q{report.section.questions}</span>
-                  <SignSectionButton caseId={c.id} keys={keys} allSigned={sectionSigned} />
+                  <button
+                    type="button"
+                    className="wb-q-pen"
+                    aria-pressed={editing}
+                    aria-label={editing ? `Lock ${report.section.title}` : `Edit ${report.section.title}`}
+                    onClick={() =>
+                      setEditingSections((cur) => ({
+                        ...cur,
+                        [report.section.id]: !cur[report.section.id],
+                      }))
+                    }
+                  >
+                    {editing ? <PencilOff size={14} /> : <Pencil size={14} />}
+                  </button>
                 </div>
               </div>
               <div className="p-3">
@@ -582,7 +697,7 @@ function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
                   caseId={c.id}
                   sectionId={report.section.id}
                   fields={report.fields}
-                  c={c}
+                  editing={editing}
                 />
               </div>
             </div>
@@ -592,7 +707,9 @@ function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
 
       {missing.length > 0 ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
-          <h4 className="text-sm font-semibold text-slate-900">Missing documents</h4>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Missing documents
+          </p>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-800">
             {missing.map((doc) => (
               <li key={doc}>{doc}</li>
@@ -614,19 +731,25 @@ function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
           </div>
         </div>
       ) : c.completenessPct < 80 ? (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            isDisabled={scanning}
-            onPress={() => runMockSignal(c.id)}
-          >
-            <RefreshCw size={14} />
-            {scanning ? 'Scanning…' : 'Run ingest again'}
-          </Button>
-          <Button size="sm" variant="primary" onPress={openIngestRefer}>
-            Escalate to Broker
-          </Button>
+        <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
+          <p className="text-sm text-slate-700">
+            Package is incomplete ({c.completenessPct}%). Run ingest again or escalate the chase to
+            the broker.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={scanning}
+              onPress={() => runMockSignal(c.id)}
+            >
+              <RefreshCw size={14} />
+              {scanning ? 'Scanning…' : 'Run ingest again'}
+            </Button>
+            <Button size="sm" variant="primary" onPress={openIngestRefer}>
+              Escalate to Broker
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -643,15 +766,66 @@ function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
 }
 
 function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
+  const [citeOpen, setCiteOpen] = useState(false)
+  const [citeSource, setCiteSource] = useState<RiskEvidenceCiteSource>('market')
+
+  const marketRows: RiskEvidenceCiteRow[] = securityRatingForCase(c).citeBacks.map((row) => ({
+    id: row.id,
+    label: row.bucketLabel,
+    finding: row.finding,
+  }))
+
+  const exposure = carrierExposureForCase(c)
+  const capacityRows: RiskEvidenceCiteRow[] = [
+    ...exposure.ingestInputs.map((row, i) => ({
+      id: `ingest-${i}-${row.label}`,
+      label: `${row.source} · ${row.label}`,
+      finding: row.value,
+    })),
+    ...exposure.scoreCriteria.map((row) => ({
+      id: `score-${row.id}`,
+      label: row.title,
+      finding: `${row.applied} · ${row.formula}`,
+    })),
+  ]
+
+  const openCites = (source: RiskEvidenceCiteSource) => {
+    setCiteSource(source)
+    setCiteOpen(true)
+  }
+
   return (
-    <div className="space-y-3">
-      <SecurityRatingPanel c={c} />
-      <RiskVizPanel c={c} activeThreatId={null} onSelectThreat={() => {}} />
+    <div className="wb-risk-evidence space-y-3">
+      <div className="wb-risk-evidence__split">
+        <div className="wb-risk-evidence__market">
+          <SecurityRatingPanel c={c} onOpenCites={() => openCites('market')} />
+        </div>
+        <div className="wb-risk-evidence__capacity">
+          <RiskVizPanel
+            c={c}
+            activeThreatId={null}
+            onSelectThreat={() => {}}
+            onOpenCites={() => openCites('capacity')}
+          />
+        </div>
+      </div>
+      <RiskEvidenceCitePanel
+        open={citeOpen}
+        onClose={() => setCiteOpen(false)}
+        source={citeSource}
+        rows={citeSource === 'market' ? marketRows : capacityRows}
+      />
     </div>
   )
 }
 
-function WorkflowTab({ c }: { c: CyberCase }) {
+function WorkflowTab({
+  c,
+  onRequestDocumentsComplete,
+}: {
+  c: CyberCase
+  onRequestDocumentsComplete: () => void
+}) {
   const role = useAuthStore((s) => s.user?.role)
   const isOps = role === 'ops'
   const idx = cyberFlowIndex(c)
@@ -675,43 +849,51 @@ function WorkflowTab({ c }: { c: CyberCase }) {
 
   return (
     <div className="space-y-3 pb-6">
-      {c.opsHandoffAt && !isOps ? (
-        <p className="text-xs font-medium text-emerald-800">
-          Ops handed off {new Date(c.opsHandoffAt).toLocaleString()}
-        </p>
-      ) : null}
+      <div>
+        {isOps ? (
+          <p className="text-xs text-slate-600">
+            Ops view: Policy Documents only. Use Ready for UW when the package is complete.
+          </p>
+        ) : null}
+        {c.opsHandoffAt && !isOps ? (
+          <p className="mt-1 text-xs font-medium text-emerald-800">
+            Ops handed off {new Date(c.opsHandoffAt).toLocaleString()}
+          </p>
+        ) : null}
+      </div>
 
       <StageSection
         title={CYBER_FLOW_STAGES[0].title}
+        icon={FileStack}
         stageIndex={0}
         currentIndex={idx}
         stayOpen
         forceExpand={Boolean(dossierFocusId)}
       >
-        <PolicyDocumentsStageBody c={c} />
+        <PolicyDocumentsStageBody c={c} onRequestDocumentsComplete={onRequestDocumentsComplete} />
       </StageSection>
 
       {isOps ? (
         <>
-          <StageSection title={CYBER_FLOW_STAGES[1].title} stageIndex={1} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ClipboardCheck} stageIndex={1} currentIndex={idx}>
             <UwLockedStage title="Risk Information" />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[2].title} stageIndex={2} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ShieldCheck} stageIndex={2} currentIndex={idx}>
             <UwLockedStage title="Risk Analysis" />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[3].title} stageIndex={3} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={CircleDollarSign} stageIndex={3} currentIndex={idx}>
             <UwLockedStage title="Get Quote Ready" />
           </StageSection>
         </>
       ) : (
         <>
-          <StageSection title={CYBER_FLOW_STAGES[1].title} stageIndex={1} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ClipboardCheck} stageIndex={1} currentIndex={idx}>
             <RiskInformationStageBody c={c} />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[2].title} stageIndex={2} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ShieldCheck} stageIndex={2} currentIndex={idx}>
             <RiskAnalysisStageBody c={c} />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[3].title} stageIndex={3} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={CircleDollarSign} stageIndex={3} currentIndex={idx}>
             <QuoteReadyCard c={c} />
           </StageSection>
         </>
@@ -732,8 +914,10 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
     applyDecision,
     listDecisionPrompt,
     clearListDecisionPrompt,
+    signOffPackage,
   } = useCyberUwStore()
   const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null)
+  const [docsCompleteOpen, setDocsCompleteOpen] = useState(false)
   const c = cases.find((x) => x.id === selectedId)
 
   useEffect(() => {
@@ -775,14 +959,24 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
             c={c}
             onRequestDecision={(d) => setPendingDecision(d)}
             onSignal={() => runMockSignal(c.id)}
+            onRequestDocumentsComplete={() => setDocsCompleteOpen(true)}
           />
         </div>
 
         <div className="case-drawer-surface min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-5 md:py-4">
-          <WorkflowTab c={c} />
+          <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
         </div>
       </div>
 
+      <DocumentsCompleteModal
+        caseItem={c}
+        open={docsCompleteOpen}
+        onCancel={() => setDocsCompleteOpen(false)}
+        onConfirm={() => {
+          signOffPackage(c.id)
+          setDocsCompleteOpen(false)
+        }}
+      />
       <DecisionConfirmModal
         caseItem={c}
         pending={pendingDecision}
