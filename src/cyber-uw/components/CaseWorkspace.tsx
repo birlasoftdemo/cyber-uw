@@ -583,8 +583,8 @@ function PolicyDocumentsStageBody({
     <div className="space-y-4">
       <QuestionMetaGrid
         items={[
-          { label: 'Start date', value: formatPolicyDate(period.start), icon: CalendarRange },
-          { label: 'End date', value: formatPolicyDate(period.end), icon: CalendarCheck2 },
+          { label: 'Proposed start date', value: formatPolicyDate(period.start), icon: CalendarRange },
+          { label: 'Proposed end date', value: formatPolicyDate(period.end), icon: CalendarCheck2 },
           { label: 'Completeness', value: `${c.completenessPct}%`, icon: Percent },
           { label: 'Requested limit', value: money(c.limitRequestedUsd), icon: Landmark },
         ]}
