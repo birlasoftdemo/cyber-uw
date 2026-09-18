@@ -138,7 +138,7 @@ export function SecurityRatingPanel({
             <Activity size={12} strokeWidth={2} className="mr-1 inline" aria-hidden />
             12 mo
           </p>
-          <ResponsiveContainer width="100%" height={132}>
+          <ResponsiveContainer width="100%" height={190}>
             <LineChart data={snap.trend} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={0} />
@@ -170,10 +170,10 @@ export function SecurityRatingPanel({
           </ResponsiveContainer>
         </div>
 
-        <div>
+        <div className="wb-rating__vectors-wrap">
           <p className="cuw-type-caption mb-2">
             <Layers size={12} strokeWidth={2} className="mr-1 inline" aria-hidden />
-            Vectors
+            Detailed Ratings
           </p>
           <ul className="wb-rating__vectors">
             {snap.vectors.map((v) => (

@@ -2297,10 +2297,19 @@
     background: #e8f1fc;
   }
 
-  .wb-rating {
+  .wb-risk-evidence__market {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    min-height: 0;
+  }
+
+  .wb-rating {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    min-height: 0;
     border: 1px solid rgba(210, 210, 215, 0.9);
     border-radius: 1rem;
     background:
@@ -2441,18 +2450,30 @@
 
   .wb-rating__body {
     display: grid;
+    flex: 1;
     grid-template-columns: minmax(0, 1.4fr) minmax(12rem, 0.9fr);
     gap: 0.75rem;
     align-items: stretch;
+    align-content: start;
+    min-height: 0;
   }
 
   .wb-rating__chart {
     position: relative;
+    display: flex;
+    flex-direction: column;
     min-width: 0;
-    border: 1px solid rgba(210, 210, 215, 0.85);
+    min-height: 13.5rem;
+    border: 1px solid var(--cuw-hairline);
     border-radius: 0.85rem;
     padding: 0.55rem 0.55rem 0.3rem;
     background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
+  }
+
+  .wb-rating__vectors-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .wb-rating__slot-label {
@@ -2470,8 +2491,10 @@
 
   .wb-rating__vectors {
     display: grid;
+    flex: 1;
     grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+    gap: 0.45rem;
+    align-content: start;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -2481,9 +2504,9 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border: 1px solid rgba(210, 210, 215, 0.85);
+    border: 1px solid var(--cuw-hairline);
     border-radius: 0.75rem;
-    padding: 0.45rem 0.55rem;
+    padding: 0.55rem 0.6rem;
     min-width: 0;
     background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
   }
@@ -2495,17 +2518,18 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    border: 1px solid rgba(29, 29, 31, 0.18);
     border-radius: 0.375rem;
     font-size: 0.8rem;
     font-weight: 800;
   }
 
-  .wb-rating__grade--a { background: #e6f6ee; color: #0b6b45; }
-  .wb-rating__grade--b { background: #eef6e8; color: #3f6212; }
-  .wb-rating__grade--c { background: #fff1e6; color: #9a3412; }
-  .wb-rating__grade--d { background: #fff1e6; color: #9a3412; }
+  .wb-rating__grade--a { background: #e6f6ee; color: #065f3c; }
+  .wb-rating__grade--b { background: #eef6e8; color: #365314; }
+  .wb-rating__grade--c { background: #fff1e6; color: #7c2d12; }
+  .wb-rating__grade--d { background: #fff1e6; color: #7c2d12; }
   .wb-rating__grade--e,
-  .wb-rating__grade--f { background: #fde8ef; color: #9f1239; }
+  .wb-rating__grade--f { background: #fde8ef; color: #881337; }
 
   .wb-rating__vector-meta {
     display: flex;
@@ -2516,8 +2540,8 @@
 
   .wb-rating__vector-score {
     font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 750;
     line-height: 1.1;
     letter-spacing: -0.03em;
     color: var(--cuw-ink);
@@ -2526,8 +2550,8 @@
   .wb-rating__vector-name {
     font-family: var(--font-ui);
     font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--cuw-ink-tertiary);
+    font-weight: 650;
+    color: var(--cuw-ink-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2535,6 +2559,7 @@
 
   .wb-rating__multipliers {
     display: grid;
+    flex-shrink: 0;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.4rem;
     margin: 0;
@@ -2546,7 +2571,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
-    border: 1px solid rgba(210, 210, 215, 0.85);
+    border: 1px solid var(--cuw-hairline);
     border-radius: 0.75rem;
     padding: 0.55rem 0.65rem;
     background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
@@ -2554,8 +2579,8 @@
 
   .wb-rating__multipliers li span:first-child {
     font-family: var(--font-display);
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 750;
     letter-spacing: -0.03em;
     color: var(--cuw-ink);
   }
@@ -2566,7 +2591,7 @@
     font-weight: 650;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--cuw-ink-tertiary);
+    color: var(--cuw-ink-secondary);
   }
 
   .wb-rating__cites {
@@ -2709,7 +2734,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 0.85rem;
-    align-items: start;
+    align-items: stretch;
   }
 
   .wb-capacity-ledger__table {
