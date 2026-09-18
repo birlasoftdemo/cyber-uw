@@ -45,7 +45,7 @@ import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberTier, RiskJudgmentStatus } from '../types'
 import { missingDocsForCase } from '../utils/missingDocs'
-import { decisionLabel, money } from './CyberPrimitives'
+import { money } from './CyberPrimitives'
 import {
   CyberProgressStepper,
   CyberStageAdvanceCard,
@@ -367,7 +367,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
 
   if (isFinancialSignOffComplete(existing) && c.decision !== 'pending') {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-3.5 py-3 text-sm text-emerald-950">
+      <div className="wb-fin-signoff wb-fin-signoff--done rounded-lg px-3.5 py-3 text-sm">
         Financial sign off recorded · {money(existing!.limitUsd)} limit · SIR{' '}
         {money(existing!.sirUsd)} · Tier {existing!.pricingTier}
         {existing!.managerCosign ? ' · Manager approved' : ''}
@@ -376,20 +376,20 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3.5">
+    <div className="wb-fin-signoff space-y-3 rounded-lg p-3.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-900">Financial sign off</p>
+        <p className="wb-fin-signoff__title text-sm font-semibold">Financial sign off</p>
         <span
-          className={`text-xs font-semibold ${within ? 'text-emerald-700' : 'text-amber-800'}`}
+          className={`wb-fin-signoff__status text-xs font-semibold ${within ? 'wb-fin-signoff__status--ok' : 'wb-fin-signoff__status--warn'}`}
         >
           {within ? 'Within junior UW authority' : 'Over authority. Manager approval needed.'}
         </span>
       </div>
-      <p className="text-xs text-slate-600">
+      <p className="wb-fin-signoff__hint text-xs">
         Confirm limit, SIR, and pricing tier before Quote (PAS-style delegated authority).
       </p>
       <div className="wb-q-grid">
-        <label className="wb-q-cell text-xs font-medium text-slate-600">
+        <label className="wb-q-cell text-xs font-medium">
           Aggregate limit (USD)
           <input
             type="number"
@@ -399,7 +399,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
             onChange={(e) => setLimitUsd(Number(e.target.value) || 0)}
           />
         </label>
-        <label className="wb-q-cell text-xs font-medium text-slate-600">
+        <label className="wb-q-cell text-xs font-medium">
           SIR / retention (USD)
           <input
             type="number"
@@ -409,7 +409,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
             onChange={(e) => setSirUsd(Number(e.target.value) || 0)}
           />
         </label>
-        <label className="wb-q-cell text-xs font-medium text-slate-600">
+        <label className="wb-q-cell text-xs font-medium">
           Pricing tier
           <select
             className="wb-q-cell__input mt-1"
@@ -424,7 +424,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
             ))}
           </select>
         </label>
-        <label className="wb-q-cell text-xs font-medium text-slate-600">
+        <label className="wb-q-cell text-xs font-medium">
           Stub premium (USD)
           <input
             type="number"
@@ -483,19 +483,10 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
 }
 
 function QuoteReadyCard({ c }: { c: CyberCase }) {
-  const aligned = c.decision !== 'pending' && c.decision === c.recommendation
   const finOk = isFinancialSignOffComplete(c.financialSignOff)
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">
-        Financial underwriting only. Record limit, SIR, and tier, then lock Quote, Escalate, or
-        Decline.
-        {c.decision !== 'pending'
-          ? ` AI ${decisionLabel(c.recommendation)} · UW ${decisionLabel(c.decision)}${aligned ? ' · Matches AI' : ' · Overrides AI'}`
-          : ` AI ${decisionLabel(c.recommendation)} · UW pending`}
-      </p>
-
       <FinancialSignOffPanel c={c} />
 
       {finOk ? (
@@ -522,7 +513,7 @@ function UwLockedStage({ title }: { title: string }) {
       <div>
         <p className="cuw-type-title">{title} (UW only)</p>
         <p className="cuw-type-caption mt-0.5">
-          Ops owns Policy Documents. Risk Information, Risk Analysis, and Get Quote Ready stay with
+          Ops owns Policy Documents. Risk Information, Risk Analysis, and Getting Ready to Quote stay with
           the underwriter.
         </p>
       </div>
@@ -882,7 +873,7 @@ function WorkflowTab({
             <UwLockedStage title="Risk Analysis" />
           </StageSection>
           <StageSection title={CYBER_FLOW_STAGES[3].title} icon={CircleDollarSign} stageIndex={3} currentIndex={idx}>
-            <UwLockedStage title="Get Quote Ready" />
+            <UwLockedStage title="Getting Ready to Quote" />
           </StageSection>
         </>
       ) : (

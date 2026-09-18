@@ -2746,35 +2746,92 @@
   .wb-capacity-ledger__table th,
   .wb-capacity-ledger__table td {
     padding: 0.5rem 0.35rem;
-    border-bottom: 1px solid rgba(210, 210, 215, 0.85);
+    border-bottom: 1px solid var(--cuw-hairline);
     text-align: left;
     font-family: var(--font-ui);
     font-size: 0.8125rem;
     vertical-align: top;
+    color: var(--cuw-ink);
   }
 
   .wb-capacity-ledger__table th {
     font-size: 0.6875rem;
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--cuw-ink-tertiary);
+    color: var(--cuw-ink-secondary);
   }
 
   .wb-capacity-ledger__num {
     text-align: right !important;
-    font-weight: 650;
+    font-weight: 700;
     color: var(--cuw-ink);
   }
 
   .wb-capacity-ledger__formula {
     margin: 0.65rem 0 0;
     padding: 0.5rem 0.65rem;
-    border: 1px dashed rgba(210, 210, 215, 0.95);
+    border: 1px solid var(--cuw-hairline);
     border-radius: 0.5rem;
     background: #fff;
     font-size: 0.6875rem;
-    color: var(--cuw-ink-tertiary);
+    font-weight: 550;
+    color: var(--cuw-ink-secondary);
+  }
+
+  /* Capacity region — scoped panel contrast (avoid global .cuw-panel bleed) */
+  .wb-capacity-ledger > .cuw-panel,
+  .wb-capacity-ledger .cuw-panel {
+    border-color: var(--cuw-hairline);
+  }
+
+  .wb-capacity-ledger .cuw-panel__head .cuw-type-title {
+    color: var(--cuw-ink);
+  }
+
+  .wb-capacity-ledger .cuw-panel__head .cuw-type-caption {
+    color: var(--cuw-ink-secondary);
+  }
+
+  /* Financial signoff — scoped so Policy Documents / other wb-q-cell consumers stay untouched */
+  .wb-fin-signoff {
+    border: 1px solid var(--cuw-hairline);
+    background: linear-gradient(180deg, #ffffff 0%, var(--cuw-surface-tint) 100%);
+  }
+
+  .wb-fin-signoff--done {
+    border-color: #6ee7b7;
+    background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #064e3b;
+    font-weight: 550;
+  }
+
+  .wb-fin-signoff__title {
+    color: var(--cuw-ink);
+  }
+
+  .wb-fin-signoff__hint {
+    color: var(--cuw-ink-secondary);
+  }
+
+  .wb-fin-signoff__status--ok {
+    color: #047857;
+  }
+
+  .wb-fin-signoff__status--warn {
+    color: #92400e;
+  }
+
+  .wb-fin-signoff .wb-q-cell {
+    border-color: var(--cuw-hairline);
+    color: var(--cuw-ink-secondary);
+    background: linear-gradient(180deg, #ffffff 0%, #f0f0f2 100%);
+  }
+
+  .wb-fin-signoff .wb-q-cell__input {
+    border-color: #94a3b8;
+    color: var(--cuw-ink);
+    font-weight: 650;
   }
 
   .wb-pkg-table-wrap {
