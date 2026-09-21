@@ -89,7 +89,7 @@ export function DispatchFormBuilder({
           </Button>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--cuw-ink-soft)]">
-              Dispatch New Form
+              Create template
             </p>
             <h2 className="text-sm font-bold tracking-tight text-[var(--cuw-ink)]">
               Form parameter builder
@@ -233,7 +233,7 @@ export function DispatchFormBuilder({
           <p className="relative z-[2] mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--cuw-ink-soft)]">
             Broker form preview
           </p>
-          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
             <BrokerFormFlow
               key={previewModules.join('|')}
               compact

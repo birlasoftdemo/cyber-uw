@@ -4,7 +4,7 @@ export function gapDispositionOf(gap: ControlGap): GapDisposition {
   return gap.disposition ?? 'open'
 }
 
-/** Open critical/high gaps that still block Proceed on Verify. */
+/** Open critical/high gaps that still need a disposition. */
 export function isOpenMaterialGap(gap: ControlGap): boolean {
   if (gapDispositionOf(gap) !== 'open') return false
   return gap.severity === 'critical' || gap.severity === 'high'

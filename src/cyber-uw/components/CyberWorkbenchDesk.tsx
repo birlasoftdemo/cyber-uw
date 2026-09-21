@@ -1,164 +1,152 @@
-import { Button, Chip, Typography } from '@heroui/react'
-import { ArrowLeft, Check } from 'lucide-react'
-import { useState } from 'react'
-import { CYBER_FLOW_STAGES, cyberFlowIndex, nextFlowStageTitle } from '../constants/cyberFlow'
+import { Button, Chip } from '@heroui/react'
+import { Check, ChevronRight } from 'lucide-react'
+import type { ReactNode } from 'react'
+import {
+  CYBER_FLOW_STAGES,
+  canLeavePolicyDocuments,
+  canOpsMarkReadyForUw,
+  cyberFlowIndex,
+  flowStageTitle,
+  nextFlowStageTitle,
+} from '../constants/cyberFlow'
 import {
   filterCyberCases,
   useCyberUwStore,
 } from '../store/cyberUwStore'
+import { useAuthStore } from '../store/authStore'
 import type { CyberCase, CyberDecision } from '../types'
-import { openMaterialGaps } from '../utils/gapDisposition'
-import { CaseMetaChip, CaseMetaChips, money, UwDecisionChip } from './CyberPrimitives'
+import {
+  CaseMetaChip,
+  decisionLabel,
+  money,
+  UwDecisionChip,
+} from './CyberPrimitives'
 
-type StripFilter = 'all' | 'pending' | 'decided'
-
-/** Queue card body — id + insured + LOB/desk/limit + UW status (same stats as case chrome). */
-function CyberQueueCardStats({ c }: { c: CyberCase }) {
-  return (
-    <div className="min-w-0 space-y-1.5">
-      <span className="wb-ref-pill">{c.id}</span>
-      <p className="truncate text-xs font-semibold leading-snug text-slate-900">{c.insured}</p>
-      <CaseMetaChips
-        lob={c.sector}
-        name={c.broker}
-        limitUsd={c.limitRequestedUsd}
-        className="wb-meta-fields--queue"
-      />
-      <div className="pt-0.5">
-        {c.pasStatus === 'synced' ? (
-          <Chip size="sm" variant="soft" color="success">
-            Synced
-          </Chip>
-        ) : c.decision === 'pending' ? (
-          <Chip size="sm" variant="soft">
-            UW Pending
-          </Chip>
-        ) : (
-          <UwDecisionChip value={c.decision} />
-        )}
-      </div>
-    </div>
-  )
+function receivedLabel(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return iso
+  }
 }
 
-export function CyberWorkbenchStrip({
-  selectedId,
-  onSelect,
-  onBackToQueue,
-}: {
-  selectedId: string | null
-  onSelect: (id: string) => void
-  onBackToQueue: () => void
-}) {
+export function CyberCasesListPage({ onSelect }: { onSelect: (id: string) => void }) {
   const {
     cases,
     searchQuery,
     filterRecommendation,
     filterDecision,
     filterSector,
+    filterSubmissionKind,
   } = useCyberUwStore()
-  const [stripFilter, setStripFilter] = useState<StripFilter>('pending')
 
-  const filtered = filterCyberCases(cases, {
+  const items = filterCyberCases(cases, {
     searchQuery,
     filterRecommendation,
     filterDecision,
     filterSector,
-  })
-
-  const items = filtered.filter((c) => {
-    if (stripFilter === 'pending') return c.decision === 'pending'
-    if (stripFilter === 'decided') return c.decision !== 'pending'
-    return true
+    filterSubmissionKind,
   })
 
   return (
-    <div className="wb-panel flex h-full flex-col overflow-hidden">
-      <div className="border-b border-slate-200 px-3 py-3">
-        <button
-          type="button"
-          onClick={onBackToQueue}
-          className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900"
-        >
-          <ArrowLeft size={12} aria-hidden />
-          Back to queue
-        </button>
-        <p className="wb-eyebrow">Decision Workbench</p>
-        <Typography.Heading level={6} className="font-display text-slate-900">
-          In-flight cases
-        </Typography.Heading>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {(
-            [
-              { id: 'pending' as const, label: 'In-flight' },
-              { id: 'decided' as const, label: 'Decided' },
-              { id: 'all' as const, label: 'All' },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setStripFilter(t.id)}
-              className={`rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                stripFilter === t.id
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <ul className="flex-1 space-y-1.5 overflow-y-auto p-2" role="listbox" aria-label="In-flight cases">
-        {items.length === 0 ? (
-          <li className="px-2 py-8 text-center text-xs text-slate-500">No cases in this filter.</li>
-        ) : (
-          items.map((c) => {
-            const active = selectedId === c.id
-            return (
-              <li key={c.id} role="option" aria-selected={active}>
-                <button
-                  type="button"
+    <div className="wb-panel flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="cuw-table-wrap min-h-0 flex-1">
+        <table className="cuw-table min-w-[860px]">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>Insured</th>
+              <th>Broker</th>
+              <th>Sector</th>
+              <th>Kind</th>
+              <th>Limit</th>
+              <th>Received</th>
+              <th>Stage</th>
+              <th>Status</th>
+              <th className="w-8">
+                <span className="sr-only">Open</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-sm text-slate-500">
+                  No records match the current filters.
+                </td>
+              </tr>
+            ) : (
+              items.map((c) => (
+                <tr
+                  key={c.id}
+                  className="cursor-pointer"
                   onClick={() => onSelect(c.id)}
-                  className={`wb-inflight-row w-full rounded-lg border px-2.5 py-2.5 text-left transition ${
-                    active
-                      ? 'wb-inflight-row--active border-blue-300 bg-blue-50/80'
-                      : 'border-transparent hover:border-slate-200 hover:bg-white'
-                  }`}
                 >
-                  <CyberQueueCardStats c={c} />
-                </button>
-              </li>
-            )
-          })
-        )}
-      </ul>
+                  <td>
+                    <span className="wb-ref-pill">{c.id}</span>
+                  </td>
+                  <td className="cuw-table__primary">{c.insured}</td>
+                  <td className="cuw-table__muted">{c.broker}</td>
+                  <td className="cuw-table__muted">{c.sector}</td>
+                  <td className="cuw-table__muted">
+                    {c.submissionKind === 'renewal' ? 'Renewal' : 'New business'}
+                  </td>
+                  <td className="cuw-table__muted">{money(c.limitRequestedUsd)}</td>
+                  <td className="cuw-table__muted">{receivedLabel(c.receivedAt)}</td>
+                  <td>
+                    <Chip size="sm" variant="soft">
+                      {flowStageTitle(c)}
+                    </Chip>
+                  </td>
+                  <td>
+                    {c.decision !== 'pending' ? (
+                      <UwDecisionChip value={c.decision} />
+                    ) : (
+                      <Chip size="sm" variant="soft">
+                        UW Pending
+                      </Chip>
+                    )}
+                  </td>
+                  <td>
+                    <ChevronRight size={16} className="text-slate-400" aria-hidden />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
-/** Prefer proper import — fix below */
 export function CyberProgressStepper({ c }: { c: CyberCase }) {
   const currentIdx = cyberFlowIndex(c)
   return (
-    <ol aria-label="Case progress" className="flex w-full flex-wrap items-center gap-x-1 gap-y-2">
+    <ol
+      aria-label="Case progress"
+      className="wb-progress-stepper wb-progress-stepper--enlarged flex w-full flex-wrap items-center gap-x-1.5 gap-y-1.5"
+    >
       {CYBER_FLOW_STAGES.map((step, i) => {
         const isComplete = i < currentIdx
         const isCurrent = i === currentIdx
         return (
           <li key={step.key} className="flex items-center gap-1">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+              className={`wb-progress-stepper__node inline-flex min-h-8 items-center gap-2 rounded-full border px-2.5 py-1 text-[0.8625rem] font-semibold ${
                 isCurrent
-                  ? 'wb-stepper-node--current border-2'
+                  ? 'wb-stepper-node--current border'
                   : isComplete
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                     : 'border-slate-200 bg-white text-slate-400'
               }`}
             >
               <span
-                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold ${
+                className={`flex h-[1.15rem] w-[1.15rem] shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                   isComplete
                     ? 'bg-emerald-500 text-white'
                     : isCurrent
@@ -166,7 +154,7 @@ export function CyberProgressStepper({ c }: { c: CyberCase }) {
                       : 'bg-slate-200 text-slate-500'
                 }`}
               >
-                {isComplete ? <Check size={9} strokeWidth={3} /> : i + 1}
+                {isComplete ? <Check size={10} strokeWidth={3} /> : i + 1}
               </span>
               {step.title}
             </span>
@@ -186,144 +174,243 @@ export function CyberProgressStepper({ c }: { c: CyberCase }) {
 export function CyberStageAdvanceCard({
   c,
   onRequestDecision,
-  onPas,
   onSignal,
+  onRequestDocumentsComplete,
   compact = false,
-  activeTab = 'workflow',
+  inline = false,
 }: {
   c: CyberCase
   onRequestDecision: (d: Exclude<CyberDecision, 'pending'>) => void
-  onPas: () => void
   onSignal: () => void
+  onRequestDocumentsComplete: () => void
   /** Quiet strip under case tabs — not a full-bleed hero banner. */
   compact?: boolean
-  activeTab?: 'workflow' | 'dossier' | 'pas'
+  /** Trailing actions only — parent journey rail owns chrome. */
+  inline?: boolean
 }) {
+  const role = useAuthStore((s) => s.user?.role)
+  const isOps = role === 'ops'
   const advanceWorkflowStage = useCyberUwStore((s) => s.advanceWorkflowStage)
-  const materialOpen = openMaterialGaps(c.gaps)
+  const markReadyForUw = useCyberUwStore((s) => s.markReadyForUw)
+  const markPackageComplete = useCyberUwStore((s) => s.markPackageComplete)
   const scanning = c.signalStatus === 'scanning'
   const pending = c.decision === 'pending'
   const idx = cyberFlowIndex(c)
   const nextTitle = nextFlowStageTitle(idx)
-  const shell = compact
-    ? 'wb-action-card wb-action-card--compact wb-advance-row !mt-0'
-    : 'wb-action-card !mt-0'
-
-  if (c.pasStatus === 'synced') {
+  const shell = inline
+    ? 'wb-cyber-journey-rail__actions'
+    : compact
+      ? 'wb-action-card wb-action-card--compact wb-advance-row !mt-0'
+      : 'wb-action-card !mt-0'
+  const wrap = (kind: 'action' | 'status' | 'plain', body: ReactNode) => {
+    if (inline) {
+      return <div className={shell}>{body}</div>
+    }
+    const kindClass =
+      kind === 'action' ? ' wb-advance-row--action' : kind === 'status' ? ' wb-advance-row--status' : ''
     return (
-      <div className={shell}>
-        <p className="wb-action-card__lead !mb-0">Case complete — policy admin synced.</p>
+      <div className={`${shell}${kindClass}`}>
+        <div className="wb-advance-row__inner">{body}</div>
       </div>
+    )
+  }
+
+  if (c.pasStatus === 'synced' || (!pending && c.decision !== 'pending')) {
+    return wrap(
+      'plain',
+      <p className="wb-action-card__lead !mb-0">
+        Decision locked (
+        {c.decision === 'pending' ? 'complete' : decisionLabel(c.decision)}).
+      </p>,
     )
   }
 
   if (!pending) {
-    return (
-      <div className={shell}>
-        <div className="wb-advance-row__inner">
-          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1">
-            Decision locked ({c.decision}). Push to policy admin when ready.
-          </p>
-          <Button
-            variant="primary"
-            size="sm"
-            className="wb-advance-cta shrink-0"
-            isDisabled={c.pasStatus === 'pushing'}
-            onPress={onPas}
-          >
-            {c.pasStatus === 'pushing' ? 'Pushing…' : 'Proceed to policy admin'}
-          </Button>
-        </div>
-      </div>
+    return wrap(
+      'plain',
+      <p className="wb-action-card__lead !mb-0">
+        Decision locked ({decisionLabel(c.decision)}).
+      </p>,
     )
   }
 
-  if (materialOpen.length > 0) {
-    return (
-      <div className={`${shell} wb-advance-row--status`}>
-        <div className="wb-advance-row__inner">
-          <Chip size="sm" variant="soft" color="danger" className="shrink-0 capitalize">
-            {materialOpen.length} open
+  // —— Ops strip: package complete + Ready for UW (no Quote/Risk advance) ——
+  if (isOps) {
+    if (c.opsHandoffAt) {
+      return wrap(
+        'status',
+        <>
+          <Chip size="sm" variant="soft" color="success" className="shrink-0">
+            Handed off
           </Chip>
-          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
-            {activeTab === 'workflow'
-              ? 'Resolve or Refer in Feedback below before Review Risk.'
-              : 'Open Workflow · Feedback to clear material gaps.'}
+          <p className="wb-action-card__lead !mb-0 min-w-0 font-medium text-slate-800">
+            Ready for UW. Decision Desk owns risk and financial sign off.
           </p>
-        </div>
-      </div>
-    )
-  }
+        </>,
+      )
+    }
 
-  if (idx < 4 && nextTitle) {
-    return (
-      <div className={`${shell} wb-advance-row--action`}>
-        <div className="wb-advance-row__inner">
-          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
-            Next: {nextTitle}
-          </p>
+    if (c.completenessPct < 80) {
+      return wrap(
+        'action',
+        <>
+          {!inline ? (
+            <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+              Package incomplete ({c.completenessPct}%). See Missing documents in Policy Documents, then mark
+              complete.
+            </p>
+          ) : null}
           <Button
             variant="primary"
             size="sm"
             className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
-            onPress={() => advanceWorkflowStage(c.id)}
+            onPress={() => markPackageComplete(c.id)}
           >
-            Continue to {nextTitle}
+            Mark package complete
           </Button>
-        </div>
-      </div>
-    )
-  }
+        </>,
+      )
+    }
 
-  return (
-    <div className={`${shell} wb-advance-row--action`}>
-      <div className="wb-advance-row__inner">
-        <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
-          AI recommends {c.recommendation.toUpperCase()}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+    if (canOpsMarkReadyForUw(c)) {
+      return wrap(
+        'action',
+        <>
+          {!inline ? (
+            <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+              Package complete. Hand off to underwriter for risk analysis and financial authority.
+            </p>
+          ) : null}
           <Button
             variant="primary"
             size="sm"
-            className="wb-advance-cta wb-advance-cta--emphasis"
-            isDisabled={scanning}
-            onPress={() => onRequestDecision('quote')}
+            className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
+            onPress={() => markReadyForUw(c.id)}
           >
-            Quote
+            Ready for UW
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            isDisabled={scanning}
-            onPress={() => onRequestDecision('refer')}
-          >
-            Refer
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            isDisabled={scanning}
-            onPress={() => onRequestDecision('decline')}
-          >
-            Decline
-          </Button>
-          <Button size="sm" variant="ghost" isDisabled={scanning} onPress={onSignal}>
-            {scanning ? 'Scanning…' : 'Re-ingest'}
-          </Button>
-          {!compact ? (
-            <>
-              <Chip size="sm" variant="soft">
-                Tier {c.tier} assist
-              </Chip>
-              <CaseMetaChip kind="limit">{money(c.limitRequestedUsd)}</CaseMetaChip>
-            </>
-          ) : (
+        </>,
+      )
+    }
+
+    return wrap(
+      'status',
+      <p className="wb-action-card__lead !mb-0 min-w-0 font-medium text-slate-800">
+        Ops owns Policy Documents. Risk analysis and Quote stay with UW.
+      </p>,
+    )
+  }
+
+  if (idx === 0 && c.completenessPct < 80) {
+    return wrap(
+      'status',
+      <>
+        <p className="wb-action-card__lead !mb-0 min-w-0 font-medium text-slate-800">
+          Package incomplete ({c.completenessPct}%). Finish Policy Documents before Risk Information.
+        </p>
+        <Button size="sm" variant="ghost" isDisabled={scanning} onPress={onSignal}>
+          {scanning ? 'Scanning…' : 'Run ingest again'}
+        </Button>
+      </>,
+    )
+  }
+
+  if (idx === 0 && !canLeavePolicyDocuments(c)) {
+    return wrap(
+      'action',
+      <>
+        {!inline ? (
+          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+            Mark Documents Complete to continue to Risk Analysis.
+          </p>
+        ) : null}
+        <Button
+          variant="primary"
+          size="sm"
+          className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
+          onPress={onRequestDocumentsComplete}
+        >
+          Documents Complete
+        </Button>
+      </>,
+    )
+  }
+
+  if (idx < 3 && nextTitle) {
+    return wrap(
+      'action',
+      <>
+        {!inline ? (
+          <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+            Next: {nextTitle}
+          </p>
+        ) : null}
+        <Button
+          variant="primary"
+          size="sm"
+          className="wb-advance-cta wb-advance-cta--emphasis shrink-0"
+          onPress={() => advanceWorkflowStage(c.id)}
+        >
+          Continue to {nextTitle}
+        </Button>
+      </>,
+    )
+  }
+
+  const finOk = Boolean(c.financialSignOff?.signedOffAt)
+
+  return wrap(
+    'action',
+    <>
+      {!inline ? (
+        <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
+          {finOk
+            ? `AI recommends ${c.recommendation.toUpperCase()}`
+            : 'Complete financial sign off in Getting Ready to Quote before Quote.'}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+        <Button
+          variant="primary"
+          size="sm"
+          className="wb-advance-cta wb-advance-cta--emphasis"
+          isDisabled={scanning || !finOk}
+          onPress={() => onRequestDecision('quote')}
+        >
+          Quote
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          isDisabled={scanning}
+          onPress={() => onRequestDecision('refer')}
+        >
+          Escalate
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          isDisabled={scanning}
+          onPress={() => onRequestDecision('decline')}
+        >
+          Decline
+        </Button>
+        <Button size="sm" variant="ghost" isDisabled={scanning} onPress={onSignal}>
+          {scanning ? 'Scanning…' : 'Run ingest again'}
+        </Button>
+        {!compact ? (
+          <>
             <Chip size="sm" variant="soft">
-              Tier {c.tier}
+              Tier {c.tier} assist
             </Chip>
-          )}
-        </div>
+            <CaseMetaChip kind="limit">{money(c.limitRequestedUsd)}</CaseMetaChip>
+          </>
+        ) : (
+          <Chip size="sm" variant="soft">
+            Tier {c.tier}
+          </Chip>
+        )}
       </div>
-    </div>
+    </>,
   )
 }

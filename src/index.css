@@ -1,0 +1,48 @@
+@import "@heroui/styles";
+@import "./styles/typography.css";
+@import "./styles/dashboard-surface.css";
+@import "./styles/workbench-surface.css";
+@import "./styles/customer-360.css";
+@import "./styles/value-compare.css";
+@import "./styles/video-polish.css";
+
+@layer theme {
+  :root,
+  .light,
+  [data-theme="light"] {
+    color-scheme: light;
+
+    /* Birlasoft clean SaaS — slate blue primary (#2563eb) */
+    --accent: oklch(0.546 0.215 262.88);
+    --accent-foreground: oklch(0.99 0 0);
+    --focus: var(--accent);
+    --link: var(--accent);
+
+    --background: oklch(0.975 0.012 265);
+    --foreground: oklch(0.18 0.03 265);
+
+    --surface: oklch(1 0 0);
+    --surface-foreground: var(--foreground);
+    --surface-secondary: oklch(0.965 0.012 265);
+    --surface-tertiary: oklch(0.945 0.016 265);
+
+    --border: oklch(0.88 0.02 265);
+    --divider: oklch(0.9 0.015 265);
+    --muted: oklch(0.42 0.03 265);
+  }
+}
+
+@layer base {
+  body {
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}

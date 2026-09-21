@@ -56,12 +56,36 @@ const INITIAL_PACKAGES: FormPackage[] = [
     updated: '2026-07-18',
   },
   {
+    id: 'pkg-cyber-renewal',
+    name: 'Cyber Renewal Lite',
+    version: 'v2.0',
+    status: 'published',
+    modules: 9,
+    updated: '2026-07-27',
+  },
+  {
+    id: 'pkg-cyber-vendor',
+    name: 'Vendor Concentration Add-on',
+    version: 'v1.0',
+    status: 'published',
+    modules: 6,
+    updated: '2026-07-21',
+  },
+  {
     id: 'pkg-cyber-draft',
     name: 'Cyber SME Light',
     version: 'v0.3',
     status: 'draft',
     modules: 8,
     updated: '2026-07-24',
+  },
+  {
+    id: 'pkg-cyber-healthcare',
+    name: 'Healthcare PHI Intensive',
+    version: 'v0.8',
+    status: 'draft',
+    modules: 14,
+    updated: '2026-07-29',
   },
 ]
 
@@ -119,6 +143,78 @@ const INITIAL_OUTTAKES: Outtake[] = [
     link: 'https://submit.shore.example/o/0832',
     moduleIds: defaultModuleIds(),
   },
+  {
+    id: 'out-0912',
+    insured: 'LumenForge Software',
+    broker: 'Marsh Specialty',
+    packageId: 'pkg-cyber-renewal',
+    packageLabel: 'Cyber Renewal Lite · v2.0',
+    status: 'in_progress',
+    attestor: 'broker',
+    shippedAt: '2026-07-29',
+    link: 'https://submit.shore.example/o/0912',
+    moduleIds: defaultModuleIds(),
+  },
+  {
+    id: 'out-0915',
+    insured: 'Harbor Retail Group',
+    broker: 'Howden Broking',
+    packageId: 'pkg-cyber-core',
+    packageLabel: 'Cyber Core Adaptive · v1.4',
+    status: 'sent',
+    attestor: 'broker',
+    shippedAt: '2026-07-30',
+    link: 'https://submit.shore.example/o/0915',
+    moduleIds: defaultModuleIds(),
+  },
+  {
+    id: 'out-0920',
+    insured: 'Cascade Logistics',
+    broker: 'WTW Cyber',
+    packageId: 'pkg-cyber-vendor',
+    packageLabel: 'Vendor Concentration Add-on · v1.0',
+    status: 'returned',
+    attestor: 'insured_officer',
+    shippedAt: '2026-07-27',
+    link: 'https://submit.shore.example/o/0920',
+    moduleIds: defaultModuleIds(),
+  },
+  {
+    id: 'out-0924',
+    insured: 'BrightPath Clinics',
+    broker: 'Aon Cyber Desk',
+    packageId: 'pkg-cyber-high',
+    packageLabel: 'Cyber High Limit ($10M+) · v1.1',
+    status: 'in_progress',
+    attestor: 'broker',
+    shippedAt: '2026-07-31',
+    link: 'https://submit.shore.example/o/0924',
+    moduleIds: [...defaultModuleIds(), 'incident_response'],
+  },
+  {
+    id: 'out-0928',
+    insured: 'Northwind Health Systems',
+    broker: 'Aon Cyber Desk',
+    packageId: 'pkg-cyber-core',
+    packageLabel: 'Cyber Core Adaptive · v1.4',
+    status: 'returned',
+    attestor: 'broker',
+    shippedAt: '2026-07-21',
+    link: 'https://submit.shore.example/o/0928',
+    moduleIds: defaultModuleIds(),
+  },
+  {
+    id: 'out-0931',
+    insured: 'Orbital Payments Ltd',
+    broker: 'Direct',
+    packageId: 'pkg-cyber-renewal',
+    packageLabel: 'Cyber Renewal Lite · v2.0',
+    status: 'sent',
+    attestor: 'insured_officer',
+    shippedAt: '2026-08-01',
+    link: 'https://submit.shore.example/o/0931',
+    moduleIds: defaultModuleIds(),
+  },
 ]
 
 function statusChip(status: OuttakeStatus | PackageStatus) {
@@ -166,14 +262,10 @@ function FilterChip({
       type="button"
       onClick={onPress}
       aria-pressed={selected}
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition ${
-        selected
-          ? 'bg-slate-900 text-white'
-          : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
-      }`}
+      className="wb-filter-chip"
     >
       {label}
-      <span className={selected ? 'text-slate-300' : 'text-slate-400'}>{count}</span>
+      <span className="wb-filter-chip__count">{count}</span>
     </button>
   )
 }
@@ -186,7 +278,7 @@ export interface ReturnedOuttakePrefill {
 }
 
 interface Props {
-  /** Returned outtake → Decision Workbench Workflow (closure path). */
+  /** Returned outtake → Dashboard Workflow (closure path). */
   onProceedToClosure: (prefill: ReturnedOuttakePrefill) => void
 }
 
@@ -238,7 +330,7 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
   const copyLink = async (link: string) => {
     try {
       await navigator.clipboard.writeText(link)
-      showSuccessToast('Outtake link copied')
+      showSuccessToast('Shared link copied')
     } catch {
       showInfoToast('Could not copy link')
     }
@@ -270,7 +362,7 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
     setBuilderOpen(false)
     setTab('outtakes')
     setOuttakeFilter('awaiting')
-    showSuccessToast('Form dispatched — broker link ready')
+    showSuccessToast('Form sent. Broker link is ready.')
     void copyLink(link)
   }
 
@@ -315,15 +407,15 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                   setViewingOuttake(null)
                 }}
               >
-                Proceed to Closure
+                Proceed to closure
               </Button>
             ) : null}
             <Button size="sm" variant="secondary" onPress={() => setViewingOuttake(null)}>
-              Back to Shared
+              Back to shared
             </Button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden rounded-2xl">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
           <BrokerFormFlow
             moduleIds={modules}
             insuredHint={viewingOuttake.insured}
@@ -358,9 +450,9 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
           </Tabs>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="primary" onPress={() => openBuilder()}>
+          <Button size="sm" variant="primary" data-video-action="create-template" onPress={() => openBuilder()}>
             <Send size={14} />
-            Dispatch New Form
+            Create template
           </Button>
         </div>
       </div>
@@ -394,45 +486,46 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                 onPress={() => setOuttakeFilter('returned')}
               />
             </div>
-            <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/80 bg-white">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+            <div className="cuw-table-wrap min-h-0 flex-1">
+              <table className="cuw-table min-w-[720px]">
+                <thead>
                   <tr>
-                    <th className="px-4 py-2.5 font-semibold">Insured</th>
-                    <th className="px-4 py-2.5 font-semibold">Broker</th>
-                    <th className="px-4 py-2.5 font-semibold">Package</th>
-                    <th className="px-4 py-2.5 font-semibold">Attestor</th>
-                    <th className="px-4 py-2.5 font-semibold">Status</th>
-                    <th className="px-4 py-2.5 font-semibold">Shipped</th>
-                    <th className="px-4 py-2.5 font-semibold">Actions</th>
+                    <th>Insured</th>
+                    <th>Broker</th>
+                    <th>Package</th>
+                    <th>Attestor</th>
+                    <th>Status</th>
+                    <th>Shipped</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleOuttakes.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
-                        No outtakes match this status.
+                        No shared forms match this status.
                       </td>
                     </tr>
                   ) : (
                     visibleOuttakes.map((o) => (
-                      <tr key={o.id} className="border-t border-slate-100 hover:bg-slate-50/80">
-                        <td className="px-4 py-3 font-medium text-slate-900">{o.insured}</td>
-                        <td className="px-4 py-3 text-slate-600">{o.broker}</td>
-                        <td className="px-4 py-3 text-slate-600">{o.packageLabel}</td>
-                        <td className="px-4 py-3">
+                      <tr key={o.id}>
+                        <td className="cuw-table__primary">{o.insured}</td>
+                        <td className="cuw-table__muted">{o.broker}</td>
+                        <td className="cuw-table__muted">{o.packageLabel}</td>
+                        <td>
                           <Chip size="sm" variant="soft" color="default">
                             {o.attestor === 'broker' ? 'Broker' : 'Insured officer'}
                           </Chip>
                         </td>
-                        <td className="px-4 py-3">{statusChip(o.status)}</td>
-                        <td className="px-4 py-3 text-slate-500">{o.shippedAt}</td>
-                        <td className="px-4 py-3">
+                        <td>{statusChip(o.status)}</td>
+                        <td className="cuw-table__muted">{o.shippedAt}</td>
+                        <td>
                           <div className="flex flex-wrap gap-1.5">
                             <Button
                               size="sm"
                               variant="secondary"
                               isDisabled={o.status === 'revoked'}
+                              data-video-action="view-form"
                               onPress={() => setViewingOuttake(o)}
                             >
                               <Eye size={12} />
@@ -442,6 +535,7 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                               <Button
                                 size="sm"
                                 variant="primary"
+                                data-video-action="proceed-closure"
                                 onPress={() =>
                                   onProceedToClosure({
                                     insured: o.insured,
@@ -451,7 +545,7 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                                   })
                                 }
                               >
-                                Proceed to Closure
+                                Proceed to closure
                               </Button>
                             ) : null}
                           </div>
@@ -479,16 +573,16 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                 onPress={() => setPackageFilter('published')}
               />
             </div>
-            <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/80 bg-white">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+            <div className="cuw-table-wrap min-h-0 flex-1">
+              <table className="cuw-table min-w-[640px]">
+                <thead>
                   <tr>
-                    <th className="px-4 py-2.5 font-semibold">Package</th>
-                    <th className="px-4 py-2.5 font-semibold">Version</th>
-                    <th className="px-4 py-2.5 font-semibold">Modules</th>
-                    <th className="px-4 py-2.5 font-semibold">Status</th>
-                    <th className="px-4 py-2.5 font-semibold">Updated</th>
-                    <th className="px-4 py-2.5 font-semibold">Actions</th>
+                    <th>Package</th>
+                    <th>Version</th>
+                    <th>Modules</th>
+                    <th>Status</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -500,26 +594,27 @@ export function FormShippingCenter({ onProceedToClosure }: Props) {
                     </tr>
                   ) : (
                     visiblePackages.map((p) => (
-                      <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50/80">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 font-medium text-slate-900">
-                            <Shield size={14} className="text-slate-400" />
+                      <tr key={p.id}>
+                        <td>
+                          <div className="cuw-table__primary flex items-center gap-2">
+                            <Shield size={14} className="text-blue-500" />
                             {p.name}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{p.version}</td>
-                        <td className="px-4 py-3 text-slate-600">{p.modules}</td>
-                        <td className="px-4 py-3">{statusChip(p.status)}</td>
-                        <td className="px-4 py-3 text-slate-500">{p.updated}</td>
-                        <td className="px-4 py-3">
+                        <td className="cuw-table__muted">{p.version}</td>
+                        <td className="cuw-table__muted">{p.modules}</td>
+                        <td>{statusChip(p.status)}</td>
+                        <td className="cuw-table__muted">{p.updated}</td>
+                        <td>
                           <Button
                             size="sm"
                             variant="primary"
                             isDisabled={p.status !== 'published'}
+                            data-video-action="send-template"
                             onPress={() => openBuilder(p.id)}
                           >
                             <Send size={12} />
-                            Dispatch
+                            Send
                           </Button>
                         </td>
                       </tr>

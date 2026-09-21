@@ -159,7 +159,7 @@ function WorstCaseExposureChart({
           </span>
         </h4>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
@@ -220,7 +220,7 @@ function CoverageAdequacyChart({
           <h4 className="cuw-type-title">{adequacyLabel}</h4>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
+      <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis
@@ -263,7 +263,7 @@ export function RiskVizPanel({
         : 'Shortfall'
 
   return (
-    <div className="wb-capacity-ledger space-y-3" aria-label="Book capacity ledger">
+    <div className="wb-capacity-ledger space-y-4" aria-label="Book capacity ledger">
       <div className="cuw-panel">
         <div className="cuw-panel__head">
           <span className="cuw-glyph" aria-hidden>
@@ -272,7 +272,7 @@ export function RiskVizPanel({
           <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
             <div>
               <h4 className="cuw-type-title">Book capacity</h4>
-              <p className="cuw-type-caption mt-0.5">Limit · ALE · adequacy as ledger rows</p>
+              
             </div>
             {onOpenCites ? (
               <button type="button" className="wb-risk-cite-open" onClick={onOpenCites}>
@@ -318,29 +318,30 @@ export function RiskVizPanel({
           </tbody>
         </table>
         <p className="wb-capacity-ledger__formula font-mono">{exposure.aleFormula}</p>
-        <p className="cuw-type-caption mt-2">{exposure.adequacyDetail}</p>
+        
       </div>
 
-      <InherentRiskBubble
-        points={points}
-        activeThreatId={activeThreatId}
-        onSelectThreat={onSelectThreat}
-        aleUsd={exposure.aleUsd}
-      />
-
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="wb-capacity-charts">
+        <InherentRiskBubble
+          points={points}
+          activeThreatId={activeThreatId}
+          onSelectThreat={onSelectThreat}
+          aleUsd={exposure.aleUsd}
+        />
         <WorstCaseExposureChart
           rows={exposure.worstCase}
           totalUsd={exposure.worstCaseTotalUsd}
           limitUsd={exposure.limitRequestedUsd}
         />
-        <CoverageAdequacyChart
-          limitUsd={exposure.limitRequestedUsd}
-          worstCaseTotalUsd={exposure.worstCaseTotalUsd}
-          adequacy={exposure.adequacy}
-          adequacyLabel={exposure.adequacyLabel}
-          adequacyDetail={exposure.adequacyDetail}
-        />
+        <div className="wb-capacity-charts__span">
+          <CoverageAdequacyChart
+            limitUsd={exposure.limitRequestedUsd}
+            worstCaseTotalUsd={exposure.worstCaseTotalUsd}
+            adequacy={exposure.adequacy}
+            adequacyLabel={exposure.adequacyLabel}
+            adequacyDetail={exposure.adequacyDetail}
+          />
+        </div>
       </div>
     </div>
   )

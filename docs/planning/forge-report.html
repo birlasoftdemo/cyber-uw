@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Forge Report — Cyber UW Decision Workbench</title>
+<style>
+  :root {
+    --ink: #14201e;
+    --muted: #5a6b66;
+    --paper: #f7f4ee;
+    --panel: #fffdf8;
+    --line: #d9d2c5;
+    --teal: #0f766e;
+    --seal: #9f1239;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    background:
+      radial-gradient(900px 400px at 0% 0%, rgba(15,118,110,.08), transparent),
+      var(--paper);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 28px 80px; }
+  header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  h1 { font-size: 1.85rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .meta { color: var(--muted); font-size: .95rem; }
+  .seal {
+    width: 148px; height: 148px; flex-shrink: 0;
+    filter: drop-shadow(0 8px 16px rgba(127,29,29,.25));
+  }
+  section {
+    margin-top: 28px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  h2 { margin: 0 0 10px; font-size: 1.1rem; color: var(--teal); letter-spacing: .04em; text-transform: uppercase; }
+  ul { margin: 0; padding-left: 1.15rem; }
+  li { margin: .35rem 0; }
+  .personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .persona {
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+  }
+  .persona .icon { font-size: 1.4rem; }
+  .persona .name { font-weight: 700; margin-top: 4px; }
+  .persona .voice { color: var(--muted); font-size: .88rem; margin-top: 4px; }
+  footer { margin-top: 28px; color: var(--muted); font-size: .85rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Cyber UW Decision Workbench</h1>
+        <p class="meta">Forge session · Birlasoft internal IP pitch · 2026-07-20</p>
+        <p class="meta">Outcome stamped after frontend + HeroUI demo UX locked.</p>
+      </div>
+      <svg class="seal" viewBox="0 0 148 148" aria-label="HARDENED seal" role="img">
+        <defs>
+          <radialGradient id="wax" cx="40%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="#fb7185"/>
+            <stop offset="55%" stop-color="#be123c"/>
+            <stop offset="100%" stop-color="#7f1d1d"/>
+          </radialGradient>
+        </defs>
+        <circle cx="74" cy="74" r="70" fill="url(#wax)"/>
+        <circle cx="74" cy="74" r="58" fill="none" stroke="#fecdd3" stroke-width="2" stroke-dasharray="3 4" opacity=".7"/>
+        <text x="74" y="70" text-anchor="middle" fill="#fff7ed" font-family="Georgia, serif" font-size="16" font-weight="700" letter-spacing="2">HARDENED</text>
+        <text x="74" y="92" text-anchor="middle" fill="#ffe4e6" font-family="Georgia, serif" font-size="9" letter-spacing="1.5">FORGE SEAL</text>
+      </svg>
+    </header>
+
+    <section>
+      <h2>Outcome</h2>
+      <p><strong>HARDENED</strong> — greenfield cyber UW workbench as Birlasoft-configurable IP, demoable with mocked signal/PAS connectors and HeroUI UX.</p>
+    </section>
+
+    <section>
+      <h2>Locked decisions</h2>
+      <ul>
+        <li>No Moody relation; consulting IP + services personalization model</li>
+        <li>Primary persona: cyber underwriter at MGA / multi-tenant orgs</li>
+        <li>Wedge: attest–reality + throughput + soft-market discipline + accumulation</li>
+        <li>POC = Band A + pricing tiers + accumulation stub + PAS adapter</li>
+        <li>Mock connectors for internal pitch; interfaces pluggable</li>
+        <li>Demo path: sidebar <code>Cyber UW</code> → queue → gaps → tier → accum → HITL → PAS</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Rejected / deferred</h2>
+      <ul>
+        <li>Compete as licensed cyber MGA (Coalition-class) — wrong Birlasoft GTM</li>
+        <li>DIY continuous monitoring / cat models — partner later</li>
+        <li>Theme 5 IR learning loop — moon only</li>
+        <li>Invented primary interview verbatim — secondary research only this phase</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Surviving weak points</h2>
+      <ul>
+        <li>No Capgemini/Birlasoft-client primary UW interviews yet</li>
+        <li>Willingness-to-pay for accelerator vs buy BitSight bolt-on unproven</li>
+        <li>Accumulation stub is alert-only — portfolio brain still moon</li>
+        <li>Signal API partner choice deferred to first client engagement</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Pressure-test roster</h2>
+      <div class="personas">
+        <div class="persona"><div class="icon">📊</div><div class="name">Mary</div><div class="voice">BA — evidence grades, buyer clarity</div></div>
+        <div class="persona"><div class="icon">📋</div><div class="name">John</div><div class="voice">PM — wedge over category labels</div></div>
+        <div class="persona"><div class="icon">🎨</div><div class="name">Sally</div><div class="voice">UX — cyber job ≠ general UW</div></div>
+        <div class="persona"><div class="icon">🏗️</div><div class="name">Winston</div><div class="voice">Architect — mock ports, explainability</div></div>
+        <div class="persona"><div class="icon">🧭</div><div class="name">Dana</div><div class="voice">Practice partner — kill slideware</div></div>
+        <div class="persona"><div class="icon">🛡️</div><div class="name">Marcus</div><div class="voice">Cyber MGA UW — price/decline truth</div></div>
+        <div class="persona"><div class="icon">🔬</div><div class="name">Elena</div><div class="voice">Research ops — no fake quotes</div></div>
+        <div class="persona"><div class="icon">🏢</div><div class="name">Ravi</div><div class="voice">Practice lead — reference spine</div></div>
+      </div>
+    </section>
+
+    <footer>
+      Artifacts: <code>forged-idea.md</code>, <code>USER-RESEARCH.md</code>, <code>COMPETITOR-RESEARCH.md</code>, <code>FEATURE-LISTS-MVP-MOON.md</code>, <code>LAUNDRY-DUMP-RANKED.md</code>, <code>SECONDARY-RESEARCH-PAIN-POINTS.md</code>, <code>src/cyber-uw/</code>
+    </footer>
+  </div>
+</body>
+</html>

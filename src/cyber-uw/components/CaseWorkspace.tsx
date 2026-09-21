@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CYBER_FLOW_STAGES,
   cyberFlowIndex,
@@ -32,6 +32,7 @@ import {
   type TriageFinding,
 } from '../data/cyberTriageRules'
 import { PACKAGE_DOC_KINDS, openPackageDocument } from '../data/dossierPackage'
+import { Customer360Panel } from './Customer360Panel'
 import { RiskVizPanel } from './RiskVizCharts'
 import {
   RiskEvidenceCitePanel,
@@ -44,12 +45,11 @@ import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberTier, RiskJudgmentStatus } from '../types'
-import { missingDocsForCase } from '../utils/missingDocs'
+import { checklistStatusForCase, missingDocsForCase } from '../utils/missingDocs'
+import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
 import { money } from './CyberPrimitives'
-import {
-  CyberProgressStepper,
-  CyberStageAdvanceCard,
-} from './CyberWorkbenchDesk'
+import { CyberProgressStepper } from './CyberWorkbenchDesk'
+import { FloatingWorkflowBar } from './FloatingWorkflowBar'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
 import { DocumentsCompleteModal } from './DocumentsCompleteModal'
 import {
@@ -61,6 +61,7 @@ import {
   DiscussionReferModal,
   type DiscussionReferDraft,
 } from './DiscussionReferModal'
+import { ValueCompareCard, parseMoneyish, formatCompactMoney, type ValueCompareStatus } from './ValueCompareCard'
 
 function StageSection({
   title,
@@ -95,7 +96,7 @@ function StageSection({
   const expanded = forceExpand || (expandedOverride ?? (stayOpen || !isPast))
 
   return (
-    <section className={cardClass}>
+    <section className={cardClass} id={`cuw-stage-${stageIndex}`}>
       <button
         type="button"
         onClick={() => setExpandedOverride(!expanded)}
@@ -152,8 +153,29 @@ function TriageFindingCard({
 }) {
   const signRiskItem = useCyberUwStore((s) => s.signRiskItem)
   const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
+  const openDossierFocus = useCyberUwStore((s) => s.openDossierFocus)
   const [draft, setDraft] = useState<DiscussionReferDraft | null>(null)
   const signed = status && status !== 'pending'
+
+  const compareStatus: ValueCompareStatus =
+    finding.suggested === 'approve'
+      ? 'meets'
+      : finding.suggested === 'escalate' || finding.severity === 'high'
+        ? 'below'
+        : 'watch'
+
+  /** Detected = package extract; Permitted = control / policy requirement. */
+  const extractedMoney =
+    parseMoneyish(finding.attested) ?? parseMoneyish(finding.detected)
+  const detectedValue = finding.attested
+  const permittedValue =
+    extractedMoney != null
+      ? formatCompactMoney(extractedMoney)
+      : finding.required
+        ? `Required · ${finding.chartLabel}`
+        : `Policy band · ${finding.chartLabel}`
+  const capacityValue =
+    extractedMoney != null ? formatCompactMoney(extractedMoney * 2) : undefined
 
   return (
     <li
@@ -175,7 +197,9 @@ function TriageFindingCard({
         </span>
         <p className="cuw-type-title min-w-0 flex-1 text-[0.9375rem]">{finding.title}</p>
         <span className="cuw-type-label font-mono">{finding.ruleId}</span>
-        <span className="cuw-type-label capitalize">{finding.severity}</span>
+        <span className={`wb-gap-severity wb-gap-severity--${finding.severity}`}>
+          {finding.severity}
+        </span>
         {signed ? (
           <span className="cuw-type-caption font-semibold">{judgmentLabel(status)}</span>
         ) : null}
@@ -191,21 +215,26 @@ function TriageFindingCard({
         <div className="mt-2 border-t border-slate-100 pt-2">
           <p className="cuw-type-body">{finding.summary}</p>
           <p className="cuw-type-caption mt-1">{finding.detail}</p>
-          <div className="wb-gap-compare mt-3" role="group" aria-label="Attested versus detected">
-            <div className="wb-gap-pane wb-gap-pane--ideal">
-              <div className="wb-gap-pane__meta">
-                <span className="wb-gap-pane__label">Attested</span>
-                <span className="wb-gap-pane__chip wb-gap-pane__chip--floor">From package</span>
-              </div>
-              <p className="wb-gap-pane__value">{finding.attested}</p>
-            </div>
-            <div className="wb-gap-pane wb-gap-pane--watch">
-              <div className="wb-gap-pane__meta">
-                <span className="wb-gap-pane__label">Detected</span>
-                <span className="wb-gap-pane__chip">Ingest / signal</span>
-              </div>
-              <p className="wb-gap-pane__value">{finding.detected}</p>
-            </div>
+          <div className="mt-3">
+            <ValueCompareCard
+              showHeader={false}
+              title={finding.title}
+              category={finding.chartLabel}
+              detectedValue={detectedValue}
+              permittedValue={permittedValue}
+              capacityValue={capacityValue}
+              detectedSource={`${finding.sourceDocName}`}
+              status={compareStatus}
+              statusDetail={finding.summary}
+              onViewSource={
+                finding.sourceDocId
+                  ? () => openDossierFocus(finding.sourceDocId)
+                  : undefined
+              }
+            />
+            <p className="cuw-type-caption mt-2 text-slate-600">
+              Signal · {finding.detected}
+            </p>
           </div>
           <p className="cuw-type-caption mt-2">
             Suggested · {finding.suggested === 'approve' ? 'Approve' : finding.suggested === 'escalate' ? 'Escalate' : 'Ignore'}
@@ -269,6 +298,25 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
     setSectionKey(reports[0]?.section.id ?? '')
     setExpandedId(null)
   }, [c.id])
+
+  useEffect(() => {
+    const onFocusFinding = (ev: Event) => {
+      const id = (ev as CustomEvent<{ id: string }>).detail?.id
+      if (!id) return
+      const report = reports.find((r) => r.findings.some((f) => f.id === id))
+      if (report) setSectionKey(report.section.id)
+      setExpandedId(id)
+      window.requestAnimationFrame(() => {
+        document.getElementById(`risk-item-${id}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      })
+    }
+    window.addEventListener('cuw-focus-risk-finding', onFocusFinding)
+    return () => window.removeEventListener('cuw-focus-risk-finding', onFocusFinding)
+  }, [reports])
+
   const selected = reports.find((r) => r.section.id === sectionKey) ?? reports[0]
   const findings = selected?.findings ?? []
 
@@ -521,21 +569,6 @@ function UwLockedStage({ title }: { title: string }) {
   )
 }
 
-function formatPolicyDate(value: string) {
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function policyPeriod(c: CyberCase): { start: string; end: string } {
-  const startIso = c.policyStartAt ?? c.receivedAt
-  const start = new Date(startIso)
-  const end = c.policyEndAt
-    ? new Date(c.policyEndAt)
-    : new Date(start.getFullYear() + 1, start.getMonth(), start.getDate())
-  return { start: startIso, end: end.toISOString() }
-}
-
 function PolicyDocumentsStageBody({
   c,
   onRequestDocumentsComplete,
@@ -544,6 +577,7 @@ function PolicyDocumentsStageBody({
   onRequestDocumentsComplete: () => void
 }) {
   const missing = missingDocsForCase(c)
+  const checklist = checklistStatusForCase(c)
   const runMockSignal = useCyberUwStore((s) => s.runMockSignal)
   const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
   const setPackageDocKind = useCyberUwStore((s) => s.setPackageDocKind)
@@ -553,7 +587,7 @@ function PolicyDocumentsStageBody({
   const reports = sectionReportsForCase(c)
   const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
   const canComplete = missing.length === 0 && c.completenessPct >= 80 && !documentsComplete
-  const period = policyPeriod(c)
+  const period = policyPeriodForCase(c)
 
   const openIngestRefer = () => {
     const label =
@@ -574,63 +608,98 @@ function PolicyDocumentsStageBody({
     <div className="space-y-4">
       <QuestionMetaGrid
         items={[
-          { label: 'Proposed start date', value: formatPolicyDate(period.start), icon: CalendarRange },
-          { label: 'Proposed end date', value: formatPolicyDate(period.end), icon: CalendarCheck2 },
+          { label: 'Proposed start date', value: formatPolicyDate(period.startIso), icon: CalendarRange },
+          { label: 'Proposed end date', value: formatPolicyDate(period.endIso), icon: CalendarCheck2 },
           { label: 'Completeness', value: `${c.completenessPct}%`, icon: Percent },
           { label: 'Requested limit', value: money(c.limitRequestedUsd), icon: Landmark },
         ]}
       />
 
       <section>
+        <h4 className="text-sm font-semibold text-slate-900">Required document checklist</h4>
+        <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+          {checklist.map((row) => (
+            <li
+              key={row.required}
+              className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm ${
+                row.present
+                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900'
+                  : 'border-amber-200 bg-amber-50/70 text-amber-950'
+              }`}
+            >
+              <span
+                className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                  row.present ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+                }`}
+                aria-hidden
+              >
+                {row.present ? '✓' : '!'}
+              </span>
+              <span className="font-medium text-inherit">{row.required}</span>
+              <span
+                className={`ml-auto text-[11px] font-semibold ${
+                  row.present ? 'text-emerald-900' : 'text-amber-950'
+                }`}
+              >
+                {row.present ? 'Present' : 'Missing'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
         <h4 className="text-sm font-semibold text-slate-900">Package documents</h4>
         {c.packageDocs.length ? (
           <div className="wb-pkg-table-wrap mt-2">
-          <table className="wb-pkg-table">
-            <thead>
-              <tr>
-                <th>Document</th>
-                <th>Type of doc</th>
-                <th>View</th>
-              </tr>
-            </thead>
-            <tbody>
-              {c.packageDocs.map((doc) => {
-                const kinds = PACKAGE_DOC_KINDS.includes(doc.kind as (typeof PACKAGE_DOC_KINDS)[number])
-                  ? PACKAGE_DOC_KINDS
-                  : ([doc.kind, ...PACKAGE_DOC_KINDS] as readonly string[])
-                return (
-                  <tr key={doc.id} id={`dossier-anchor-${doc.id}`}>
-                    <td className="font-medium text-slate-900" title={doc.name}>
-                      {doc.name}
-                    </td>
-                    <td>
-                      <select
-                        className="wb-q-cell__input"
-                        value={doc.kind}
-                        aria-label={`Type of ${doc.name}`}
-                        onChange={(e) => setPackageDocKind(c.id, doc.id, e.target.value)}
-                      >
-                        {kinds.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {kind}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="wb-pkg-view"
-                        onClick={() => openPackageDocument(doc)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+            <table className="wb-pkg-table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Type of doc</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {c.packageDocs.map((doc) => {
+                  const kinds = PACKAGE_DOC_KINDS.includes(
+                    doc.kind as (typeof PACKAGE_DOC_KINDS)[number],
+                  )
+                    ? PACKAGE_DOC_KINDS
+                    : ([doc.kind, ...PACKAGE_DOC_KINDS] as readonly string[])
+                  return (
+                    <tr key={doc.id} id={`dossier-anchor-${doc.id}`}>
+                      <td className="font-medium text-slate-900" title={doc.name}>
+                        {doc.name}
+                      </td>
+                      <td>
+                        <select
+                          className="wb-q-cell__input"
+                          value={doc.kind}
+                          aria-label={`Type of ${doc.name}`}
+                          onChange={(e) => setPackageDocKind(c.id, doc.id, e.target.value)}
+                        >
+                          {kinds.map((kind) => (
+                            <option key={kind} value={kind}>
+                              {kind}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="wb-pkg-view"
+                          onClick={() => openPackageDocument(doc)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="mt-2 text-sm text-slate-500">No documents attached.</p>
@@ -839,7 +908,7 @@ function WorkflowTab({
   }, [dossierFocusId, clearDossierFocus, c.id])
 
   return (
-    <div className="space-y-3 pb-6">
+    <div className="space-y-4 pb-8">
       <div>
         {isOps ? (
           <p className="text-xs text-slate-600">
@@ -906,6 +975,8 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
     listDecisionPrompt,
     clearListDecisionPrompt,
     signOffPackage,
+    dismissCustomer360,
+    showCustomer360,
   } = useCyberUwStore()
   const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null)
   const [docsCompleteOpen, setDocsCompleteOpen] = useState(false)
@@ -938,24 +1009,67 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
     clearListDecisionPrompt()
   }
 
+  const onWorkflow = c.customer360Dismissed === true
+  const scrollRootRef = useRef<HTMLDivElement>(null)
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+    <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="wb-cyber-advance-strip wb-cyber-advance-strip--stages shrink-0 border-b border-slate-200/80 px-3 py-2.5 md:px-4">
-          <div className="wb-progress-stepper-chrome wb-progress-stepper-chrome--inline mb-2">
-            <CyberProgressStepper c={c} />
+        <div
+          className="cuw-case-view-tabs shrink-0 px-3 pt-2 md:px-4"
+          role="tablist"
+          aria-label="Case view"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!onWorkflow}
+            className={`cuw-case-view-tabs__tab${!onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
+            onClick={() => showCustomer360(c.id)}
+          >
+            Customer 360
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={onWorkflow}
+            className={`cuw-case-view-tabs__tab${onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
+            onClick={() => dismissCustomer360(c.id)}
+          >
+            Proceed to Closure
+          </button>
+        </div>
+
+        {onWorkflow ? (
+          <div className="wb-cyber-journey-rail shrink-0 border-b border-slate-200/80 px-3 py-2 md:px-4">
+            <div className="wb-cyber-journey-rail__shell">
+              <div className="wb-cyber-journey-rail__stepper min-w-0 flex-1">
+                <CyberProgressStepper c={c} />
+              </div>
+            </div>
           </div>
-          <CyberStageAdvanceCard
-            compact
+        ) : null}
+
+        <div className="cuw-case-workflow-pane min-h-0 flex-1">
+          <div
+            ref={scrollRootRef}
+            className="case-drawer-surface cuw-case-shell__pane case-drawer-surface--float-pad min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5"
+          >
+            {!onWorkflow ? (
+              <Customer360Panel c={c} />
+            ) : (
+              <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
+            )}
+          </div>
+
+          <FloatingWorkflowBar
             c={c}
+            surface={onWorkflow ? 'workflow' : 'c360'}
+            scrollRootRef={scrollRootRef}
             onRequestDecision={(d) => setPendingDecision(d)}
             onSignal={() => runMockSignal(c.id)}
             onRequestDocumentsComplete={() => setDocsCompleteOpen(true)}
           />
-        </div>
-
-        <div className="case-drawer-surface min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-5 md:py-4">
-          <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
         </div>
       </div>
 

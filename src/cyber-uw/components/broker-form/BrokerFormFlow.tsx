@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   buildBrokerPath,
   demoAnswersForPath,
+  filterVisibleBrokerSteps,
   type BrokerStepDef,
 } from '../../constants/brokerFormSteps'
 import { BrokerFormShell } from './BrokerFormShell'
@@ -32,22 +33,33 @@ export function BrokerFormFlow({
   compact,
   dossierReady = true,
 }: Props) {
-  const path = useMemo(() => buildBrokerPath(moduleIds), [moduleIds])
+  const basePath = useMemo(() => buildBrokerPath(moduleIds), [moduleIds])
   const [stepIndex, setStepIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [view, setView] = useState<'question' | 'review'>(mode === 'review' ? 'review' : 'question')
   const [prefillState, setPrefillState] = useState<PrefillState>(null)
   const [pulse, setPulse] = useState(false)
 
+  const path = useMemo(
+    () => filterVisibleBrokerSteps(basePath, answers),
+    [basePath, answers],
+  )
+
   useEffect(() => {
     setStepIndex(0)
     setView(mode === 'review' ? 'review' : 'question')
     if (mode === 'review') {
-      setAnswers(demoAnswersForPath(path))
+      setAnswers(demoAnswersForPath(basePath))
     } else {
       setAnswers({})
     }
-  }, [moduleIds.join('|'), mode, path])
+  }, [moduleIds.join('|'), mode, basePath])
+
+  useEffect(() => {
+    if (stepIndex >= path.length && path.length > 0) {
+      setStepIndex(path.length - 1)
+    }
+  }, [path.length, stepIndex])
 
   const step: BrokerStepDef | undefined = path[stepIndex]
   const total = Math.max(path.length, 1)
@@ -216,7 +228,7 @@ export function BrokerFormFlow({
         <button
           type="button"
           className="cuw-broker__btn"
-          disabled={view === 'question' && stepIndex === 0}
+          disabled={mode === 'review' || (view === 'question' && stepIndex === 0)}
           onClick={goBack}
         >
           Back
@@ -225,7 +237,7 @@ export function BrokerFormFlow({
       footerRight={
         view === 'review' ? (
           <button type="button" className="cuw-broker__btn cuw-broker__btn--primary" disabled>
-            Submitted
+            {mode === 'review' ? 'Already submitted' : 'Submitted'}
           </button>
         ) : (
           <button
@@ -242,10 +254,16 @@ export function BrokerFormFlow({
       <section key={`${view}-${step?.id ?? 'empty'}`} className="cuw-broker__section">
         {view === 'review' ? (
           <>
-            <h1 className="cuw-broker__q">Review &amp; submit</h1>
+            <h1 className="cuw-broker__q">
+              {mode === 'review' ? 'Submitted answers' : 'Review & submit'}
+            </h1>
             <p className="cuw-broker__sub">
               {packageLabel ? `${packageLabel} · ` : ''}
-              {insuredHint ? `Applicant: ${insuredHint}` : 'Answers attested for underwriter review.'}
+              {insuredHint
+                ? `Applicant: ${insuredHint}`
+                : mode === 'review'
+                  ? 'Broker responses returned for underwriter review.'
+                  : 'Answers attested for underwriter review.'}
             </p>
             <ul className="cuw-broker__review-list">
               {path.map((s) => (

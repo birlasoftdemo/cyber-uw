@@ -6,6 +6,7 @@ import {
   useCyberUwStore,
   type CyberDecisionFilter,
   type CyberRecFilter,
+  type CyberSubmissionKindFilter,
 } from '../store/cyberUwStore'
 
 const CYBER_PLACEHOLDERS = [
@@ -37,7 +38,7 @@ function getSpeechRecognition(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
-export type CyberShellView = 'shipping' | 'workbench' | 'insights'
+export type CyberShellView = 'shipping' | 'workbench' | 'insights' | 'referrals'
 
 interface Props {
   shellView: CyberShellView
@@ -52,9 +53,11 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
     filterRecommendation,
     filterDecision,
     filterSector,
+    filterSubmissionKind,
     setFilterRecommendation,
     setFilterDecision,
     setFilterSector,
+    setFilterSubmissionKind,
     clearFilters,
     selectCase,
   } = useCyberUwStore()
@@ -68,7 +71,8 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
   const activeCount =
     (filterRecommendation !== 'all' ? 1 : 0) +
     (filterDecision !== 'all' ? 1 : 0) +
-    (filterSector !== 'all' ? 1 : 0)
+    (filterSector !== 'all' ? 1 : 0) +
+    (filterSubmissionKind !== 'all' ? 1 : 0)
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop()
@@ -158,7 +162,7 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
               >
                 <option value="all">All AI</option>
                 <option value="quote">AI Quote</option>
-                <option value="refer">AI Refer</option>
+                <option value="refer">AI Escalate</option>
                 <option value="decline">AI Decline</option>
               </select>
             </div>
@@ -175,7 +179,7 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
                 <option value="all">All UW</option>
                 <option value="pending">Pending</option>
                 <option value="quote">Quoted</option>
-                <option value="refer">Referred</option>
+                <option value="refer">Escalated</option>
                 <option value="decline">Declined</option>
               </select>
             </div>
@@ -195,6 +199,23 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
                     {s}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Submission kind
+              </Label>
+              <select
+                className="mt-0.5 block w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
+                value={filterSubmissionKind}
+                onChange={(e) =>
+                  setFilterSubmissionKind(e.target.value as CyberSubmissionKindFilter)
+                }
+                aria-label="Filter by submission kind"
+              >
+                <option value="all">All kinds</option>
+                <option value="new_business">New business</option>
+                <option value="renewal">Renewal</option>
               </select>
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">

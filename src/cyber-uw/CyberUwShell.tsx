@@ -1,19 +1,37 @@
 import { Button } from '@heroui/react'
-import { Sparkles } from 'lucide-react'
+import { ArrowLeft, Maximize2, Minimize2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WorkbenchPageHeader } from '../shared/workbench/WorkbenchPageHeader'
+import { BirlasoftLogo } from './components/BirlasoftLogo'
 import { CyberAppSidebar } from './components/CyberAppSidebar'
 import { CyberNewSubmissionModal } from './components/CyberNewSubmissionModal'
 import { CyberShellToolbar } from './components/CyberShellToolbar'
-import { CyberWorkbenchStrip } from './components/CyberWorkbenchDesk'
+import { CyberCasesListPage } from './components/CyberWorkbenchDesk'
 import {
   FormShippingCenter,
   type ReturnedOuttakePrefill,
 } from './components/FormShippingCenter'
 import { CaseWorkspace } from './components/CaseWorkspace'
+import { ReferralInbox } from './components/ReferralInbox'
 import { InsightsLanding } from './insights/InsightsLanding'
+import { useAuthStore } from './store/authStore'
 import { useCyberUwStore } from './store/cyberUwStore'
 import type { CyberShellView } from './components/CyberShellToolbar'
+import { CaseMetaChips, decisionTitle } from './components/CyberPrimitives'
+
+const FOCUS_KEY = 'cyber-uw-workflow-focus'
+
+function defaultViewForRole(_role: 'underwriter' | 'ops' | undefined): CyberShellView {
+  return 'workbench'
+}
+
+function loadFocus(): boolean {
+  try {
+    return sessionStorage.getItem(FOCUS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export function CyberUwShell() {
   const {
@@ -28,10 +46,27 @@ export function CyberUwShell() {
     clearToast,
     uploadOpen,
     setUploadOpen,
+    referrals,
   } = useCyberUwStore()
+  const role = useAuthStore((s) => s.user?.role)
   const pending = cases.filter((c) => c.decision === 'pending').length
-  const [shellView, setShellView] = useState<CyberShellView>('insights')
+  const activeReferrals = referrals.filter((r) => r.status !== 'resolved').length
+  const [shellView, setShellView] = useState<CyberShellView>(() => defaultViewForRole(role))
   const [submissionPrefill, setSubmissionPrefill] = useState<ReturnedOuttakePrefill | null>(null)
+  const [focusMode, setFocusMode] = useState(loadFocus)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setShellView(defaultViewForRole(role))
+  }, [role])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(FOCUS_KEY, focusMode ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [focusMode])
 
   useEffect(() => {
     if (!toastMessage) return
@@ -39,12 +74,10 @@ export function CyberUwShell() {
     return () => window.clearTimeout(t)
   }, [toastMessage, clearToast])
 
-  // Keep canvas populated when entering workbench with no selection
+  // Exit focus when leaving workbench or returning to the list
   useEffect(() => {
-    if (shellView !== 'workbench' || selectedId) return
-    const first = cases.find((c) => c.decision === 'pending') ?? cases[0]
-    if (first) selectCase(first.id)
-  }, [shellView, selectedId, cases, selectCase])
+    if ((shellView !== 'workbench' || !selectedId) && focusMode) setFocusMode(false)
+  }, [shellView, selectedId, focusMode])
 
   const openNewSubmission = (prefill?: ReturnedOuttakePrefill) => {
     setSubmissionPrefill(prefill ?? null)
@@ -79,41 +112,119 @@ export function CyberUwShell() {
     setShellView('workbench')
   }
 
+  const selectedCase = selectedId ? cases.find((c) => c.id === selectedId) : undefined
+  const pageTitle =
+    shellView === 'shipping'
+      ? 'Manage Submissions'
+      : shellView === 'insights'
+        ? 'Cyber Insurance Overview'
+        : shellView === 'referrals'
+          ? role === 'ops'
+            ? 'Escalation Inbox'
+            : 'Escalations'
+          : selectedCase
+            ? selectedCase.insured
+            : 'Open cases'
+
+  const showCaseDetail = shellView === 'workbench' && Boolean(selectedId)
+  const caseSaved = selectedId ? Boolean(bookmarkedIds[selectedId]) : false
+  const dispositionLabel = selectedCase
+    ? selectedCase.decision === 'pending'
+      ? 'UW Pending'
+      : `UW ${decisionTitle(selectedCase.decision)}`
+    : ''
+
   return (
     <div className="flex h-screen bg-[var(--background)]">
-      <CyberAppSidebar shellView={shellView} onShellViewChange={setShellView} />
+      <CyberAppSidebar
+        shellView={shellView}
+        onShellViewChange={setShellView}
+        focusMode={focusMode}
+      />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <main className="workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <WorkbenchPageHeader
-            eyebrow="Cyber UW"
-            title={
-              shellView === 'shipping'
-                ? 'Manage Submissions'
-                : shellView === 'insights'
-                  ? 'Cyber Insurance Overview'
-                  : 'Decision Workbench'
-            }
-            count={shellView === 'workbench' ? pending : undefined}
-            countLabel="open decision"
-            meta={
-              shellView === 'workbench' ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ai-cta"
-                  onPress={() => openNewSubmission()}
-                >
-                  <Sparkles size={14} />
-                  New Submission
-                </Button>
-              ) : undefined
-            }
-            actions={
-              shellView === 'workbench' ? (
-                <CyberShellToolbar shellView={shellView} onShellViewChange={setShellView} />
-              ) : undefined
-            }
-          />
+              leading={<BirlasoftLogo />}
+              title={pageTitle}
+              count={
+                shellView === 'workbench' && !selectedId
+                  ? pending
+                  : shellView === 'referrals'
+                    ? activeReferrals
+                    : undefined
+              }
+              countLabel={
+                shellView === 'referrals'
+                  ? role === 'ops'
+                    ? 'active escalation'
+                    : 'open escalation'
+                  : 'open case'
+              }
+              subtitle={
+                showCaseDetail && selectedCase ? (
+                  <>
+                    <span className="wb-ref-pill">{selectedCase.id}</span>
+                    <CaseMetaChips
+                      lob={selectedCase.sector}
+                      name={selectedCase.broker}
+                      limitUsd={selectedCase.limitRequestedUsd}
+                    />
+                    <span className="text-xs font-medium text-slate-500">{dispositionLabel}</span>
+                  </>
+                ) : undefined
+              }
+              meta={
+                shellView === 'workbench' && !selectedId ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="ai-cta"
+                      onPress={() => openNewSubmission()}
+                    >
+                      <Sparkles size={14} />
+                      New Submission
+                    </Button>
+                  </div>
+                ) : undefined
+              }
+              actions={
+                showCaseDetail && selectedCase ? (
+                  <>
+                    <Button variant="primary" size="sm" onPress={clearCaseSelection}>
+                      <ArrowLeft size={14} />
+                      Open cases
+                    </Button>
+                    {role === 'underwriter' ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onPress={() => setFocusMode((v) => !v)}
+                        aria-pressed={focusMode}
+                        aria-label={focusMode ? 'Exit workflow focus' : 'Enter workflow focus'}
+                      >
+                        {focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                        {focusMode ? 'Exit focus' : 'Focus mode'}
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onPress={() =>
+                        setBookmarkedIds((cur) => ({
+                          ...cur,
+                          [selectedCase.id]: !cur[selectedCase.id],
+                        }))
+                      }
+                    >
+                      {caseSaved ? 'Bookmarked' : 'Save for later'}
+                    </Button>
+                  </>
+                ) : shellView === 'workbench' && !selectedId ? (
+                  <CyberShellToolbar shellView={shellView} onShellViewChange={setShellView} />
+                ) : undefined
+              }
+            />
 
           {shellView === 'shipping' ? (
             <div className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-hidden p-3 md:p-4">
@@ -122,18 +233,33 @@ export function CyberUwShell() {
               </div>
             </div>
           ) : shellView === 'insights' ? (
-            <InsightsLanding onOpenCase={openInWorkbench} />
+            <InsightsLanding onOpenCase={openInWorkbench} personaLens={role ?? 'underwriter'} />
+          ) : shellView === 'referrals' ? (
+            <ReferralInbox
+              onOpenCase={openInWorkbench}
+              onRemindBroker={() => setShellView('shipping')}
+            />
           ) : (
-            <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 gap-3 overflow-hidden p-3 md:grid-cols-[190px_1fr] md:p-4">
-              <CyberWorkbenchStrip
-                selectedId={selectedId}
-                onSelect={selectCase}
-                onBackToQueue={clearCaseSelection}
-              />
-              <div id="cyber-main" className="wb-panel min-h-0 min-w-0 overflow-hidden">
-                <CaseWorkspace />
+            showCaseDetail ? (
+            <div
+              className={`mx-auto grid min-h-0 w-full flex-1 grid-cols-1 gap-3 overflow-hidden ${
+                focusMode ? 'max-w-none p-0' : 'max-w-[1600px] p-3 md:p-4'
+              }`}
+            >
+              <div
+                id="cyber-main"
+                className={`wb-panel min-h-0 min-w-0 overflow-hidden ${
+                  focusMode ? 'rounded-none border-0' : ''
+                }`}
+              >
+                <CaseWorkspace focusMode={focusMode} />
               </div>
             </div>
+          ) : (
+            <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-hidden p-3 md:p-4">
+              <CyberCasesListPage onSelect={selectCase} />
+            </div>
+          )
           )}
         </main>
       </div>

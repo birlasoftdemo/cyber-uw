@@ -11,7 +11,7 @@ source: Moody overview 02-METRICS-SPEC (underwriting assistant)
 
 **Case model:** [`src/cyber-uw/types.ts`](../../src/cyber-uw/types.ts)  
 **Product stages:** Intake → Verify → Tier → Book → Decide  
-**UI implementation:** deferred (this doc is the locked contract for a follow-on phase)
+**UI:** [`src/cyber-uw/insights/`](../../src/cyber-uw/insights/) — shell tab **Insights** (demo aggregates + Recharts + drill-down → workbench)
 
 ---
 

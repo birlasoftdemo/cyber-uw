@@ -1,6 +1,6 @@
 # Cyber UW
 
-Standalone cyber underwriting workbench — Form Shipping Center + Decision Workbench.
+Standalone cyber underwriting app — Form Shipping Center + Dashboard.
 
 Extracted from the Moody Submission Workbench monorepo as an independent product repo.
 
@@ -16,7 +16,7 @@ Open http://localhost:5173
 ## What's included
 
 - **Form Shipping Center** — broker outtake / form dispatch flows
-- **Decision Workbench** — 5-stage cyber UW journey (Intake → Verify → Tier → Book → Decide)
+- **Dashboard** — 5-stage cyber UW journey (New → Feedback → Review Risk → Review Platform → Closure)
 - Demo ingest + mock cases (no API key)
 
 ## Tech stack

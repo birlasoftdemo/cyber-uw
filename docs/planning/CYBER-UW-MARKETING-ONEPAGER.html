@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyber Underwriting Dashboard — Marketing one-pager</title>
+  <style>
+    :root {
+      --ink: #141820;
+      --muted: #5a6270;
+      --paper: #fffcf5;
+      --white: #ffffff;
+      --line: #1e1e1e;
+      --blue: #a5d8ff;
+      --green: #b2f2bb;
+      --yellow: #ffec99;
+      --orange: #ffc078;
+      --pink: #ffc9c9;
+      --violet: #d0bfff;
+      --gray: #e9ecef;
+      --sea: #0d4f5c;
+      --ops: #1d4ed8;
+      --uw: #047857;
+      --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page {
+      size: A3 landscape;
+      margin: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: #c8c4bb;
+      color: var(--ink);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .screen-bar {
+      max-width: 420mm;
+      margin: 12px auto 0;
+      padding: 0 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      color: #3d3d3d;
+    }
+
+    .screen-bar button {
+      font: inherit;
+      font-weight: 600;
+      border: 1.5px solid var(--ink);
+      background: var(--yellow);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    .page {
+      width: 420mm;
+      height: 297mm;
+      margin: 8px auto 24px;
+      background: var(--paper);
+      padding: 8mm 10mm 7mm;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(20, 24, 32, 0.22);
+      background-image:
+        radial-gradient(circle at 10% 14%, rgba(0,0,0,0.018) 0 1px, transparent 2px),
+        radial-gradient(circle at 82% 70%, rgba(0,0,0,0.02) 0 1px, transparent 2px);
+    }
+
+    /* —— Header —— */
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 7px;
+      margin-bottom: 8px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(145deg, #1e3a8a, #2563eb);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -0.04em;
+      border: 1.5px solid var(--ink);
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-top: 1px;
+    }
+
+    .lede {
+      font-size: 12.5px;
+      color: #333;
+      margin-top: 4px;
+      max-width: 720px;
+      line-height: 1.35;
+    }
+
+    .header-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .badge {
+      border: 1.5px solid var(--ink);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--yellow);
+      white-space: nowrap;
+    }
+
+    .tagline {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--sea);
+    }
+
+    /* —— Section labels —— */
+    .section-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 6px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid var(--ink);
+    }
+
+    /* —— Ideal paths —— */
+    .paths {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .path {
+      border: 1.5px solid var(--ink);
+      border-radius: 9px;
+      padding: 8px 9px 9px;
+      background: #fff;
+    }
+
+    .path.ops { background: linear-gradient(180deg, #e7f5ff 0%, #fff 38%); }
+    .path.uw { background: linear-gradient(180deg, #ebfbee 0%, #fff 38%); }
+
+    .path-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .path h2 {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .path .who {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .path-rail {
+      display: flex;
+      gap: 4px;
+      align-items: stretch;
+    }
+
+    .pstep {
+      flex: 1;
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      padding: 6px 6px 7px;
+      min-height: 86px;
+      position: relative;
+    }
+
+    .path.ops .pstep { background: var(--blue); }
+    .path.uw .pstep { background: var(--green); }
+
+    .pstep .n {
+      font-size: 9px;
+      font-weight: 800;
+      opacity: 0.45;
+    }
+
+    .pstep h3 {
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin: 1px 0 3px;
+    }
+
+    .pstep p {
+      font-size: 10px;
+      line-height: 1.28;
+      color: #222;
+    }
+
+    .path-outcome {
+      margin-top: 6px;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    /* —— Journey —— */
+    .journey-wrap { margin-bottom: 10px; }
+
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .jstep {
+      border: 1.5px solid var(--ink);
+      border-radius: 8px;
+      padding: 7px 8px 8px;
+      min-height: 124px;
+    }
+
+    .jstep:nth-child(1) { background: var(--blue); }
+    .jstep:nth-child(2) { background: var(--violet); }
+    .jstep:nth-child(3) { background: var(--yellow); }
+    .jstep:nth-child(4) { background: var(--orange); }
+    .jstep:nth-child(5) { background: var(--green); }
+    .jstep:nth-child(6) { background: var(--pink); }
+    .jstep:nth-child(7) { background: #d0ebff; }
+    .jstep:nth-child(8) { background: var(--violet); }
+    .jstep:nth-child(9) { background: var(--yellow); }
+    .jstep:nth-child(10) { background: var(--orange); }
+    .jstep:nth-child(11) { background: var(--green); }
+    .jstep:nth-child(12) { background: var(--gray); }
+
+    .role {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--ink);
+      border-radius: 3px;
+      padding: 1px 4px;
+      background: rgba(255,255,255,0.7);
+    }
+
+    .jstep .n {
+      float: right;
+      font-size: 10px;
+      font-weight: 800;
+      opacity: 0.4;
+    }
+
+    .jstep h3 {
+      font-size: 12.5px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin: 4px 0 3px;
+      clear: both;
+    }
+
+    .jstep p {
+      font-size: 10px;
+      line-height: 1.3;
+      color: #222;
+    }
+
+    .jstep .feat {
+      margin-top: 5px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--sea);
+      line-height: 1.25;
+    }
+
+    /* —— Metrics —— */
+    .metrics {
+      display: grid;
+      grid-template-columns: 0.95fr 1.55fr 1fr;
+      gap: 8px;
+      align-items: stretch;
+      margin-bottom: 8px;
+    }
+
+    .panel {
+      border: 1.5px solid var(--ink);
+      border-radius: 9px;
+      padding: 9px 11px 10px;
+      background: #fff;
+    }
+
+    .panel.hero { background: #fff9db; }
+    .panel.compare { background: #fff; }
+    .panel.volume { background: #e7f5ff; }
+
+    .panel h2 {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 4px;
+      margin-bottom: 7px;
+    }
+
+    .formula {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .kpi {
+      border: 1px solid var(--ink);
+      border-radius: 7px;
+      background: #fff;
+      padding: 6px 8px;
+    }
+
+    .kpi .k {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .kpi .v {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin: 2px 0 1px;
+    }
+
+    .kpi .s {
+      font-size: 9.5px;
+      color: #333;
+      line-height: 1.25;
+    }
+
+    .eq {
+      grid-column: 1 / -1;
+      font-size: 10.5px;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+
+    .eq strong { font-weight: 800; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    table.sources { font-size: 9px; }
+
+    th, td {
+      text-align: left;
+      padding: 3.5px 5px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+      line-height: 1.25;
+    }
+
+    th {
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    table.nums th:last-child,
+    table.nums td:last-child,
+    table.nums td.num { text-align: right; }
+
+    .win { font-weight: 700; color: var(--uw); }
+    .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .grade {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--ink);
+      border-radius: 3px;
+      padding: 0 4px;
+      background: #fff;
+      white-space: nowrap;
+    }
+    .grade.a { background: var(--green); }
+    .grade.c { background: var(--yellow); }
+
+    .fine {
+      font-size: 8.5px;
+      color: var(--muted);
+      line-height: 1.3;
+      margin-top: 5px;
+    }
+
+    .compete {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .chip-row {
+      border: 1.5px solid var(--ink);
+      border-radius: 8px;
+      padding: 10px 12px 12px;
+      background: #fff;
+      min-height: 78px;
+    }
+
+    .chip-row h2 {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .chip-row p {
+      font-size: 10.5px;
+      line-height: 1.35;
+      color: #222;
+    }
+
+    .chip-row.replace { background: #fff9db; }
+    .chip-row.partner { background: #e7f5ff; }
+    .chip-row.out { background: #ebfbee; }
+
+    .footer {
+      position: absolute;
+      left: 10mm;
+      right: 10mm;
+      bottom: 5.5mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--muted);
+      border-top: 1px solid #ccc;
+      padding-top: 4px;
+    }
+
+    .footer .note {
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      background: #fff;
+      padding: 2px 8px;
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    @media print {
+      body { background: none; }
+      .screen-bar { display: none; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: avoid;
+      }
+    }
+
+    @media screen and (max-width: 1100px) {
+      body { background: var(--paper); }
+      .page {
+        width: auto;
+        height: auto;
+        margin: 0;
+        box-shadow: none;
+        overflow: visible;
+        padding: 18px 16px 28px;
+      }
+      .header { grid-template-columns: 1fr; }
+      .header-meta { align-items: flex-start; }
+      .paths, .path-rail, .journey, .metrics, .formula, .compete {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+      .path-rail { grid-template-columns: 1fr 1fr; }
+      .journey { grid-template-columns: 1fr 1fr; }
+      .jstep, .pstep { min-height: 0; }
+      .footer { position: relative; left: auto; right: auto; bottom: auto; margin-top: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-bar">
+    <span>Birlasoft · Cyber Underwriting Dashboard · print as <strong>A3 landscape</strong> (Save as PDF)</span>
+    <button type="button" onclick="window.print()">Print / PDF</button>
+  </div>
+
+  <div class="page">
+    <header class="header">
+      <div>
+        <div class="brand-row">
+          <div class="mark" aria-hidden="true">CY</div>
+          <div>
+            <p class="eyebrow">Birlasoft IP accelerator · MGA / carrier desk</p>
+            <h1>Cyber Underwriting Dashboard</h1>
+          </div>
+        </div>
+        <p class="lede">
+          One workbench for Ops and underwriting. Ship the right form, chase Ideal vs Detected,
+          then quote, refer, or decline — with a human lock and an audit trail.
+          Not a risk-bearing MGA. Not a bound premium engine.
+        </p>
+      </div>
+      <div class="header-meta">
+        <div class="badge">Leave-behind · ideal paths + journey + economics</div>
+        <p class="tagline">Agents assist · underwriter binds · every override is explainable</p>
+      </div>
+    </header>
+
+    <div class="section-label"><span class="dot" style="background:var(--blue)"></span> 1 · Ideal path — two desks, one record</div>
+    <div class="paths">
+      <article class="path ops">
+        <div class="path-head">
+          <h2>Ops · ship, chase, hand off</h2>
+          <span class="who">Persona · Sarah Chen · ops@</span>
+        </div>
+        <div class="path-rail">
+          <div class="pstep">
+            <div class="n">A</div>
+            <h3>Land &amp; pick</h3>
+            <p>Sign in. Insights optional. Open Manage Submissions — every broker outtake in one queue.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">B</div>
+            <h3>Compose</h3>
+            <p>Reuse a published template or Create template. Toggle modules to the risk, not a 40-page PDF.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">C</div>
+            <h3>Ship &amp; track</h3>
+            <p>Send form to broker or insured officer. Sent → In progress → Returned. No inbox archaeology.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">D</div>
+            <h3>Clear &amp; hand off</h3>
+            <p>Proceed to closure. Resolve or Refer material gaps. Ready for UW only when the package is decision-ready.</p>
+          </div>
+        </div>
+        <p class="path-outcome">Outcome: underwriters never open a blocked case. Cycle time dies in Ops, not at the quote desk.</p>
+      </article>
+
+      <article class="path uw">
+        <div class="path-head">
+          <h2>Underwriter · judge, defend, bind</h2>
+          <span class="who">Persona · James Park · uw@</span>
+        </div>
+        <div class="path-rail">
+          <div class="pstep">
+            <div class="n">A</div>
+            <h3>Find the case</h3>
+            <p>Sign in. Insights first — median days, completeness, pipeline limit, gap-blocked backlog. Drill, then Open.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">B</div>
+            <h3>Sign the spine</h3>
+            <p>New is already complete. Feedback: Ideal vs Detected with cite-back. Then Review Risk and Review Platform.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">C</div>
+            <h3>Lock capital</h3>
+            <p>Limit, SIR, pricing-tier assist (guidance, not a bound premium). Quote / Refer / Decline with reasons.</p>
+          </div>
+          <div class="pstep">
+            <div class="n">D</div>
+            <h3>Human + sync</h3>
+            <p>HITL confirm. Manager cosign when over authority. Approve-before-send to policy admin. Undo until synced.</p>
+          </div>
+        </div>
+        <p class="path-outcome">Outcome: judgment time, not search time. Every override stays explainable. The product never takes insurance risk.</p>
+      </article>
+    </div>
+
+    <div class="section-label"><span class="dot" style="background:var(--yellow)"></span> 2 · User journey — login to completed submission</div>
+    <div class="journey-wrap">
+      <div class="journey">
+        <div class="jstep">
+          <span class="role">Shared</span><span class="n">01</span>
+          <h3>Login</h3>
+          <p>Email or SSO (Outlook / Google). Role-aware shell: Ops sees shipping; UW sees the Decision Desk.</p>
+          <p class="feat">Feature · secure session, two-persona nav, no dual systems</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Shared</span><span class="n">02</span>
+          <h3>Insights</h3>
+          <p>Speed · Quality · Portfolio pulse. Click gap-blocked backlog or aging to the case that matters.</p>
+          <p class="feat">Feature · hero KPIs, drill-down drawer → workbench</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops</span><span class="n">03</span>
+          <h3>Manage submissions</h3>
+          <p>Broker outtakes in one queue: Sent, In progress, Returned, Revoked. Proceed when the package is back.</p>
+          <p class="feat">Feature · shared shipping record, status without email search</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops</span><span class="n">04</span>
+          <h3>Templates</h3>
+          <p>Published packs (Core Adaptive, High Limit, Renewal Lite, Vendor add-on) or start a draft SME / healthcare pack.</p>
+          <p class="feat">Feature · versioned packages, not a new Word form per broker</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops</span><span class="n">05</span>
+          <h3>Create / tune</h3>
+          <p>Form parameter builder. Toggle modules: firmographics, MFA, EDR, email, backups, vendors, claims… Live broker preview.</p>
+          <p class="feat">Feature · adaptive questionnaire, appetite-aligned modules</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops</span><span class="n">06</span>
+          <h3>Ship template</h3>
+          <p>Named insured, broker, attestor (broker or insured officer), notify email. Send form — tracked link, not five attachments.</p>
+          <p class="feat">Feature · dispatch + attestor role + return tracking</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops</span><span class="n">07</span>
+          <h3>Returned → desk</h3>
+          <p>Proceed to closure opens Decision Desk. Completeness gate. Agents think on ingest; controls map into one record.</p>
+          <p class="feat">Feature · ingest normalize, completeness, agent thinking</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Ops → UW</span><span class="n">08</span>
+          <h3>Feedback</h3>
+          <p>Ideal vs Detected. Every material gap cites its signal. Resolve or Refer before Review Risk can start.</p>
+          <p class="feat">Feature · gap board, early RFI, attest-vs-signal</p>
+        </div>
+        <div class="jstep">
+          <span class="role">Shared</span><span class="n">09</span>
+          <h3>Escalation inbox</h3>
+          <p>One chase hub: Remind / Resolve / Return. Gaps, missing package, risk escalations — not five inboxes.</p>
+          <p class="feat">Feature · centralized referral orchestration</p>
+        </div>
+        <div class="jstep">
+          <span class="role">UW</span><span class="n">10</span>
+          <h3>Review risk + book</h3>
+          <p>Sign each threat and impact. Stacked exposure and estimated ALE. Platform cards: Watch / Terms / Block on shared vendors.</p>
+          <p class="feat">Feature · ALE strip, accumulation alert — not a cat model</p>
+        </div>
+        <div class="jstep">
+          <span class="role">UW</span><span class="n">11</span>
+          <h3>Closure</h3>
+          <p>Lock limit, SIR, tier assist. Quote / Refer / Decline with AI confidence. UW still owns the chip. Manager cosign over authority.</p>
+          <p class="feat">Feature · HITL bind, reason codes, immutable audit</p>
+        </div>
+        <div class="jstep">
+          <span class="role">UW</span><span class="n">12</span>
+          <h3>Completed</h3>
+          <p>Approve-before-send to policy administration. Dossier + broker-safe summary. Undo until synced. Submission closed.</p>
+          <p class="feat">Feature · PAS adapter, no silent dual-entry</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label"><span class="dot" style="background:var(--green)"></span> 3 · Economics — sourced facts, then a labeled model</div>
+    <div class="metrics">
+      <article class="panel hero">
+        <h2>Model — only if the hunt path still applies</h2>
+        <div class="formula">
+          <div class="kpi">
+            <div class="k">Recoverable / txn (sourced spread)</div>
+            <div class="v">~2.5 hrs</div>
+            <div class="s">SageSure: “should take 30 minutes” vs “takes three hours.” Not a timed MGA study.</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Illustrative $ / txn</div>
+            <div class="v">$225</div>
+            <div class="s">2.5 × $90 loaded. Cyber UW median $130k (Lyneer 2026) × 1.4 / 2,080 hrs.</div>
+          </div>
+        </div>
+        <p class="eq">
+          <strong>If</strong> this desk still runs email/PDF → search → external intel → consolidate, then
+          annual hours = 2.5 × txns; $ = hours × buyer loaded rate.
+          Mid 2,000 txns → <strong>5,000 hrs / $450k / ~2.7 FTE</strong>.
+        </p>
+        <table class="nums" style="margin-top:6px">
+          <thead>
+            <tr>
+              <th>Annual txns</th>
+              <th>Hours</th>
+              <th>At $90/hr</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>500</td>
+              <td class="num">1,250</td>
+              <td class="num">$113k</td>
+            </tr>
+            <tr>
+              <td>2,000</td>
+              <td class="num">5,000</td>
+              <td class="num">$450k</td>
+            </tr>
+            <tr>
+              <td>5,000</td>
+              <td class="num">12,500</td>
+              <td class="num">$1.13M</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="fine">Re-run with the buyer’s volume and loaded cost. FTE = hours / 1,880. BLS all-UW median is only $38.40/hr — too low for specialty cyber; we do not use it as the dollar rate.</p>
+      </article>
+
+      <article class="panel compare">
+        <h2>What is actually sourced (not a 45/60/50 minute split)</h2>
+        <table class="sources">
+          <thead>
+            <tr>
+              <th>Claim</th>
+              <th>Number / quote</th>
+              <th>Source</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Traditional specialty path</td>
+              <td>Email/PDF → review → internal search → external intel → consolidate. “What should take 30 minutes takes three hours.”</td>
+              <td>SageSure vendor blog on specialty intake (2025)</td>
+              <td><span class="grade c">C/B</span></td>
+            </tr>
+            <tr>
+              <td>Manual cyber quote prep</td>
+              <td>Vendor table: 3–5 hours → 15–30 min; document chase 2+ days → &lt;1 day</td>
+              <td>Selectsys RQB / Insurance Journal 13 Nov 2025 (sponsored)</td>
+              <td><span class="grade c">C</span></td>
+            </tr>
+            <tr>
+              <td>UW time still non-core</td>
+              <td>Commercial P/C: 35% of time on data collection / admin (was 38% three years prior)</td>
+              <td>Accenture <em>Underwriting Rewritten</em> (430 execs, 11 countries); Carrier Management 23 Dec 2025</td>
+              <td><span class="grade a">A</span></td>
+            </tr>
+            <tr>
+              <td>Forms are still carrier-specific</td>
+              <td>“No two portals ask the same questions.” Dynamic questions, attachments, same-day broker pressure.</td>
+              <td>Same RQB article — why a quoting platform still exists</td>
+              <td><span class="grade c">C</span></td>
+            </tr>
+            <tr>
+              <td>Traditional multi-app (the problem Marsh solved)</td>
+              <td>“Each insurer traditionally requires its own application… unprotected spreadsheets.”</td>
+              <td>Marsh Online Cyber self-assessment PDF — describing the legacy they replaced</td>
+              <td><span class="grade a">A/B</span></td>
+            </tr>
+            <tr>
+              <td>Manual UW cost (qualitative)</td>
+              <td>Questionnaires + manual assessment “consume too many resources, driving up costs” — SME product uneconomic</td>
+              <td>Swiss Re, cyber insurance growth</td>
+              <td><span class="grade a">A</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="fine">
+          Grades: <strong>A</strong> survey / reinsurer / major broker · <strong>C</strong> vendor (commercial bias). No primary time-and-motion at a named cyber MGA — still an open research gap.
+          Do not treat the 2.5 hr model as measured. Do not mix in applicant-side “40–80 hours / $5–10k per renewal” (KBPilot) — that is insured labor, not the UW desk.
+        </p>
+      </article>
+
+      <article class="panel volume">
+        <h2>Do they still assemble the form by hand?</h2>
+        <p class="eq">
+          <strong>No — not universally.</strong> Digitally mature programs already ship a questionnaire:
+          Marsh’s Online Cyber is a <em>single</em> application accepted by leading insurers.
+          Coalition / At-Bay / Cowbell run their own portals (wrong GTM for us).
+          Cytora-class tools extract whatever arrives.
+        </p>
+        <p class="eq" style="margin-top:6px">
+          <strong>Yes — still common on MGA / carrier desks we sell to.</strong>
+          Specialty packages still land as email/PDF (SageSure’s six-step path).
+          Cyber questions stay appetite-specific; no two portals match (RQB).
+          Follow-up attachments and RFIs still explode cycle time.
+        </p>
+        <p class="eq" style="margin-top:6px">
+          Our Form Shipping Center is the <em>carrier-side</em> move: versioned modules for <em>this</em> appetite, tracked return, then Ideal vs Detected in the same record — not a claim that the market has no portals.
+        </p>
+        <p class="eq" style="margin-top:8px">
+          <strong>Second model (Accenture, no per-txn clock):</strong>
+          8 UWs × 35% non-core × 1,880 hrs = 5,264 admin hours/year.
+          Reclaiming half of that (not promised) ≈ 1.4 FTE.
+          Loaded at $130k × 1.4 ≈ $182k → <strong>~$255k capacity</strong> before counting Ops.
+        </p>
+      </article>
+    </div>
+
+    <div class="compete">
+      <div class="chip-row replace">
+        <h2>Where we still win vs workflow AI</h2>
+        <p>Intake extract is parity (Cytora-class). The wedge is cyber-specific: adaptive ship + track, attest vs signal, early RFI in one inbox, appetite Q/R/D, book watch, approve-before-send PAS — in one white-label spine.</p>
+      </div>
+      <div class="chip-row partner">
+        <h2>Partner — do not rebuild</h2>
+        <p>Ratings / ASM (BitSight-class) and cat / portfolio models (CyberCube-class). Consume the signal; alert concentration at quote time. Broker portals (Marsh) sit adjacent, not opposite.</p>
+      </div>
+      <div class="chip-row out">
+        <h2>Out of scope — wrong GTM</h2>
+        <p>Not Coalition / At-Bay (they take insurance risk). Not a bound-premium engine. Agents assist; the underwriter binds.</p>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Birlasoft · configurable Decision Workbench (rules, connectors, branding, PAS) · proof of concept: Band A + tiers + accumulation alert + PAS adapter</span>
+      <span class="note">Print · A3 landscape</span>
+    </footer>
+  </div>
+</body>
+</html>
