@@ -15,9 +15,58 @@ npm run dev      # Remotion Studio
 npm run render   # → out/agents-assist-launch.mp4
 ```
 
+## Dev handoff walkthrough (`DevHandoffWalkthrough`)
+
+**Share this film** with engineering. Brightcare case walkthrough — each beat includes a **Dev · understand** line (gates, store, files). ~2 minutes.
+
+```bash
+# App must be running (repo root) — default http://localhost:5173
+npm run dev
+
+# Refresh screenshots
+cd video
+npm run capture:handoff
+# or: CYBER_UW_URL=http://127.0.0.1:5173 npm run capture:handoff
+
+npm run render:handoff   # → out/dev-handoff-walkthrough.mp4
+```
+
+Screenshots: `public/handoff/`. Full share kit: [`docs/DEV-HANDOFF-WALKTHROUGH.md`](../docs/DEV-HANDOFF-WALKTHROUGH.md).
+
+### Demo credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Underwriter | `uw@cyber.internal` | `uw123` |
+| Ops | `ops@cyber.internal` | `ops123` |
+
+SSO buttons sign in as the underwriter. Capture uses **Brightcare Digital Health** (`demoPackage: 'uw'`).
+
+### Scene order
+
+| Beat | Screen | Dev · understand (summary) |
+|------|--------|----------------------------|
+| Title | (motion) | Brightcare · login to lock |
+| 1. Login | `01-login.png` | Auth gate; no case URLs |
+| 2. Open cases | `02-open-cases.png` | `selectedId`; list filters |
+| 3. New Submission | `03-new-submission.png` | `createSubmission` / demo ingest |
+| 4. Customer 360 | `04-customer-360.png` | `customer360Dismissed` |
+| 5. Float C360 | `05-float-c360.png` | `surface='c360'` → dismiss |
+| 6a. Float Docs Complete | `05b-float-docs-complete.png` | `canLeavePolicyDocuments` |
+| 6b. Policy Documents | `06-policy-documents.png` | Stage 0 / `workflowStage` |
+| 6c. Risk Information | `07-risk-information.png` | Triage + `riskJudgments` |
+| 6d. Float Continue | `07b-float-continue-risk.png` | `advanceWorkflowStage` + scroll |
+| 6e. Risk Analysis | `08-risk-analysis.png` | Rating / ALE panels |
+| 6f. Getting Ready to Quote | `09-getting-ready-quote.png` | `saveFinancialSignOff` |
+| 6g. Confirm | `09b-decision-confirm.png` | `DecisionConfirmModal` |
+| 6h. Locked | `10-decision-locked.png` | `applyDecision` · PAS synced |
+| Closer | mosaic | Code map reminder |
+
+---
+
 ## Product demo walkthrough (`CyberUwWorkflow`)
 
-Ops shipping → UW Northwind stage arc (no VO):
+Ops shipping → UW Northwind stage arc (no VO). **Legacy stage labels** (Feedback / Review Risk / Closure) — prefer `DevHandoffWalkthrough` for current UI handoff.
 
 ```bash
 # App must be running (repo root)

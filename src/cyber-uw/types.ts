@@ -136,6 +136,8 @@ export interface CyberCase {
   sector: string
   /** Insured mailing / HQ address for Customer 360. */
   insuredAddress: string
+  /** Short company blurb for Customer 360 AI summary (~10–20 words). */
+  companyDescription?: string
   productName: string
   productCode: string
   lobCode: string

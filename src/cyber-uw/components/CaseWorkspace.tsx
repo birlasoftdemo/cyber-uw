@@ -1,13 +1,19 @@
-import { Button, Tabs, Typography } from '@heroui/react'
+import { Button, Typography } from '@heroui/react'
 import {
   CalendarCheck2,
   CalendarRange,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
+  AlertCircle,
+  Check,
   FileStack,
+  FileText,
   Landmark,
+  Layers,
   Lock,
+  Network,
   Pencil,
   PencilOff,
   Percent,
@@ -15,6 +21,7 @@ import {
   Scale,
   ShieldAlert,
   ShieldCheck,
+  ArrowUpRight,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -29,6 +36,10 @@ import {
   INELIGIBLE_ORGANIZATION_ACTIVITIES,
   riskSectionReportsForCase,
   sectionReportsForCase,
+  triageFindingsForCase,
+  questionFieldMatchers,
+  APP_SECTIONS,
+  type SectionField,
   type TriageFinding,
 } from '../data/cyberTriageRules'
 import { PACKAGE_DOC_KINDS, openPackageDocument } from '../data/dossierPackage'
@@ -55,13 +66,12 @@ import { DocumentsCompleteModal } from './DocumentsCompleteModal'
 import {
   IngestQuestionGrid,
   QuestionMetaGrid,
-  ReviewQuestionGrid,
 } from './QuestionFields'
 import {
   DiscussionReferModal,
   type DiscussionReferDraft,
 } from './DiscussionReferModal'
-import { ValueCompareCard, parseMoneyish, formatCompactMoney, type ValueCompareStatus } from './ValueCompareCard'
+import { parseMoneyish, formatCompactMoney, type ValueCompareStatus } from './ValueCompareCard'
 
 function StageSection({
   title,
@@ -136,6 +146,40 @@ function judgmentLabel(status: RiskJudgmentStatus | undefined) {
   return 'Pending'
 }
 
+function sectionTabLabel(sectionId: string): string {
+  return APP_SECTIONS.find((s) => s.id === sectionId)?.tabLabel ?? sectionId
+}
+
+const SEVERITY_RANK: Record<TriageFinding['severity'], number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+}
+
+type QueueFilter = 'all' | 'required' | 'suggested'
+
+const SOURCE_FIELD_CAP = 8
+
+function sourceFieldsForFinding(
+  finding: TriageFinding,
+  reports: ReturnType<typeof riskSectionReportsForCase>,
+): SectionField[] {
+  const report = reports.find((r) => r.section.id === finding.sourceSectionId)
+  if (!report?.fields.length) return []
+  const matchers = questionFieldMatchers(finding.questionRef)
+  const matched = report.fields.filter((f) =>
+    matchers.some((m) => f.label.toLowerCase().startsWith(m.toLowerCase())),
+  )
+  if (matched.length) return matched
+  return report.fields.slice(0, SOURCE_FIELD_CAP)
+}
+
+function riskBannerTitle(status: ValueCompareStatus): string {
+  if (status === 'meets') return 'Meets requirement'
+  if (status === 'below') return 'Does not meet requirement'
+  return 'Needs review'
+}
+
 function TriageFindingCard({
   caseId,
   insured,
@@ -143,6 +187,10 @@ function TriageFindingCard({
   status,
   expanded,
   onToggle,
+  sectionLabel,
+  sourceFields,
+  sourceOpen,
+  onViewSource,
 }: {
   caseId: string
   insured: string
@@ -150,11 +198,15 @@ function TriageFindingCard({
   status: RiskJudgmentStatus | undefined
   expanded: boolean
   onToggle: () => void
+  sectionLabel?: string
+  sourceFields?: SectionField[]
+  sourceOpen?: boolean
+  onViewSource?: () => void
 }) {
   const signRiskItem = useCyberUwStore((s) => s.signRiskItem)
   const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
-  const openDossierFocus = useCyberUwStore((s) => s.openDossierFocus)
   const [draft, setDraft] = useState<DiscussionReferDraft | null>(null)
+  const answersRef = useRef<HTMLDivElement | null>(null)
   const signed = status && status !== 'pending'
 
   const compareStatus: ValueCompareStatus =
@@ -164,106 +216,196 @@ function TriageFindingCard({
         ? 'below'
         : 'watch'
 
-  /** Detected = package extract; Permitted = control / policy requirement. */
   const extractedMoney =
     parseMoneyish(finding.attested) ?? parseMoneyish(finding.detected)
-  const detectedValue = finding.attested
+  const receivedValue = finding.attested
   const permittedValue =
     extractedMoney != null
       ? formatCompactMoney(extractedMoney)
       : finding.required
         ? `Required · ${finding.chartLabel}`
         : `Policy band · ${finding.chartLabel}`
-  const capacityValue =
-    extractedMoney != null ? formatCompactMoney(extractedMoney * 2) : undefined
+
+  const escalatePrimary = finding.suggested === 'escalate'
+  const approvePrimary = finding.suggested === 'approve'
+
+  useEffect(() => {
+    if (!sourceOpen || !answersRef.current) return
+    const cells = answersRef.current.querySelectorAll('.wb-risk-card__answer')
+    cells.forEach((el) => {
+      el.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2')
+    })
+    const t = window.setTimeout(() => {
+      cells.forEach((el) => {
+        el.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2')
+      })
+    }, 2200)
+    return () => window.clearTimeout(t)
+  }, [sourceOpen, finding.id])
+
+  const openEscalate = () =>
+    setDraft({
+      caseId,
+      kind: 'risk',
+      sourceId: finding.id,
+      sourceLabel: finding.title,
+      insured,
+    })
 
   return (
     <li
       id={`risk-item-${finding.id}`}
-      className={`wb-risk-item overflow-hidden ${expanded ? 'ring-2 ring-blue-400/70 ring-offset-1' : ''}`}
+      className={`wb-risk-card wb-risk-card--${compareStatus}${expanded ? ' wb-risk-card--open' : ''}`}
     >
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
+        className="wb-risk-card__head"
       >
-        <span className="cuw-glyph" aria-hidden>
+        <span className="wb-risk-card__icon" aria-hidden>
           {finding.required ? (
-          <ShieldAlert size={14} strokeWidth={1.75} />
-        ) : (
-          <Scale size={14} strokeWidth={1.75} />
-        )}
+            <ShieldAlert size={16} strokeWidth={1.75} />
+          ) : (
+            <Scale size={16} strokeWidth={1.75} />
+          )}
         </span>
-        <p className="cuw-type-title min-w-0 flex-1 text-[0.9375rem]">{finding.title}</p>
-        <span className="cuw-type-label font-mono">{finding.ruleId}</span>
-        <span className={`wb-gap-severity wb-gap-severity--${finding.severity}`}>
-          {finding.severity}
-        </span>
-        {signed ? (
-          <span className="cuw-type-caption font-semibold">{judgmentLabel(status)}</span>
-        ) : null}
-        <ChevronDown
-          size={14}
-          className={`shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--cuw-ink-tertiary)' }}
-          aria-hidden
-        />
+        <div className="wb-risk-card__identity">
+          <p className="wb-risk-card__eyebrow">Policy check</p>
+          <p className="wb-risk-card__title">{finding.title}</p>
+          {finding.questionRef ? (
+            <p className="wb-risk-card__qref">
+              Question <span>{finding.questionRef}</span>
+            </p>
+          ) : null}
+          {!expanded ? (
+            <p className="wb-risk-card__summary">{finding.summary}</p>
+          ) : null}
+        </div>
+        <div className="wb-risk-card__chips">
+          {sectionLabel ? (
+            <span className="wb-risk-card__chip wb-risk-card__chip--section">
+              <Network size={12} strokeWidth={2} aria-hidden />
+              {sectionLabel}
+            </span>
+          ) : null}
+          <span className={`wb-gap-severity wb-gap-severity--${finding.severity}`}>
+            {finding.severity}
+          </span>
+          {signed ? (
+            <span className="wb-risk-card__chip wb-risk-card__chip--signed">
+              {judgmentLabel(status)}
+            </span>
+          ) : null}
+          <ChevronDown
+            size={14}
+            className={`wb-risk-card__chevron${expanded ? ' wb-risk-card__chevron--open' : ''}`}
+            aria-hidden
+          />
+        </div>
       </button>
 
       {expanded ? (
-        <div className="mt-2 border-t border-slate-100 pt-2">
-          <p className="cuw-type-body">{finding.summary}</p>
-          <p className="cuw-type-caption mt-1">{finding.detail}</p>
-          <div className="mt-3">
-            <ValueCompareCard
-              showHeader={false}
-              title={finding.title}
-              category={finding.chartLabel}
-              detectedValue={detectedValue}
-              permittedValue={permittedValue}
-              capacityValue={capacityValue}
-              detectedSource={`${finding.sourceDocName}`}
-              status={compareStatus}
-              statusDetail={finding.summary}
-              onViewSource={
-                finding.sourceDocId
-                  ? () => openDossierFocus(finding.sourceDocId)
-                  : undefined
-              }
-            />
-            <p className="cuw-type-caption mt-2 text-slate-600">
-              Signal · {finding.detected}
-            </p>
+        <div className="wb-risk-card__body">
+          <p className="wb-risk-card__summary wb-risk-card__summary--body">{finding.summary}</p>
+
+          <div className="wb-risk-card__panes" role="group" aria-label="Received versus permitted">
+            <div className="wb-risk-card__pane">
+              <div className="wb-risk-card__pane-meta">
+                <FileText size={14} strokeWidth={1.75} aria-hidden />
+                <span>Received</span>
+              </div>
+              <p className="wb-risk-card__pane-value">{receivedValue}</p>
+            </div>
+            <div
+              className={`wb-risk-card__eq wb-risk-card__eq--${compareStatus}`}
+              aria-hidden
+            >
+              {compareStatus === 'meets' ? '=' : '≠'}
+            </div>
+            <div className="wb-risk-card__pane">
+              <div className="wb-risk-card__pane-meta">
+                <Layers size={14} strokeWidth={1.75} aria-hidden />
+                <span>Permitted</span>
+              </div>
+              <p className="wb-risk-card__pane-value">{permittedValue}</p>
+            </div>
           </div>
-          <p className="cuw-type-caption mt-2">
-            Suggested · {finding.suggested === 'approve' ? 'Approve' : finding.suggested === 'escalate' ? 'Escalate' : 'Ignore'}
-          </p>
+
+          <div className={`wb-risk-card__banner wb-risk-card__banner--${compareStatus}`}>
+            <span className="wb-risk-card__banner-icon" aria-hidden>
+              {compareStatus === 'meets' ? (
+                <Check size={14} strokeWidth={2.25} />
+              ) : (
+                <AlertCircle size={14} strokeWidth={2} />
+              )}
+            </span>
+            <div>
+              <p className="wb-risk-card__banner-title">{riskBannerTitle(compareStatus)}</p>
+              <p className="wb-risk-card__banner-detail">{finding.summary}</p>
+            </div>
+          </div>
+
+          {onViewSource ? (
+            <div className="wb-risk-card__source-row">
+              <button type="button" className="wb-risk-card__source" onClick={onViewSource}>
+                <FileText size={14} strokeWidth={1.75} aria-hidden />
+                View source
+                <ChevronRight size={14} strokeWidth={1.75} aria-hidden />
+              </button>
+            </div>
+          ) : null}
+
+          {sourceOpen ? (
+            <div className="wb-risk-card__answers" ref={answersRef}>
+              <p className="wb-risk-card__answers-title">Application answers</p>
+              {sourceFields && sourceFields.length ? (
+                <ul className="wb-risk-card__answers-list">
+                  {sourceFields.map((f) => (
+                    <li key={f.key ?? f.label} className="wb-risk-card__answer">
+                      <span className="wb-risk-card__answer-label">{f.label}</span>
+                      <span className="wb-risk-card__answer-value">{f.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="wb-risk-card__answers-empty">
+                  No structured answers for this check.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           {!signed ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="primary"
-                onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
-              >
-                Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onPress={() =>
-                  setDraft({
-                    caseId,
-                    kind: 'risk',
-                    sourceId: finding.id,
-                    sourceLabel: finding.title,
-                    insured,
-                  })
-                }
-              >
-                Escalate
-              </Button>
+            <div className="wb-risk-card__actions">
+              {escalatePrimary ? (
+                <>
+                  <Button size="sm" variant="primary" onPress={openEscalate}>
+                    <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
+                    Escalate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
+                  >
+                    Approve
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant={approvePrimary ? 'primary' : 'secondary'}
+                    onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
+                  >
+                    Approve
+                  </Button>
+                  <Button size="sm" variant="secondary" onPress={openEscalate}>
+                    Escalate
+                  </Button>
+                </>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -291,21 +433,24 @@ function TriageFindingCard({
 function RiskInformationStageBody({ c }: { c: CyberCase }) {
   const reports = riskSectionReportsForCase(c)
   const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
-  const [sectionKey, setSectionKey] = useState(reports[0]?.section.id ?? '')
+  const signRiskItems = useCyberUwStore((s) => s.signRiskItems)
+  const [queueFilter, setQueueFilter] = useState<QueueFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [showSourceForId, setShowSourceForId] = useState<string | null>(null)
 
   useEffect(() => {
-    setSectionKey(reports[0]?.section.id ?? '')
+    setQueueFilter('all')
     setExpandedId(null)
+    setShowSourceForId(null)
   }, [c.id])
 
   useEffect(() => {
     const onFocusFinding = (ev: Event) => {
       const id = (ev as CustomEvent<{ id: string }>).detail?.id
       if (!id) return
-      const report = reports.find((r) => r.findings.some((f) => f.id === id))
-      if (report) setSectionKey(report.section.id)
+      setQueueFilter('all')
       setExpandedId(id)
+      setShowSourceForId(null)
       window.requestAnimationFrame(() => {
         document.getElementById(`risk-item-${id}`)?.scrollIntoView({
           behavior: 'smooth',
@@ -315,74 +460,143 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
     }
     window.addEventListener('cuw-focus-risk-finding', onFocusFinding)
     return () => window.removeEventListener('cuw-focus-risk-finding', onFocusFinding)
-  }, [reports])
+  }, [])
 
-  const selected = reports.find((r) => r.section.id === sectionKey) ?? reports[0]
-  const findings = selected?.findings ?? []
+  const pendingFindings = triageFindingsForCase(c)
+    .filter((f) => {
+      const j = c.riskJudgments?.[f.id]
+      return !j || j.status === 'pending'
+    })
+    .sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1
+      const sev = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+      if (sev !== 0) return sev
+      return a.sourceSectionId.localeCompare(b.sourceSectionId)
+    })
+
+  const filteredQueue = pendingFindings.filter((f) => {
+    if (queueFilter === 'required') return f.required
+    if (queueFilter === 'suggested') return f.suggested === 'approve'
+    return true
+  })
+
+  const suggestedApproveIds = pendingFindings
+    .filter((f) => f.suggested === 'approve')
+    .map((f) => f.id)
+
+  const toggleSource = (findingId: string) => {
+    setShowSourceForId((cur) => (cur === findingId ? null : findingId))
+    setExpandedId(findingId)
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="wb-risk-review space-y-4">
       <details className="cuw-type-caption">
         <summary className="cursor-pointer font-semibold">Eligibility exclusions</summary>
         <p className="mt-1">{INELIGIBLE_ORGANIZATION_ACTIVITIES.join('; ')}</p>
       </details>
 
-      {reports.length ? (
-        <Tabs
-          selectedKey={sectionKey}
-          onSelectionChange={(k) => {
-            setSectionKey(String(k))
-            setExpandedId(null)
-          }}
-          className="wb-segmented-tabs wb-section-tabs"
-        >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Application sections">
-              {reports.map((r) => (
-                <Tabs.Tab key={r.section.id} id={r.section.id}>
-                  {r.section.tabLabel}
-                </Tabs.Tab>
+      {!documentsComplete ? (
+        <div className="wb-risk-review__locked">
+          <p className="cuw-type-body font-semibold text-slate-800">
+            Risk review locked
+          </p>
+          <p className="cuw-type-caption mt-1 text-slate-500">
+            Mark Documents Complete on Policy Documents to unlock the open risks queue.
+          </p>
+        </div>
+      ) : (
+        <div className="wb-risk-review__panel">
+          <div className="wb-risk-review__toolbar">
+            <div className="wb-risk-review__heading">
+              <p className="wb-risk-review__title">Open risks</p>
+              <span className="wb-risk-review__count">{pendingFindings.length} open</span>
+            </div>
+            <div className="wb-risk-review__filters">
+              <Button
+                size="sm"
+                variant={queueFilter === 'all' ? 'primary' : 'secondary'}
+                onPress={() => setQueueFilter('all')}
+              >
+                All pending
+              </Button>
+              <Button
+                size="sm"
+                variant={queueFilter === 'required' ? 'primary' : 'secondary'}
+                onPress={() => setQueueFilter('required')}
+              >
+                Required only
+              </Button>
+              <Button
+                size="sm"
+                variant={queueFilter === 'suggested' ? 'primary' : 'secondary'}
+                onPress={() => setQueueFilter('suggested')}
+              >
+                Suggested approve
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                isDisabled={suggestedApproveIds.length === 0}
+                onPress={() => signRiskItems(c.id, suggestedApproveIds, 'accepted')}
+                className="wb-risk-review__bulk"
+              >
+                Approve all suggested
+                {suggestedApproveIds.length ? ` (${suggestedApproveIds.length})` : ''}
+              </Button>
+            </div>
+          </div>
+
+          {filteredQueue.length ? (
+            <ul className="wb-risk-review__list space-y-2">
+              {filteredQueue.map((finding) => (
+                <TriageFindingCard
+                  key={finding.id}
+                  caseId={c.id}
+                  insured={c.insured}
+                  finding={finding}
+                  status={c.riskJudgments[finding.id]?.status}
+                  expanded={expandedId === finding.id}
+                  onToggle={() => {
+                    setExpandedId((cur) => {
+                      const next = cur === finding.id ? null : finding.id
+                      if (next !== finding.id) setShowSourceForId(null)
+                      return next
+                    })
+                  }}
+                  sectionLabel={sectionTabLabel(finding.sourceSectionId)}
+                  sourceFields={sourceFieldsForFinding(finding, reports)}
+                  sourceOpen={showSourceForId === finding.id}
+                  onViewSource={() => toggleSource(finding.id)}
+                />
               ))}
-            </Tabs.List>
-          </Tabs.ListContainer>
-        </Tabs>
-      ) : null}
-
-      {selected ? (
-        <div className="cuw-panel">
-          {documentsComplete ? null : (
-            <p className="cuw-type-caption mb-3">
-              Mark Documents Complete on Policy Documents to unlock this section.
-            </p>
-          )}
-
-          {selected.fields.length ? (
-            <ReviewQuestionGrid
-              sectionId={selected.section.id}
-              fields={selected.fields}
-              showTriage={documentsComplete}
-            />
+            </ul>
+          ) : pendingFindings.length === 0 ? (
+            <div className="wb-open-risks-empty px-4 py-8 text-center">
+              <p className="cuw-type-body font-semibold text-slate-800">
+                Open risks queue is clear
+              </p>
+              <p className="cuw-type-caption mt-1 text-slate-500">
+                Required findings are dispositioned. Continue when ready.
+              </p>
+            </div>
           ) : (
-            <p className="cuw-type-caption">No structured answers extracted for this section.</p>
+            <div className="wb-open-risks-empty px-4 py-6 text-center">
+              <p className="cuw-type-caption text-slate-500">
+                No findings match this filter.
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2"
+                onPress={() => setQueueFilter('all')}
+              >
+                Clear filter
+              </Button>
+            </div>
           )}
         </div>
-      ) : null}
-
-      {documentsComplete && findings.length ? (
-        <ul className="space-y-2">
-          {findings.map((finding) => (
-            <TriageFindingCard
-              key={finding.id}
-              caseId={c.id}
-              insured={c.insured}
-              finding={finding}
-              status={c.riskJudgments[finding.id]?.status}
-              expanded={expandedId === finding.id}
-              onToggle={() => setExpandedId((cur) => (cur === finding.id ? null : finding.id))}
-            />
-          ))}
-        </ul>
-      ) : null}
+      )}
     </div>
   )
 }

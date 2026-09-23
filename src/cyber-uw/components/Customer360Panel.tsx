@@ -4,7 +4,6 @@ import {
   CalendarCheck2,
   CalendarRange,
   CircleDollarSign,
-  FileWarning,
   GitBranch,
   Handshake,
   Hash,
@@ -38,7 +37,6 @@ interface Props {
 
 export function Customer360Panel({ c }: Props) {
   const missing = missingDocsForCase(c)
-  const presentCount = c.packageDocs.length
   const aiSummary = buildC360AiSummary(c)
   const period = policyPeriodForCase(c)
 
@@ -53,7 +51,7 @@ export function Customer360Panel({ c }: Props) {
     {
       icon: RefreshCw,
       label: 'Renewal applicable',
-      value: c.renewalApplicable ? 'Y' : 'N',
+      value: c.renewalApplicable ? 'Yes' : 'No',
     },
     { icon: Building2, label: 'Sector', value: c.sector },
     { icon: Handshake, label: 'Broker', value: c.broker },
@@ -71,14 +69,6 @@ export function Customer360Panel({ c }: Props) {
     },
     { icon: Percent, label: 'Completeness', value: `${c.completenessPct}%` },
     {
-      icon: FileWarning,
-      label: 'Package',
-      value:
-        missing.length > 0
-          ? `${presentCount} attached · ${missing.length} checklist item(s) open`
-          : `${presentCount} attached · checklist clear`,
-    },
-    {
       icon: Sparkles,
       label: 'Signal score',
       value: String(c.signalScore),
@@ -93,6 +83,14 @@ export function Customer360Panel({ c }: Props) {
         {c.insured}
       </Typography.Heading>
 
+      <section className="cuw-c360-ai-summary" aria-label="AI summary">
+        <header className="cuw-c360-ai-summary__head">
+          <h3 className="cuw-c360-ai-summary__title">AI summary</h3>
+          <Sparkles className="cuw-c360-ai-summary__spark" size={16} strokeWidth={1.75} aria-hidden />
+        </header>
+        <p className="cuw-c360-ai-summary__body">{aiSummary.paragraph}</p>
+      </section>
+
       <dl className="cuw-c360__kpis">
         {kpis.map((row) => (
           <div key={row.label} className="cuw-c360-kpi">
@@ -106,43 +104,6 @@ export function Customer360Panel({ c }: Props) {
           </div>
         ))}
       </dl>
-
-      <section className="cuw-c360-ai-summary" aria-label="AI summary">
-        <header className="cuw-c360-ai-summary__head">
-          <h3 className="cuw-c360-ai-summary__title">AI summary</h3>
-          <Sparkles className="cuw-c360-ai-summary__spark" size={16} strokeWidth={1.75} aria-hidden />
-        </header>
-        <div className="cuw-c360-ai-summary__grid">
-          <div className="cuw-c360-ai-summary__col">
-            <p className="cuw-c360-ai-summary__col-label">Strengths</p>
-            <ul className="cuw-c360-ai-summary__pills">
-              {aiSummary.strengths.map((s) => (
-                <li key={s} className="cuw-c360-ai-summary__pill cuw-c360-ai-summary__pill--strength">
-                  {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="cuw-c360-ai-summary__col">
-            <p className="cuw-c360-ai-summary__col-label">Watch items</p>
-            <ul className="cuw-c360-ai-summary__pills">
-              {aiSummary.watchItems.map((w) => (
-                <li key={w} className="cuw-c360-ai-summary__pill cuw-c360-ai-summary__pill--watch">
-                  {w}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="cuw-c360-ai-summary__col cuw-c360-ai-summary__col--read">
-            <p className="cuw-c360-ai-summary__col-label">AI read</p>
-            <div className="cuw-c360-ai-summary__read">
-              {aiSummary.aiRead.map((para) => (
-                <p key={para}>{para}</p>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {missing.length > 0 ? (
         <section className="cuw-c360__glass cuw-c360__glass--warn">

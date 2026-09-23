@@ -181,11 +181,11 @@ export const topExposures: {
   sector: string
 }[] = [
   {
-    insured: 'Northwind Health Systems',
+    insured: 'Airbnb',
     caseId: MOCK_CYBER_CASES[0]?.id ?? null,
-    amountUsd: 20_000_000,
+    amountUsd: 50_000_000,
     trending: 'up',
-    sector: 'Healthcare',
+    sector: 'Travel / Hospitality Marketplace',
   },
   {
     insured: 'LumenForge Software',

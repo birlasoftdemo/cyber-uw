@@ -16,6 +16,8 @@ export const ScreenBeat: React.FC<{
   title: string;
   win?: string;
   caption?: string;
+  /** Developer lens — what to understand (gates, files, store). */
+  devTakeaway?: string;
   zoomFrom?: number;
   zoomTo?: number;
 }> = ({
@@ -24,11 +26,13 @@ export const ScreenBeat: React.FC<{
   title,
   win,
   caption,
+  devTakeaway,
   zoomFrom = 1,
   zoomTo = 1.06,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const dense = Boolean(devTakeaway);
 
   const enter = spring({
     frame,
@@ -63,7 +67,7 @@ export const ScreenBeat: React.FC<{
       <div
         style={{
           position: "absolute",
-          inset: "48px 56px 110px",
+          inset: dense ? "40px 56px 168px" : "48px 56px 110px",
           borderRadius: 18,
           overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.18)",
@@ -99,32 +103,32 @@ export const ScreenBeat: React.FC<{
           position: "absolute",
           left: 72,
           right: 72,
-          bottom: 36,
+          bottom: 28,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-end",
           gap: 24,
         }}
       >
-        <div style={{ maxWidth: 1200 }}>
+        <div style={{ maxWidth: dense ? 1280 : 1200 }}>
           <div
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: 700,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.55)",
-              marginBottom: 8,
+              marginBottom: 6,
             }}
           >
             {eyebrow}
           </div>
           <div
             style={{
-              fontSize: 42,
+              fontSize: dense ? 34 : 42,
               fontWeight: 800,
               letterSpacing: "-0.02em",
-              lineHeight: 1.1,
+              lineHeight: 1.12,
             }}
           >
             {title}
@@ -132,14 +136,45 @@ export const ScreenBeat: React.FC<{
           {caption ? (
             <div
               style={{
-                marginTop: 10,
-                fontSize: 22,
+                marginTop: 8,
+                fontSize: dense ? 19 : 22,
                 color: "rgba(255,255,255,0.72)",
-                maxWidth: 980,
+                maxWidth: 1100,
                 lineHeight: 1.35,
               }}
             >
               {caption}
+            </div>
+          ) : null}
+          {devTakeaway ? (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid rgba(165,216,255,0.35)",
+                background: "rgba(11,18,32,0.85)",
+                fontSize: 17,
+                fontWeight: 600,
+                color: colors.blue,
+                maxWidth: 1100,
+                lineHeight: 1.4,
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  marginRight: 8,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "rgba(165,216,255,0.7)",
+                }}
+              >
+                Dev · understand
+              </span>
+              {devTakeaway}
             </div>
           ) : null}
         </div>

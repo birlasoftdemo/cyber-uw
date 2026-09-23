@@ -26,7 +26,9 @@
     "build": "remotion bundle",
     "render": "remotion render AgentsAssistLaunch out/agents-assist-launch.mp4",
     "render:workflow": "remotion render CyberUwWorkflow out/cyber-uw-workflow.mp4",
+    "render:handoff": "remotion render DevHandoffWalkthrough out/dev-handoff-walkthrough.mp4",
     "capture:walkthrough": "node scripts/capture-walkthrough.mjs",
+    "capture:handoff": "node scripts/capture-dev-handoff.mjs",
     "vo": "bash scripts/generate-vo.sh",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"

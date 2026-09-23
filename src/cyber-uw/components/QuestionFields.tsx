@@ -1,5 +1,5 @@
 import { type LucideIcon } from 'lucide-react'
-import { type SectionField } from '../data/cyberTriageRules'
+import { fieldKey, type SectionField } from '../data/cyberTriageRules'
 import { useCyberUwStore } from '../store/cyberUwStore'
 
 export function QuestionMetaGrid({
@@ -78,13 +78,15 @@ export function ReviewQuestionGrid({
   showTriage: boolean
 }) {
   return (
-    <div className="wb-q-grid">
+    <div className="wb-q-grid" id={`review-section-${sectionId}`}>
       {fields.map((f) => {
-        const key = f.key ?? `${sectionId}::${f.label}`
+        const key = f.key ?? fieldKey(sectionId, f.label)
         const fail = showTriage && Boolean(f.failsTriage)
         return (
           <div
             key={key}
+            id={`review-q-${key}`}
+            data-q-label={f.label}
             className={`wb-q-cell${fail ? ' wb-q-cell--fail' : ''}${showTriage ? ' wb-q-cell--triage' : ''}`}
           >
             <p className="wb-q-cell__label">{f.label}</p>

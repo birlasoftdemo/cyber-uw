@@ -7,7 +7,7 @@ export const CYBER_PRODUCT_DEFAULTS = {
   lobName: 'Cyber',
   productVersion: '2026.1',
   productTenure: '12 months',
-  renewalApplicable: true,
+  renewalApplicable: false,
 } as const
 
 export function defaultInsuredAddress(insured: string, sector: string): string {

@@ -193,8 +193,8 @@ const INITIAL_OUTTAKES: Outtake[] = [
   },
   {
     id: 'out-0928',
-    insured: 'Northwind Health Systems',
-    broker: 'Aon Cyber Desk',
+    insured: 'Airbnb',
+    broker: 'Marsh Specialty',
     packageId: 'pkg-cyber-core',
     packageLabel: 'Cyber Core Adaptive · v1.4',
     status: 'returned',

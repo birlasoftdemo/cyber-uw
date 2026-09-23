@@ -127,6 +127,13 @@ interface CyberUwState {
     status: Exclude<RiskJudgmentStatus, 'pending'>,
     note?: string,
   ) => void
+  /** Bulk disposition for Open Risks queue (single toast + audit). */
+  signRiskItems: (
+    caseId: string,
+    itemIds: string[],
+    status: Exclude<RiskJudgmentStatus, 'pending'>,
+    note?: string,
+  ) => void
   signPlatformCard: (
     caseId: string,
     cardId: string,
@@ -685,6 +692,41 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
         }
       }),
       toastMessage: `Risk item ${status === 'accepted' ? 'approved' : status === 'noted' ? 'ignored' : status}.`,
+      toastTone: 'info',
+    }))
+  },
+
+  signRiskItems: (caseId, itemIds, status, note) => {
+    const ids = [...new Set(itemIds.filter(Boolean))]
+    if (ids.length === 0) return
+    if (ids.length === 1) {
+      get().signRiskItem(caseId, ids[0], status, note)
+      return
+    }
+    const now = new Date().toISOString()
+    const statusWord =
+      status === 'accepted' ? 'approved' : status === 'noted' ? 'ignored' : status
+    set((s) => ({
+      cases: s.cases.map((c) => {
+        if (c.id !== caseId) return c
+        const riskJudgments = { ...c.riskJudgments }
+        for (const itemId of ids) {
+          riskJudgments[itemId] = { status, note, signedOffAt: now }
+        }
+        return {
+          ...c,
+          riskJudgments,
+          audit: [
+            ...c.audit,
+            {
+              at: now,
+              actor: 'Underwriter',
+              action: `Risk · bulk ${status}: ${ids.length} items${note ? ` — ${note}` : ''}`,
+            },
+          ],
+        }
+      }),
+      toastMessage: `${ids.length} risk items ${statusWord}.`,
       toastTone: 'info',
     }))
   },

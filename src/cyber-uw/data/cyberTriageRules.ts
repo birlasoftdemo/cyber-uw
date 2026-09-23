@@ -7,6 +7,8 @@ export interface TriageFinding {
   id: string
   ruleId: string
   title: string
+  /** Application question reference shown separately from the title (e.g. Q7h–j). Empty when N/A. */
+  questionRef: string
   chartLabel: string
   severity: 'high' | 'medium' | 'low'
   required: boolean
@@ -405,6 +407,7 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
       id: `${c.id}-triage-elig`,
       ruleId: 'ELIG-ORG-EXCLUSION',
       title: 'Organizations not eligible for coverage',
+      questionRef: '',
       chartLabel: 'Eligibility',
       severity: ineligible ? 'high' : 'low',
       required: true,
@@ -429,7 +432,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
       finding( dataInv, {
         id: `${c.id}-triage-hipaa`,
         ruleId: 'DATA-HIPAA-Q4',
-        title: 'HIPAA entity and compliance (Q4)',
+        title: 'HIPAA entity and compliance',
+        questionRef: 'Q4',
         chartLabel: 'HIPAA',
         severity: 'medium',
         required: true,
@@ -454,7 +458,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( privacy, {
       id: `${c.id}-triage-privacy`,
       ruleId: 'PRIV-CONTROLS-Q6',
-      title: 'Privacy officer, policy, training, least privilege (Q6)',
+      title: 'Privacy officer, policy, training, least privilege',
+      questionRef: 'Q6',
       chartLabel: 'Privacy',
       severity: (c.completenessPct ?? 100) < 80 ? 'medium' : 'low',
       required: false,
@@ -479,7 +484,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( network, {
       id: `${c.id}-triage-mfa`,
       ruleId: 'CTRL-MFA-Q7',
-      title: 'MFA for admin, remote access, and email (Q7h–j)',
+      title: 'MFA for admin, remote access, and email',
+      questionRef: 'Q7h–j',
       chartLabel: 'MFA floor',
       severity: p.mfaGap ? 'high' : 'low',
       required: true,
@@ -489,7 +495,7 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
         c.formSignals.find((s) => s.label.toLowerCase().includes('mfa'))?.signal ??
         'No ASM contradiction extracted',
       summary: p.mfaGap
-        ? 'Q7h–j MFA floor is open or contradicted — do not straight-through.'
+        ? 'MFA floor is open or contradicted — do not straight-through.'
         : 'MFA for privileged, remote, and email access is represented.',
       detail:
         'Q7 asks Yes/No/N/A for MFA on administrative or privileged access, remote access to systems holding private data in bulk, and remote access to email, plus VPN-limited remote access (Q7k). A No or attest-vs-signal contradiction is a coverage-floor escalate, independent of the ineligible-organization list.',
@@ -504,7 +510,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( network, {
       id: `${c.id}-triage-backup`,
       ruleId: 'CTRL-BACKUP-Q7L',
-      title: 'Backup and recovery — automated and tested annually (Q7l)',
+      title: 'Backup and recovery — automated and tested annually',
+      questionRef: 'Q7l',
       chartLabel: 'Backups',
       severity: p.backupWeak ? 'medium' : 'low',
       required: p.backupWeak,
@@ -530,6 +537,7 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
       id: `${c.id}-triage-pci`,
       ruleId: 'PCI-Q8',
       title: 'PCI-DSS (credit / debit card data)',
+      questionRef: 'Q8',
       chartLabel: 'PCI-DSS',
       severity: p.cardData && p.pciCompliant === false ? 'high' : 'low',
       required: p.cardData,
@@ -561,7 +569,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( content, {
       id: `${c.id}-triage-media`,
       ruleId: 'MEDIA-Q9-10',
-      title: 'Intellectual property and content procedures (Q9–10)',
+      title: 'Intellectual property and content procedures',
+      questionRef: 'Q9–10',
       chartLabel: 'Content',
       severity: 'low',
       required: false,
@@ -581,7 +590,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( bc, {
       id: `${c.id}-triage-ir`,
       ruleId: 'IR-DR-Q11-13',
-      title: 'DR / BCP, incident response, and restoration time (Q11–13)',
+      title: 'DR / BCP, incident response, and restoration time',
+      questionRef: 'Q11–13',
       chartLabel: 'RTO / IR',
       severity: !p.irTested ? 'medium' : 'low',
       required: !p.irTested,
@@ -605,7 +615,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( vendor, {
       id: `${c.id}-triage-vendor`,
       ruleId: 'VENDOR-Q14',
-      title: 'Vendor information-security policy and access review (Q14)',
+      title: 'Vendor information-security policy and access review',
+      questionRef: 'Q14',
       chartLabel: 'Vendors',
       severity: (c.completenessPct ?? 100) < 80 ? 'medium' : 'low',
       required: false,
@@ -633,7 +644,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( outsourced, {
       id: `${c.id}-triage-outsourced`,
       ruleId: 'OUTSOURCE-Q15',
-      title: 'Outsourced services and alternative processing (Q15)',
+      title: 'Outsourced services and alternative processing',
+      questionRef: 'Q15',
       chartLabel: 'Outsourcing',
       severity: p.retail && p.backupWeak ? 'medium' : 'low',
       required: false,
@@ -660,7 +672,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( loss, {
       id: `${c.id}-triage-loss`,
       ruleId: 'LOSS-Q16-17',
-      title: 'Prior incidents and known circumstances (Q16–17)',
+      title: 'Prior incidents and known circumstances',
+      questionRef: 'Q16–17',
       chartLabel: 'Loss history',
       severity: p.lossYes ? 'high' : 'low',
       required: true,
@@ -687,6 +700,7 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
       id: `${c.id}-triage-ins-terms`,
       ruleId: 'TERMS-TABLE',
       title: 'Insuring-agreement limits and retentions',
+      questionRef: '',
       chartLabel: 'Sublimits',
       severity: 'low',
       required: false,
@@ -707,7 +721,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( reqTerms, {
       id: `${c.id}-triage-aggregate`,
       ruleId: 'TERMS-Q18',
-      title: 'Aggregate limit and effective date (Q18)',
+      title: 'Aggregate limit and effective date',
+      questionRef: 'Q18',
       chartLabel: 'Aggregate limit',
       severity: highLimitPhi ? 'medium' : 'low',
       required: highLimitPhi,
@@ -731,7 +746,8 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
     finding( current, {
       id: `${c.id}-triage-current`,
       ruleId: 'COVER-Q19',
-      title: 'Currently purchased CyberRisk coverage (Q19)',
+      title: 'Currently purchased CyberRisk coverage',
+      questionRef: 'Q19',
       chartLabel: 'Expiring',
       severity: 'low',
       required: false,
@@ -761,6 +777,39 @@ export function triageFindingsForCase(c: CyberCase): TriageFinding[] {
 
 export function requiredTriageIds(findings: TriageFinding[]): string[] {
   return findings.filter((f) => f.required).map((f) => f.id)
+}
+
+/**
+ * Expand a questionRef into label prefixes for ReviewQuestionGrid matching.
+ * e.g. "Q7h–j" → ["Q7h", "Q7i", "Q7j"]; "Q9–10" → ["Q9", "Q10"]; "Q4" → ["Q4"].
+ */
+export function questionFieldMatchers(questionRef: string): string[] {
+  const raw = questionRef.replace(/[—–]/g, '–').trim()
+  if (!raw || raw === '—' || raw === '-') return []
+
+  const letterRange = raw.match(/^Q(\d+)([a-z])–([a-z])$/i)
+  if (letterRange) {
+    const num = letterRange[1]
+    const start = letterRange[2].toLowerCase().charCodeAt(0)
+    const end = letterRange[3].toLowerCase().charCodeAt(0)
+    const out: string[] = []
+    for (let c = start; c <= end; c++) {
+      out.push(`Q${num}${String.fromCharCode(c)}`)
+    }
+    return out
+  }
+
+  const numRange = raw.match(/^Q(\d+)–(\d+)$/i)
+  if (numRange) {
+    const start = Number(numRange[1])
+    const end = Number(numRange[2])
+    const out: string[] = []
+    for (let n = start; n <= end; n++) out.push(`Q${n}`)
+    return out
+  }
+
+  const single = raw.match(/^(Q[\d]+[a-z]?)/i)
+  return single ? [single[1]] : [raw]
 }
 
 export function fieldKey(sectionId: string, label: string): string {

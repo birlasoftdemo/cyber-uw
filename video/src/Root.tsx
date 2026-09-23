@@ -5,6 +5,10 @@ import {
   AgentsAssistLaunch,
   LAUNCH_TOTAL_FRAMES,
 } from "./AgentsAssistLaunch";
+import {
+  DevHandoffWalkthrough,
+  HANDOFF_TOTAL_FRAMES,
+} from "./DevHandoffWalkthrough";
 import { ProductWalkthrough, TOTAL_FRAMES } from "./ProductWalkthrough";
 import { fps } from "./theme";
 
@@ -23,6 +27,14 @@ export const RemotionRoot: React.FC = () => {
         id="CyberUwWorkflow"
         component={ProductWalkthrough}
         durationInFrames={TOTAL_FRAMES}
+        fps={fps}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="DevHandoffWalkthrough"
+        component={DevHandoffWalkthrough}
+        durationInFrames={HANDOFF_TOTAL_FRAMES}
         fps={fps}
         width={1920}
         height={1080}
