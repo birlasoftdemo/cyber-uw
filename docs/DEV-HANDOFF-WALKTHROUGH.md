@@ -41,8 +41,8 @@ SSO always signs in as UW. Session: `sessionStorage` key `cyber-uw-auth-session`
 | Login | `01-login.png` | `App.tsx` auth gate; `authStore`; no React Router for shell |
 | Open cases | `02-open-cases.png` | `selectedId == null` → `CyberCasesListPage`; filters in store |
 | New Submission | `03-new-submission.png` | Modal → `createSubmission` / `demoIngest.ts` Brightcare |
-| Customer 360 | `04-customer-360.png` | `Customer360Panel`; `customer360Dismissed` |
-| Float C360 | `05-float-c360.png` | `FloatingWorkflowBar` `surface='c360'` → dismiss |
+| Customer Insights | `04-customer-360.png` | `Customer360Panel`; `customer360Dismissed` |
+| Float Insights | `05-float-c360.png` | `FloatingWorkflowBar` `surface='c360'` → dismiss |
 | Float Docs Complete | `05b-float-docs-complete.png` | `canLeavePolicyDocuments` → `signOffPackage` |
 | Policy Documents | `06-policy-documents.png` | `CYBER_FLOW_STAGES[0]`; `workflowStage` |
 | Risk Information | `07-risk-information.png` | `triageFindingsForCase` + `riskJudgments` |
@@ -60,7 +60,7 @@ SSO always signs in as UW. Session: `sessionStorage` key `cyber-uw-auth-session`
 | Auth | `pages/LoginPage.tsx`, `store/authStore.ts` |
 | Intake | `components/CyberNewSubmissionModal.tsx`, `data/demoIngest.ts` |
 | Case chrome | `components/CaseWorkspace.tsx`, `FloatingWorkflowBar.tsx` |
-| C360 | `components/Customer360Panel.tsx`, `utils/c360AiSummary.ts` |
+| Customer Insights | `components/Customer360Panel.tsx`, `utils/c360AiSummary.ts` |
 | Gates | `constants/cyberFlow.ts`, `store/cyberUwStore.ts` |
 | Confirm | `components/DecisionConfirmModal.tsx`, `DocumentsCompleteModal.tsx` |
 

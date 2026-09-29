@@ -1,0 +1,50 @@
+---
+title: Brightcare_Cyber_Application_2026.pdf
+kind: Application
+insured: Brightcare Digital Health
+status: demo-facsimile
+---
+
+```
+CYBER LIABILITY APPLICATION — 2026
+Brightcare Digital Health, Inc.
+CONFIDENTIAL — For underwriting and broker use only. Not for redistribution.
+
+Broker of record: Marsh Specialty — Cyber Practice
+Submission date: 2026-09-18
+Requested effective: 2026-10-01  |  Term: 12 months
+Limit requested: $5,000,000 aggregate / $5,000,000 each claim
+Retention requested: $100,000
+
+1. APPLICANT
+   Legal name: Brightcare Digital Health, Inc.
+   DBA: Brightcare
+   HQ: 500 Healthcloud Pkwy, Boston, MA 02110
+   Primary NAICS: 621999 (Healthcare SaaS / care coordination)
+   Employees: ~420  |  Annual revenue (TTM): $128,000,000
+   Website / primary domain: brightcare.health
+
+2. BUSINESS ACTIVITIES
+   Cloud-hosted patient engagement and care-coordination platform.
+   Processes ePHI for ~2.1M covered lives via BAA-covered customers.
+   No owned clinics; SaaS delivery only. Hosting: AWS us-east-1 / us-west-2.
+
+3. PRIOR CYBER / PRIVACY CLAIMS (5 YEARS)
+   None reported. No regulatory fines or OCR settlements disclosed.
+
+4. CONTROL ATTESTATIONS (SUMMARY)
+   MFA on privileged / remote admin ........ Okta Verify + phishing-resistant
+                                            keys for Tier-0; VPN MFA asserted
+   EDR coverage ........................... CrowdStrike Falcon ≥98% endpoints
+   Immutable / tested backups ............. Daily; last restore test 2026-06-12
+   Email security ......................... M365 + Proofpoint
+   Vulnerability management ............... Qualys; critical SLA ≤7 days
+
+5. CRITICAL VENDORS
+   Microsoft 365 (IdP + productivity), AWS (IaaS), CrowdStrike (EDR),
+   Okta (workforce IdP), Twilio (notifications), Snowflake (analytics).
+
+Applicant attestation: Information is true and complete to the best of
+knowledge as of the submission date. Material changes will be notified.
+Signed: A. Reyes, CISO  |  Countersigned: Broker — Marsh Specialty
+```

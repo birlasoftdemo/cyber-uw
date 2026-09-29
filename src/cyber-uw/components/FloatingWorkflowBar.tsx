@@ -132,7 +132,7 @@ function scrollToFirstUnsigned(ids: string[]) {
 interface FloatingWorkflowBarProps {
   c: CyberCase
   scrollRootRef: RefObject<HTMLElement | null>
-  /** Customer 360 summary vs workflow stages. */
+  /** Birlasoft Customer Insights summary vs workflow stages. */
   surface?: 'c360' | 'workflow'
   onRequestDecision: (d: Exclude<CyberDecision, 'pending'>) => void
   onSignal: () => void
@@ -168,12 +168,18 @@ export function FloatingWorkflowBar({
     body = (
       <>
         <WorkflowStatus
-          title="Customer 360"
-          detail="Review the summary, then continue into the workflow."
+          title="Birlasoft Customer Insights"
+          detail="Review the summary, then continue into Submission Workbench."
         />
         <PrimaryWorkflowCTA
-          label="Continue to Workflow →"
-          onPress={() => dismissCustomer360(c.id)}
+          label="Continue to Submission Workbench →"
+          onPress={() => {
+            dismissCustomer360(c.id)
+            document.getElementById('cuw-workbench-root')?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            })
+          }}
           ready
         />
       </>
@@ -398,7 +404,7 @@ export function FloatingWorkflowBar({
 
   const focusLabel =
     surface === 'c360'
-      ? 'Focus Customer 360 summary'
+      ? 'Focus Birlasoft Customer Insights summary'
       : `Focus ${CYBER_FLOW_STAGES[Math.min(idx, CYBER_FLOW_STAGES.length - 1)]?.title ?? 'current'} stage`
 
   return (

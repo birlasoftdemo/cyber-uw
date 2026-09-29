@@ -75,7 +75,7 @@ export function DevHandoffWalkthrough() {
             eyebrow="3 · New Submission · Brightcare package"
             title="Upload or Mail MCP → createSubmission."
             caption="Ingest runs thinking UI, then seeds a CYB-* case. This walkthrough uses Brightcare Digital Health (demoPackage: 'uw')."
-            devTakeaway="CyberNewSubmissionModal → inferExtractedSubmission → createSubmission. Rich UW dossier: data/demoIngest.ts. Opens with selectedId set; Customer 360 shows first (customer360Dismissed unset)."
+            devTakeaway="CyberNewSubmissionModal → inferExtractedSubmission → createSubmission. Rich UW dossier: data/demoIngest.ts. Opens with selectedId set; Birlasoft Customer Insights shows first (customer360Dismissed unset)."
             zoomFrom={1}
             zoomTo={1.05}
           />
@@ -84,10 +84,10 @@ export function DevHandoffWalkthrough() {
         <Series.Sequence durationInFrames={SCENE.customer360}>
           <ScreenBeat
             src="handoff/04-customer-360.png"
-            eyebrow="4 · Customer 360 · Brightcare"
+            eyebrow="4 · Customer Insights · Brightcare"
             title="Context panel before any stage work."
             caption="AI summary (rule-based), product/LOB KPIs, completeness, missing-doc checklist. Not the decision desk yet."
-            devTakeaway="Customer360Panel + buildC360AiSummary (no LLM). Tabs in CaseWorkspace: Customer 360 vs Proceed to Closure. Toggle = showCustomer360 / dismissCustomer360 on the case."
+            devTakeaway="Customer360Panel + buildC360AiSummary (no LLM). Tabs in CaseWorkspace: Birlasoft Customer Insights vs Submission Workbench. Continuous scroll stacks both; toggle = showCustomer360 / dismissCustomer360 on the case."
             zoomFrom={1}
             zoomTo={1.04}
           />
@@ -96,10 +96,10 @@ export function DevHandoffWalkthrough() {
         <Series.Sequence durationInFrames={SCENE.floatC360}>
           <ScreenBeat
             src="handoff/05-float-c360.png"
-            eyebrow="5 · Floating CTA · C360 surface"
-            title="Continue to Workflow is the same dismiss."
-            caption="Bottom glass bar always mounts with the case. On C360 it only advances into the four-stage workflow."
-            devTakeaway="FloatingWorkflowBar surface='c360' → dismissCustomer360. Bar click focuses #cuw-c360-root. Workflow surface switches once customer360Dismissed === true."
+            eyebrow="5 · Floating CTA · Insights surface"
+            title="Continue to Submission Workbench is the same dismiss."
+            caption="Bottom glass bar always mounts with the case. On Customer Insights it advances into the four-stage workbench."
+            devTakeaway="FloatingWorkflowBar surface='c360' → dismissCustomer360 + scroll to #cuw-workbench-root. Workflow surface switches once customer360Dismissed === true."
             zoomFrom={1.05}
             zoomTo={1.1}
           />
@@ -110,7 +110,7 @@ export function DevHandoffWalkthrough() {
             src="handoff/05b-float-docs-complete.png"
             eyebrow="6a · Float · Policy Documents gate"
             title="Documents Complete is the package gate."
-            caption="After Proceed to Closure, the float asks for Documents Complete before Risk Information unlocks."
+            caption="After Submission Workbench, the float asks for Documents Complete before Risk Information unlocks."
             devTakeaway="canLeavePolicyDocuments: completeness ≥ 80%, no missing docs, packageSignOff.signedOffAt. CTA → DocumentsCompleteModal → signOffPackage. Gates live in cyberFlow.ts."
             zoomFrom={1.04}
             zoomTo={1.09}

@@ -127,13 +127,13 @@ async function captureHandoff(page) {
   )
   console.log('  Brightcare case', caseId)
 
-  await page.getByRole('tab', { name: /Customer 360/i }).waitFor({ timeout: 10000 })
+  await page.getByRole('tab', { name: /Customer Insights/i }).waitFor({ timeout: 10000 })
   await page.locator('#cuw-c360-root').waitFor({ timeout: 8000 })
   await shot(page, '04-customer-360.png')
   await scrollCasePaneBottom(page)
   await shot(page, '05-float-c360.png')
 
-  await page.getByRole('tab', { name: /Proceed to Closure/i }).click()
+  await page.getByRole('tab', { name: /Submission Workbench/i }).click()
   await page.waitForTimeout(700)
   await page.getByRole('heading', { name: /Policy Documents/i }).first().waitFor({ timeout: 8000 })
   await scrollCasePaneBottom(page)

@@ -106,7 +106,7 @@ interface CyberUwState {
   setFilterSubmissionKind: (v: CyberSubmissionKindFilter) => void
   clearFilters: () => void
   dismissCustomer360: (id: string) => void
-  /** Re-open Customer 360 for a case (tab switch). */
+  /** Re-open Customer Insights for a case (tab switch). */
   showCustomer360: (id: string) => void
   setUploadOpen: (open: boolean) => void
   createSubmission: (input: CyberUploadInput) => string
@@ -824,7 +824,16 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
             }),
           }
         }
-        // ingest: ticket + audit only (package chase stays on New until docs arrive)
+        // ingest + submission: ticket + audit only (no gap/risk/platform mutation)
+
+        const auditAction =
+          input.kind === 'submission'
+            ? `Transferred submission “${input.sourceLabel}” → ${input.assigneeLabel}${
+                input.note.trim() ? ` — ${input.note.trim()}` : ''
+              }`
+            : `Escalated ${input.kind} “${input.sourceLabel}” → ${input.assigneeLabel}${
+                input.note.trim() ? ` — ${input.note.trim()}` : ''
+              }`
 
         return {
           ...next,
@@ -833,9 +842,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
             {
               at: now,
               actor: 'Underwriter',
-              action: `Escalated ${input.kind} “${input.sourceLabel}” → ${input.assigneeLabel}${
-                input.note.trim() ? ` — ${input.note.trim()}` : ''
-              }`,
+              action: auditAction,
             },
           ],
         }
@@ -844,7 +851,10 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
       return {
         cases,
         referrals: [ticket, ...s.referrals],
-        toastMessage: `Escalation sent · ${input.assigneeLabel}`,
+        toastMessage:
+          input.kind === 'submission'
+            ? `Submission transferred · ${input.assigneeLabel}`
+            : `Escalation sent · ${input.assigneeLabel}`,
         toastTone: 'info' as const,
       }
     })

@@ -11,10 +11,8 @@ import {
   Layers,
   MapPin,
   Package,
-  Percent,
   RefreshCw,
   Sparkles,
-  Tag,
   Timer,
 } from 'lucide-react'
 import type { CyberCase } from '../types'
@@ -44,8 +42,11 @@ export function Customer360Panel({ c }: Props) {
     { icon: MapPin, label: 'Address', value: c.insuredAddress },
     { icon: Package, label: 'Product name', value: c.productName },
     { icon: Hash, label: 'Product code', value: c.productCode },
-    { icon: Layers, label: 'LOB code', value: c.lobCode },
-    { icon: Tag, label: 'LOB name', value: c.lobName },
+    {
+      icon: Layers,
+      label: 'LOB & code',
+      value: `${c.lobName} · ${c.lobCode}`,
+    },
     { icon: GitBranch, label: 'Product version', value: c.productVersion },
     { icon: Timer, label: 'Product tenure', value: c.productTenure },
     {
@@ -66,12 +67,6 @@ export function Customer360Panel({ c }: Props) {
       icon: CalendarCheck2,
       label: 'Proposed end date',
       value: formatPolicyDate(period.endIso),
-    },
-    { icon: Percent, label: 'Completeness', value: `${c.completenessPct}%` },
-    {
-      icon: Sparkles,
-      label: 'Signal score',
-      value: String(c.signalScore),
     },
   ]
 

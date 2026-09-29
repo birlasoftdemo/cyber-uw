@@ -1,4 +1,4 @@
-/* Birlasoft Customer 360 — deep navy workspace integrated into light SaaS chrome */
+/* Birlasoft Customer Insights — deep navy workspace integrated into light SaaS chrome */
 
 @layer components {
   .cuw-c360 {
@@ -39,16 +39,11 @@
   }
 
   .cuw-c360-mark {
-    display: flex;
-  }
-
-  .cuw-c360-mark__img {
-    display: block;
-    height: 3.25rem;
-    width: auto;
-    max-width: min(100%, 22rem);
-    object-fit: contain;
-    object-position: left center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 100%;
+    padding: 0.55rem 0.85rem 0.55rem 0.65rem;
     border-radius: 0.5rem;
     background: #ffffff;
     box-shadow:
@@ -56,10 +51,37 @@
       0 6px 16px rgba(15, 28, 43, 0.12);
   }
 
+  .cuw-c360-mark__logo {
+    display: block;
+    height: 1.75rem;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .cuw-c360-mark__copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-left: 1px solid rgba(148, 163, 184, 0.35);
+    padding-left: 0.75rem;
+  }
+
+  .cuw-c360-mark__product {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: #0f2744;
+  }
+
   @media (min-width: 640px) {
-    .cuw-c360-mark__img {
-      height: 3.75rem;
-      max-width: min(100%, 26rem);
+    .cuw-c360-mark__logo {
+      height: 2rem;
+    }
+
+    .cuw-c360-mark__product {
+      font-size: 1.2rem;
     }
   }
 

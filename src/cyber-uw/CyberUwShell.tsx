@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react'
-import { ArrowLeft, Maximize2, Minimize2, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WorkbenchPageHeader } from '../shared/workbench/WorkbenchPageHeader'
 import { BirlasoftLogo } from './components/BirlasoftLogo'
@@ -12,6 +12,10 @@ import {
   type ReturnedOuttakePrefill,
 } from './components/FormShippingCenter'
 import { CaseWorkspace } from './components/CaseWorkspace'
+import {
+  DiscussionReferModal,
+  type DiscussionReferDraft,
+} from './components/DiscussionReferModal'
 import { ReferralInbox } from './components/ReferralInbox'
 import { InsightsLanding } from './insights/InsightsLanding'
 import { useAuthStore } from './store/authStore'
@@ -19,18 +23,8 @@ import { useCyberUwStore } from './store/cyberUwStore'
 import type { CyberShellView } from './components/CyberShellToolbar'
 import { CaseMetaChips, decisionTitle } from './components/CyberPrimitives'
 
-const FOCUS_KEY = 'cyber-uw-workflow-focus'
-
 function defaultViewForRole(_role: 'underwriter' | 'ops' | undefined): CyberShellView {
   return 'workbench'
-}
-
-function loadFocus(): boolean {
-  try {
-    return sessionStorage.getItem(FOCUS_KEY) === '1'
-  } catch {
-    return false
-  }
 }
 
 export function CyberUwShell() {
@@ -47,37 +41,25 @@ export function CyberUwShell() {
     uploadOpen,
     setUploadOpen,
     referrals,
+    submitDiscussionReferral,
   } = useCyberUwStore()
   const role = useAuthStore((s) => s.user?.role)
   const pending = cases.filter((c) => c.decision === 'pending').length
   const activeReferrals = referrals.filter((r) => r.status !== 'resolved').length
   const [shellView, setShellView] = useState<CyberShellView>(() => defaultViewForRole(role))
   const [submissionPrefill, setSubmissionPrefill] = useState<ReturnedOuttakePrefill | null>(null)
-  const [focusMode, setFocusMode] = useState(loadFocus)
   const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({})
+  const [referDraft, setReferDraft] = useState<DiscussionReferDraft | null>(null)
 
   useEffect(() => {
     setShellView(defaultViewForRole(role))
   }, [role])
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(FOCUS_KEY, focusMode ? '1' : '0')
-    } catch {
-      /* ignore */
-    }
-  }, [focusMode])
-
-  useEffect(() => {
     if (!toastMessage) return
     const t = window.setTimeout(() => clearToast(), 3800)
     return () => window.clearTimeout(t)
   }, [toastMessage, clearToast])
-
-  // Exit focus when leaving workbench or returning to the list
-  useEffect(() => {
-    if ((shellView !== 'workbench' || !selectedId) && focusMode) setFocusMode(false)
-  }, [shellView, selectedId, focusMode])
 
   const openNewSubmission = (prefill?: ReturnedOuttakePrefill) => {
     setSubmissionPrefill(prefill ?? null)
@@ -134,12 +116,24 @@ export function CyberUwShell() {
       : `UW ${decisionTitle(selectedCase.decision)}`
     : ''
 
+  const openSubmissionRefer = () => {
+    if (!selectedCase) return
+    setReferDraft({
+      caseId: selectedCase.id,
+      kind: 'submission',
+      sourceId: selectedCase.id,
+      sourceLabel: `${selectedCase.insured} · ${selectedCase.id}`,
+      insured: selectedCase.insured,
+      broker: selectedCase.broker,
+    })
+  }
+
   return (
     <div className="flex h-screen bg-[var(--background)]">
       <CyberAppSidebar
         shellView={shellView}
         onShellViewChange={setShellView}
-        focusMode={focusMode}
+        focusMode={showCaseDetail}
       />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <main className="workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -199,12 +193,11 @@ export function CyberUwShell() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onPress={() => setFocusMode((v) => !v)}
-                        aria-pressed={focusMode}
-                        aria-label={focusMode ? 'Exit workflow focus' : 'Enter workflow focus'}
+                        onPress={openSubmissionRefer}
+                        aria-label="Refer submission to underwriter"
                       >
-                        {focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                        {focusMode ? 'Exit focus' : 'Focus mode'}
+                        <ArrowUpRight size={14} />
+                        Refer to Underwriter
                       </Button>
                     ) : null}
                     <Button
@@ -241,18 +234,12 @@ export function CyberUwShell() {
             />
           ) : (
             showCaseDetail ? (
-            <div
-              className={`mx-auto grid min-h-0 w-full flex-1 grid-cols-1 gap-3 overflow-hidden ${
-                focusMode ? 'max-w-none p-0' : 'max-w-[1600px] p-3 md:p-4'
-              }`}
-            >
+            <div className="mx-auto grid min-h-0 w-full max-w-none flex-1 grid-cols-1 gap-3 overflow-hidden p-0">
               <div
                 id="cyber-main"
-                className={`wb-panel min-h-0 min-w-0 overflow-hidden ${
-                  focusMode ? 'rounded-none border-0' : ''
-                }`}
+                className="wb-panel min-h-0 min-w-0 overflow-hidden rounded-none border-0"
               >
-                <CaseWorkspace focusMode={focusMode} />
+                <CaseWorkspace />
               </div>
             </div>
           ) : (
@@ -272,6 +259,15 @@ export function CyberUwShell() {
         }}
         prefill={submissionPrefill}
         onOpenInWorkbench={openInWorkbench}
+      />
+
+      <DiscussionReferModal
+        draft={referDraft}
+        onCancel={() => setReferDraft(null)}
+        onConfirm={(input) => {
+          submitDiscussionReferral(input)
+          setReferDraft(null)
+        }}
       />
 
       <div aria-live="polite" aria-atomic="true" className="contents">

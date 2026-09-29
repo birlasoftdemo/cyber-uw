@@ -1762,6 +1762,17 @@
     padding: 0.625rem 0.875rem;
   }
 
+  /* Above question stems (.wb-q-cell__label: ink / 700). Link blue ~7:1 on white / ~6:1 on bucket head. */
+  .wb-qual-bucket__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    color: var(--cuw-ink-link);
+  }
+
   .wb-qual-bucket__list {
     display: flex;
     flex-direction: column;

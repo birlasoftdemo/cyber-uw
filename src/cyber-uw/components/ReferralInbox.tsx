@@ -34,6 +34,7 @@ function kindLabel(kind: ReferralTicket['kind']) {
   if (kind === 'gap') return 'Control gap'
   if (kind === 'risk') return 'Risk item'
   if (kind === 'ingest') return 'Missing package / ingest'
+  if (kind === 'submission') return 'Submission transfer'
   return 'Platform finding'
 }
 
@@ -98,7 +99,7 @@ export function ReferralInbox({ onOpenCase, onRemindBroker }: Props) {
               {isOps
                 ? 'No escalations in this view.'
                 : filter === 'active'
-                  ? 'No open escalations. Escalate a gap, missing package, risk item, or platform finding from Decision Desk.'
+                  ? 'No open escalations. Refer a submission from the case header, or escalate a missing package from Policy Documents.'
                   : 'No escalations sent yet.'}
             </li>
           ) : (

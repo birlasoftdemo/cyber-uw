@@ -1,4 +1,4 @@
-/** Shared cyber product identity defaults for Customer 360 / case constructors. */
+/** Shared cyber product identity defaults for Customer Insights / case constructors. */
 
 export const CYBER_PRODUCT_DEFAULTS = {
   productName: 'Cyber Liability',

@@ -21,7 +21,6 @@ import {
   Scale,
   ShieldAlert,
   ShieldCheck,
-  ArrowUpRight,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -182,7 +181,6 @@ function riskBannerTitle(status: ValueCompareStatus): string {
 
 function TriageFindingCard({
   caseId,
-  insured,
   finding,
   status,
   expanded,
@@ -193,7 +191,6 @@ function TriageFindingCard({
   onViewSource,
 }: {
   caseId: string
-  insured: string
   finding: TriageFinding
   status: RiskJudgmentStatus | undefined
   expanded: boolean
@@ -204,8 +201,6 @@ function TriageFindingCard({
   onViewSource?: () => void
 }) {
   const signRiskItem = useCyberUwStore((s) => s.signRiskItem)
-  const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
-  const [draft, setDraft] = useState<DiscussionReferDraft | null>(null)
   const answersRef = useRef<HTMLDivElement | null>(null)
   const signed = status && status !== 'pending'
 
@@ -226,7 +221,6 @@ function TriageFindingCard({
         ? `Required · ${finding.chartLabel}`
         : `Policy band · ${finding.chartLabel}`
 
-  const escalatePrimary = finding.suggested === 'escalate'
   const approvePrimary = finding.suggested === 'approve'
 
   useEffect(() => {
@@ -242,15 +236,6 @@ function TriageFindingCard({
     }, 2200)
     return () => window.clearTimeout(t)
   }, [sourceOpen, finding.id])
-
-  const openEscalate = () =>
-    setDraft({
-      caseId,
-      kind: 'risk',
-      sourceId: finding.id,
-      sourceLabel: finding.title,
-      insured,
-    })
 
   return (
     <li
@@ -378,34 +363,13 @@ function TriageFindingCard({
 
           {!signed ? (
             <div className="wb-risk-card__actions">
-              {escalatePrimary ? (
-                <>
-                  <Button size="sm" variant="primary" onPress={openEscalate}>
-                    <ArrowUpRight size={14} strokeWidth={2} aria-hidden />
-                    Escalate
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
-                  >
-                    Approve
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    size="sm"
-                    variant={approvePrimary ? 'primary' : 'secondary'}
-                    onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
-                  >
-                    Approve
-                  </Button>
-                  <Button size="sm" variant="secondary" onPress={openEscalate}>
-                    Escalate
-                  </Button>
-                </>
-              )}
+              <Button
+                size="sm"
+                variant={approvePrimary ? 'primary' : 'secondary'}
+                onPress={() => signRiskItem(caseId, finding.id, 'accepted')}
+              >
+                Approve
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -417,15 +381,6 @@ function TriageFindingCard({
           ) : null}
         </div>
       ) : null}
-
-      <DiscussionReferModal
-        draft={draft}
-        onCancel={() => setDraft(null)}
-        onConfirm={(input) => {
-          submitDiscussionReferral(input)
-          setDraft(null)
-        }}
-      />
     </li>
   )
 }
@@ -553,7 +508,6 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
                 <TriageFindingCard
                   key={finding.id}
                   caseId={c.id}
-                  insured={c.insured}
                   finding={finding}
                   status={c.riskJudgments[finding.id]?.status}
                   expanded={expandedId === finding.id}
@@ -947,7 +901,7 @@ function PolicyDocumentsStageBody({
           return (
             <div key={report.section.id} className="wb-qual-bucket">
               <div className="wb-qual-bucket__head">
-                <h5 className="text-sm font-semibold text-slate-900">{report.section.title}</h5>
+                <h5 className="wb-qual-bucket__title">{report.section.title}</h5>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-medium text-slate-500">Q{report.section.questions}</span>
                   <button
@@ -1176,11 +1130,7 @@ function WorkflowTab({
   )
 }
 
-type CaseWorkspaceProps = {
-  focusMode?: boolean
-}
-
-export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
+export function CaseWorkspace() {
   const {
     cases,
     selectedId,
@@ -1194,13 +1144,50 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
   } = useCyberUwStore()
   const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null)
   const [docsCompleteOpen, setDocsCompleteOpen] = useState(false)
+  const scrollRootRef = useRef<HTMLDivElement>(null)
   const c = cases.find((x) => x.id === selectedId)
+  const caseId = c?.id
 
   useEffect(() => {
     if (listDecisionPrompt) {
       setPendingDecision(listDecisionPrompt)
     }
   }, [listDecisionPrompt, selectedId])
+
+  // Sync Insights / Submission Workbench tabs with continuous scroll position.
+  useEffect(() => {
+    if (!caseId) return
+    const root = scrollRootRef.current
+    const workbench = document.getElementById('cuw-workbench-root')
+    if (!root || !workbench) return
+
+    let ticking = false
+    const syncFromScroll = () => {
+      if (ticking) return
+      ticking = true
+      window.requestAnimationFrame(() => {
+        ticking = false
+        const rootRect = root.getBoundingClientRect()
+        const wbRect = workbench.getBoundingClientRect()
+        const mid = rootRect.top + rootRect.height * 0.35
+        const inWorkbench = wbRect.top <= mid
+        const dismissed =
+          useCyberUwStore.getState().cases.find((x) => x.id === caseId)?.customer360Dismissed ===
+          true
+        if (inWorkbench && !dismissed) dismissCustomer360(caseId)
+        else if (!inWorkbench && dismissed) showCustomer360(caseId)
+      })
+    }
+
+    root.addEventListener('scroll', syncFromScroll, { passive: true })
+    const dismissedOnOpen =
+      useCyberUwStore.getState().cases.find((x) => x.id === caseId)?.customer360Dismissed === true
+    if (dismissedOnOpen) {
+      workbench.scrollIntoView({ behavior: 'instant', block: 'start' })
+    }
+    syncFromScroll()
+    return () => root.removeEventListener('scroll', syncFromScroll)
+  }, [caseId, dismissCustomer360, showCustomer360])
 
   if (!c) {
     return (
@@ -1224,7 +1211,22 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
   }
 
   const onWorkflow = c.customer360Dismissed === true
-  const scrollRootRef = useRef<HTMLDivElement>(null)
+
+  const scrollToInsights = () => {
+    showCustomer360(c.id)
+    document.getElementById('cuw-c360-root')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
+
+  const scrollToWorkbench = () => {
+    dismissCustomer360(c.id)
+    document.getElementById('cuw-workbench-root')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
 
   return (
     <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
@@ -1239,18 +1241,18 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
             role="tab"
             aria-selected={!onWorkflow}
             className={`cuw-case-view-tabs__tab${!onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-            onClick={() => showCustomer360(c.id)}
+            onClick={scrollToInsights}
           >
-            Customer 360
+            Birlasoft Customer Insights
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={onWorkflow}
             className={`cuw-case-view-tabs__tab${onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-            onClick={() => dismissCustomer360(c.id)}
+            onClick={scrollToWorkbench}
           >
-            Proceed to Closure
+            Submission Workbench
           </button>
         </div>
 
@@ -1269,11 +1271,13 @@ export function CaseWorkspace(_props: CaseWorkspaceProps = {}) {
             ref={scrollRootRef}
             className="case-drawer-surface cuw-case-shell__pane case-drawer-surface--float-pad min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5"
           >
-            {!onWorkflow ? (
-              <Customer360Panel c={c} />
-            ) : (
+            <Customer360Panel c={c} />
+            <div
+              id="cuw-workbench-root"
+              className="cuw-workbench-section mt-8 scroll-mt-4 border-t border-slate-200/80 pt-8"
+            >
               <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
-            )}
+            </div>
           </div>
 
           <FloatingWorkflowBar

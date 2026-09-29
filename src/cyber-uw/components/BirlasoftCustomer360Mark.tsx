@@ -1,17 +1,13 @@
-/** Birlasoft Customer 360 lockup for the C360 hero. */
+/** Birlasoft Customer Insights lockup for the C360 hero. */
 export function BirlasoftCustomer360Mark({ className = '' }: { className?: string }) {
-  const src = `${import.meta.env.BASE_URL}birlasoft-customer-360.png`
+  const logoSrc = `${import.meta.env.BASE_URL}birlasoft-logo.png`
 
   return (
-    <div className={`cuw-c360-mark ${className}`.trim()}>
-      <img
-        className="cuw-c360-mark__img"
-        src={src}
-        alt="Birlasoft Customer 360"
-        width={420}
-        height={120}
-        decoding="async"
-      />
+    <div className={`cuw-c360-mark ${className}`.trim()} role="img" aria-label="Birlasoft Customer Insights">
+      <img className="cuw-c360-mark__logo" src={logoSrc} alt="" width={120} height={32} decoding="async" />
+      <div className="cuw-c360-mark__copy">
+        <span className="cuw-c360-mark__product">Customer Insights</span>
+      </div>
     </div>
   )
 }

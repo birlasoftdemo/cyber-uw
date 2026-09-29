@@ -1,5 +1,6 @@
 import type { FormSignal, PackageDoc, PackageDocPreviewKind } from '../types'
 import { REQUIRED_PACKAGE_DOCS } from '../constants/requiredPackageDocs'
+import { exhibitBodyFor } from './packageExhibitBodies'
 
 export const PACKAGE_DOC_KINDS = [
   'Application',
@@ -46,6 +47,10 @@ function kindFromName(name: string): string {
 }
 
 function previewFor(name: string, kind: string): { previewKind: PackageDocPreviewKind; previewBody: string } {
+  const rich = exhibitBodyFor(name, kind)
+  if (rich) {
+    return { previewKind: 'pdf', previewBody: rich }
+  }
   const title = name.replace(/_/g, ' ').replace(/\.pdf$/i, '')
   return {
     previewKind: 'pdf',
@@ -95,7 +100,7 @@ function escapeHtml(value: string): string {
 /** Open a package document in a new browser tab. */
 export function openPackageDocument(doc: PackageDoc): void {
   const body = doc.previewBody
-    ? escapeHtml(doc.previewBody).replace(/\n/g, '<br/>')
+    ? escapeHtml(doc.previewBody)
     : 'Ingested package preview. A live connector would stream the stored file here.'
   const html = `<!doctype html>
 <html lang="en">
@@ -103,16 +108,39 @@ export function openPackageDocument(doc: PackageDoc): void {
   <meta charset="utf-8" />
   <title>${escapeHtml(doc.name)}</title>
   <style>
-    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 2.5rem; color: #0f172a; max-width: 42rem; }
-    .kind { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
-    h1 { font-size: 1.15rem; margin: 0.35rem 0 1rem; }
-    .sheet { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; font-size: 0.85rem; line-height: 1.55; color: #334155; white-space: pre-wrap; }
+    @page { margin: 1.25in 1in; }
+    body {
+      font-family: "IBM Plex Sans", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      margin: 0; color: #0f172a; background: #e2e8f0;
+      min-height: 100vh; padding: 2rem 1rem;
+    }
+    .page {
+      max-width: 46rem; margin: 0 auto; background: #fff;
+      border: 1px solid #cbd5e1; box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
+      padding: 2.25rem 2.5rem 2.75rem;
+    }
+    .kind { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 0; }
+    h1 { font-size: 1.05rem; font-weight: 650; margin: 0.4rem 0 0.35rem; line-height: 1.35; }
+    .meta { font-size: 0.72rem; color: #64748b; margin: 0 0 1.25rem; padding-bottom: 0.85rem; border-bottom: 1px solid #e2e8f0; }
+    .sheet {
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem; line-height: 1.55; color: #1e293b; white-space: pre-wrap; margin: 0;
+    }
+    .banner {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px;
+      padding: 0.35rem 0.55rem; margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
-  <p class="kind">${escapeHtml(doc.kind)}</p>
-  <h1>${escapeHtml(doc.name)}</h1>
-  <div class="sheet">${body}</div>
+  <article class="page">
+    <p class="banner">Demo underwriting exhibit — fictional insured package</p>
+    <p class="kind">${escapeHtml(doc.kind)}</p>
+    <h1>${escapeHtml(doc.name)}</h1>
+    <p class="meta">Brightcare Digital Health dossier · confidential · for underwriting use</p>
+    <pre class="sheet">${body}</pre>
+  </article>
 </body>
 </html>`
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))

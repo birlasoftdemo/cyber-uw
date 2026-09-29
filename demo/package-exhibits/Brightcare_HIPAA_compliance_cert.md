@@ -1,0 +1,40 @@
+---
+title: Brightcare_HIPAA_compliance_cert.pdf
+kind: Compliance certifications
+insured: Brightcare Digital Health
+status: demo-facsimile
+---
+
+```
+COMPLIANCE CERTIFICATIONS & ATTESTATIONS PACKET
+Brightcare Digital Health, Inc.
+Packet ID: BC-COMP-2026-09  |  Assembled: 2026-09-10
+CONFIDENTIAL — For underwriting and broker use only. Not for redistribution.
+
+A. HIPAA — COVERED ENTITY / BUSINESS ASSOCIATE POSTURE
+   Role: Business Associate to covered-entity customers
+   BAAs: Standard BAA executed with all ePHI-processing customers
+   Risk analysis: Last enterprise HIPAA security risk analysis 2026-01-28
+   Workforce training: Annual HIPAA + security awareness (98% completion)
+   Breach history (5y): None reportable under HIPAA breach rule
+   Exhibit: “HIPAA Compliance Attestation — Brightcare CISO” (2026-08-01)
+
+B. ISO/IEC 27001:2022
+   Certificate No. HCS-ISMS-88421 (see ISO report exhibit)
+   Valid: 2026-05-02 → 2029-05-01
+
+C. SOC 2 TYPE II
+   Period: 2025-07-01 → 2026-06-30; unmodified opinion (see SOC exhibit)
+
+D. ADDITIONAL
+   HITRUST CSF ........ Self-assessment in progress (target: 2027-H1)
+   GDPR .............. DPA + SCCs for EEA customers; DPO appointed
+   PCI DSS ........... Not in scope (no CHD stored; Stripe Checkout)
+
+E. INSURANCE / REGULATORY
+   Prior cyber policy: Admitted carrier; expiring 2026-09-30
+   No open regulatory inquiries disclosed as of packet date
+
+Prepared by: GRC Lead  |  Attested by: CISO, Brightcare Digital Health
+Broker copy: Marsh Specialty
+```

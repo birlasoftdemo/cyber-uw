@@ -31,6 +31,11 @@ export const GAP_REFER_ASSIGNEES = [
 
 export type GapReferAssigneeId = (typeof GAP_REFER_ASSIGNEES)[number]['id']
 
+/** UW-facing assignees for submission transfer (excludes brokers). */
+export const SUBMISSION_REFER_ASSIGNEES = GAP_REFER_ASSIGNEES.filter(
+  (a) => a.target === 'senior_uw' || a.target === 'specialist',
+)
+
 export const REFERRAL_TARGET_LABELS: Record<ReferralTarget, string> = {
   specialist: 'Specialist',
   broker: 'Broker',

@@ -50,8 +50,8 @@ SSO buttons sign in as the underwriter. Capture uses **Brightcare Digital Health
 | 1. Login | `01-login.png` | Auth gate; no case URLs |
 | 2. Open cases | `02-open-cases.png` | `selectedId`; list filters |
 | 3. New Submission | `03-new-submission.png` | `createSubmission` / demo ingest |
-| 4. Customer 360 | `04-customer-360.png` | `customer360Dismissed` |
-| 5. Float C360 | `05-float-c360.png` | `surface='c360'` → dismiss |
+| 4. Customer Insights | `04-customer-360.png` | `customer360Dismissed` |
+| 5. Float Insights | `05-float-c360.png` | `surface='c360'` → dismiss |
 | 6a. Float Docs Complete | `05b-float-docs-complete.png` | `canLeavePolicyDocuments` |
 | 6b. Policy Documents | `06-policy-documents.png` | Stage 0 / `workflowStage` |
 | 6c. Risk Information | `07-risk-information.png` | Triage + `riskJudgments` |

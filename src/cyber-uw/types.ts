@@ -17,7 +17,7 @@ export type PlatformCardType =
 export type PlatformSignOff = 'pending' | 'ignore' | 'block' | 'escalate'
 export type PlatformOutcome = 'pending' | 'clear' | 'ignore' | 'escalate' | 'blocks'
 
-export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest'
+export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest' | 'submission'
 export type ReferralTarget = 'specialist' | 'broker' | 'senior_uw'
 export type ReferralStatus = 'open' | 'awaiting_broker' | 'resolved' | 'returned'
 
@@ -134,9 +134,9 @@ export interface CyberCase {
   insured: string
   broker: string
   sector: string
-  /** Insured mailing / HQ address for Customer 360. */
+  /** Insured mailing / HQ address for Customer Insights. */
   insuredAddress: string
-  /** Short company blurb for Customer 360 AI summary (~10–20 words). */
+  /** Short company blurb for Customer Insights AI summary (~10–20 words). */
   companyDescription?: string
   productName: string
   productCode: string
@@ -184,7 +184,7 @@ export interface CyberCase {
   packageSignOff?: PackageSignOff
   /** UW edits to extracted application answers (`sectionId::label`). */
   answerOverrides?: Record<string, string>
-  /** When true, skip Customer 360 and open workflow stages. */
+  /** When true, skip Customer Insights and open workflow stages. */
   customer360Dismissed?: boolean
   audit: { at: string; actor: string; action: string }[]
 }
