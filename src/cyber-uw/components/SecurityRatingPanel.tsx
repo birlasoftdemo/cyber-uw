@@ -83,6 +83,15 @@ export function SecurityRatingPanel({
         </div>
       </div>
 
+      <ul className="wb-rating__multipliers">
+        {snap.multipliers.map((m) => (
+          <li key={m.label}>
+            <span className="tabular-nums">{m.factor.toFixed(1)}×</span>
+            <span>{m.label}</span>
+          </li>
+        ))}
+      </ul>
+
       <div className="wb-rating__hero">
         <div className="wb-rating__score-block">
           <p className="wb-rating__score-label">Overall</p>
@@ -138,7 +147,7 @@ export function SecurityRatingPanel({
             <Activity size={12} strokeWidth={2} className="mr-1 inline" aria-hidden />
             12 mo
           </p>
-          <ResponsiveContainer width="100%" height={190}>
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart data={snap.trend} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={0} />
@@ -188,15 +197,6 @@ export function SecurityRatingPanel({
           </ul>
         </div>
       </div>
-
-      <ul className="wb-rating__multipliers">
-        {snap.multipliers.map((m) => (
-          <li key={m.label}>
-            <span className="tabular-nums">{m.factor.toFixed(1)}×</span>
-            <span>{m.label}</span>
-          </li>
-        ))}
-      </ul>
     </section>
   )
 }

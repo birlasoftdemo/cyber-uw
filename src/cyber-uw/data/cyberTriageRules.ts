@@ -847,7 +847,7 @@ export function answersSignedForCase(c: Pick<CyberCase, 'packageSignOff'> & Part
 
 function decorateSectionFields(c: CyberCase, sectionId: string, fields: SectionField[]): SectionField[] {
   return fields.map((f) => {
-    const key = fieldKey(sectionId, f.label)
+    const key = f.key ?? fieldKey(sectionId, f.label)
     const override = c.answerOverrides?.[key]
     const attested = override ?? f.attested ?? f.value
     const value = override ?? f.value
@@ -880,92 +880,171 @@ function fieldsForSectionRaw(c: CyberCase, sectionId: string): SectionField[] {
   const backup = c.formSignals.find((s) => s.label.toLowerCase().includes('backup'))
   const vendors = c.formSignals.find((s) => s.label.toLowerCase().includes('vendor'))
   const incomplete = (c.completenessPct ?? 100) < 80
+  const k = (id: string) => `${sectionId}::${id}`
 
   switch (sectionId) {
     case 'data_inventory':
       return [
         {
-          label: 'Q1a Credit / debit card data',
+          key: k('q1a'),
+          label: 'Does the applicant store or process credit or debit card data? (Q1a)',
           attested: p.cardData ? yn(true) : yn(false),
           value: p.cardData ? yn(true) : yn(false),
           signal: p.cardData
             ? `PCI-DSS ${p.pciCompliant ? 'Yes' : 'Not decision-ready'} · volume from Q2 band`
             : undefined,
         },
-        { label: 'Q1b Medical information (non-employee)', value: yn(p.healthcare) },
-        { label: 'Q1c Non-employee SSNs', value: yn(p.healthcare || p.retail) },
-        { label: 'Q1d Employee / HR information', value: 'Yes' },
-        { label: 'Q2 Unique individuals (records)', value: p.recordsBand },
-        { label: 'Q3 Encryption (at rest / transit / mobile / BYOD / third party)', value: p.encryptionNote },
         {
-          label: 'Q4 HIPAA',
+          key: k('q1b'),
+          label: 'Does the applicant hold medical information about non-employees? (Q1b)',
+          value: yn(p.healthcare),
+        },
+        {
+          key: k('q1c'),
+          label: 'Does the applicant hold Social Security numbers for non-employees? (Q1c)',
+          value: yn(p.healthcare || p.retail),
+        },
+        {
+          key: k('q1d'),
+          label: 'Does the applicant hold employee or HR information? (Q1d)',
+          value: 'Yes',
+        },
+        {
+          key: k('q2'),
+          label: 'How many unique individuals’ records are in scope? (Q2)',
+          value: p.recordsBand,
+        },
+        {
+          key: k('q3'),
+          label:
+            'Is sensitive data encrypted at rest, in transit, on mobile devices, on BYOD, and at third parties? (Q3)',
+          value: p.encryptionNote,
+        },
+        {
+          key: k('q4'),
+          label: 'Is the applicant a HIPAA-covered entity or business associate? (Q4)',
           value: p.hipaaApplies ? 'Healthcare entity — Yes; compliance attested' : 'N/A',
         },
         {
-          label: 'Q5 GDPR',
+          key: k('q5'),
+          label: 'Is the applicant subject to GDPR for personal data in this risk? (Q5)',
           value: p.gdprApplies ? 'Subject to GDPR — compliance attested' : 'Not subject / N/A',
         },
       ]
     case 'privacy_controls':
       return [
-        { label: 'Q6a Chief Privacy Officer (or equivalent)', value: p.healthcare || p.saas ? 'Yes' : incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q6b Public privacy policy reviewed by counsel', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q6c Data classification and inventory', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q6d Retention, destruction, recordkeeping', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q6e Annual privacy / security training', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q6f Restricted access by job function', value: incomplete ? 'Not answered' : 'Yes' },
+        {
+          key: k('q6a'),
+          label: 'Does the applicant have a Chief Privacy Officer or equivalent? (Q6a)',
+          value: p.healthcare || p.saas ? 'Yes' : incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q6b'),
+          label: 'Has counsel reviewed the public privacy policy? (Q6b)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q6c'),
+          label: 'Does the applicant maintain a data classification and inventory? (Q6c)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q6d'),
+          label: 'Are retention, destruction, and recordkeeping procedures in place? (Q6d)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q6e'),
+          label: 'Do staff receive annual privacy and security training? (Q6e)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q6f'),
+          label: 'Is access to sensitive data restricted by job function? (Q6f)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
       ]
     case 'network_security':
       return [
-        { label: 'Q7a CISO (or equivalent)', value: p.saas || p.healthcare ? 'Yes' : incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q7b Active firewall', value: 'Yes' },
         {
-          label: 'Q7c Anti-virus / EDR across devices',
+          key: k('q7a'),
+          label: 'Does the applicant have a CISO or equivalent security owner? (Q7a)',
+          value: p.saas || p.healthcare ? 'Yes' : incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q7b'),
+          label: 'Is an active firewall in place at the network edge? (Q7b)',
+          value: 'Yes',
+        },
+        {
+          key: k('q7c'),
+          label: 'Is anti-virus or EDR deployed across devices that handle company data? (Q7c)',
           attested: edr?.answer ?? 'Yes',
           value: edr?.answer ?? (p.edrGap ? 'Antivirus only' : 'Yes'),
           signal: edr?.signal,
         },
         {
-          label: 'Q7d Patch management (automated / critical ≤ 30 days)',
+          key: k('q7d'),
+          label: 'Is patch management automated, with critical patches applied within 30 days? (Q7d)',
           attested: 'Yes',
           value: p.edrGap || incomplete ? 'Partial' : 'Yes',
         },
-        { label: 'Q7e–g IDS / IPS / DLP', value: p.saas || p.healthcare ? 'Yes / Yes / Yes' : 'Yes / No / No' },
         {
-          label: 'Q7h MFA for administrative or privileged access',
+          key: k('q7eg'),
+          label: 'Are IDS, IPS, and DLP controls in place where required? (Q7e–g)',
+          value: p.saas || p.healthcare ? 'Yes / Yes / Yes' : 'Yes / No / No',
+        },
+        {
+          key: k('q7h'),
+          label: 'Is MFA required for administrative or privileged access? (Q7h)',
           attested: mfa?.answer ?? 'Yes',
           value: p.mfaGap ? 'No / contradicted' : 'Yes',
           signal: mfa?.signal,
         },
         {
-          label: 'Q7i MFA for remote access to systems with bulk sensitive data',
+          key: k('q7i'),
+          label:
+            'Is MFA required for remote access to systems that hold bulk sensitive data? (Q7i)',
           attested: 'Yes',
           value: p.mfaGap ? 'No / contradicted' : 'Yes',
         },
         {
-          label: 'Q7j MFA for remote access to email',
+          key: k('q7j'),
+          label: 'Is MFA required for remote access to email? (Q7j)',
           attested: mfa?.answer ?? 'Yes',
           value: mfa?.answer ?? (p.mfaGap ? 'Gap on mail protocols' : 'Yes'),
           signal: mfa?.signal,
         },
         {
-          label: 'Q7k Remote access limited to VPN',
+          key: k('q7k'),
+          label: 'Is remote access limited to a VPN (or equivalent controlled path)? (Q7k)',
           attested: 'Yes',
           value: p.mfaGap ? 'No — exposed RDP / legacy auth' : 'Yes',
         },
         {
-          label: 'Q7l Backup and recovery (automated · tested annually)',
+          key: k('q7l'),
+          label: 'Are backups automated and tested at least annually? (Q7l)',
           attested: backup?.answer ?? 'Yes',
           value: backup?.answer ?? (p.backupWeak ? 'Incomplete' : 'Yes'),
           signal: backup?.signal,
         },
-        { label: 'Q7m–n Annual pentest / security assessment (third party)', value: p.saas || p.healthcare ? 'Yes' : incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q7o–q Logs, password complexity, joiner-mover-leaver', value: incomplete ? 'Not answered' : 'Yes' },
+        {
+          key: k('q7mn'),
+          label: 'Has a third party completed an annual pentest or security assessment? (Q7m–n)',
+          value: p.saas || p.healthcare ? 'Yes' : incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q7oq'),
+          label:
+            'Are logging, password complexity, and joiner-mover-leaver controls in place? (Q7o–q)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
       ]
     case 'payment_card':
       if (!p.cardData) {
         return [
           {
+            key: k('pci-scope'),
             label:
               'Does the applicant collect, process, store, or transmit credit or debit card data?',
             value: 'No — PCI-DSS not applicable',
@@ -974,86 +1053,190 @@ function fieldsForSectionRaw(c: CyberCase, sectionId: string): SectionField[] {
       }
       return [
         {
+          key: k('pci-scope'),
           label:
             'Does the applicant collect, process, store, or transmit credit or debit card data?',
           value: 'Yes',
         },
         {
+          key: k('pci-transit'),
           label:
             'While card data moves, is it encrypted the whole way (end-to-end or point-to-point)?',
           value: p.pciCompliant ? 'Yes' : 'Not answered / No',
         },
         {
+          key: k('pci-rest'),
           label:
             'At rest, is card data encrypted or tokenized so raw card numbers are not sitting in clear text?',
           value: p.pciCompliant ? 'Yes' : 'Not answered / No',
         },
         {
+          key: k('pci-emv'),
           label: 'If they take cards in person, are the terminals EMV-capable?',
           value: p.retail ? (p.pciCompliant ? 'Yes' : 'Not answered') : 'N/A — not card-present',
         },
       ]
     case 'content_liability':
       return [
-        { label: 'Communications and Media Liability', value: 'Coverage is not requested' },
-        { label: 'Q9 Written IP-rights program', value: 'N/A' },
-        { label: 'Q10a–c Infringing / offensive content and complaint response', value: 'N/A' },
+        {
+          key: k('media'),
+          label: 'Is Communications and Media Liability coverage requested?',
+          value: 'Coverage is not requested',
+        },
+        {
+          key: k('q9'),
+          label: 'Does the applicant maintain a written IP-rights clearance program? (Q9)',
+          value: 'N/A',
+        },
+        {
+          key: k('q10'),
+          label:
+            'Are processes in place for infringing or offensive content and complaint response? (Q10a–c)',
+          value: 'N/A',
+        },
       ]
     case 'bc_dr_ir':
       return [
-        { label: 'Q11a Disaster recovery / BCP for system disruption', attested: 'Yes', value: p.irTested ? 'Yes' : 'Incomplete / untested' },
-        { label: 'Q11b Incident-response plan for network intrusion', attested: 'Yes', value: p.irTested ? 'Yes' : p.backupWeak ? 'Not attested' : 'Yes' },
-        { label: 'Q12 Plans tested; deficiencies remediated', attested: p.irTested ? 'Yes' : 'No', value: p.irTested ? 'Yes' : 'No / N/A' },
-        { label: 'Q13 Time to restore critical operations', value: p.rtoBand },
+        {
+          key: k('q11a'),
+          label:
+            'Is there a disaster recovery or business continuity plan for system disruption? (Q11a)',
+          attested: 'Yes',
+          value: p.irTested ? 'Yes' : 'Incomplete / untested',
+        },
+        {
+          key: k('q11b'),
+          label: 'Is there an incident-response plan for network intrusion? (Q11b)',
+          attested: 'Yes',
+          value: p.irTested ? 'Yes' : p.backupWeak ? 'Not attested' : 'Yes',
+        },
+        {
+          key: k('q12'),
+          label: 'Are DR and IR plans tested regularly, with deficiencies remediated? (Q12)',
+          attested: p.irTested ? 'Yes' : 'No',
+          value: p.irTested ? 'Yes' : 'No / N/A',
+        },
+        {
+          key: k('q13'),
+          label: 'How quickly can the applicant restore critical operations after an outage? (Q13)',
+          value: p.rtoBand,
+        },
       ]
     case 'vendor_controls':
       return [
-        { label: 'Q14a Written vendor information-security controls', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Q14b Periodic review of vendor access rights', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Named vendors (application)', value: vendors?.answer ?? 'See outsourced grid' },
+        {
+          key: k('q14a'),
+          label: 'Does the applicant require written information-security controls from vendors? (Q14a)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('q14b'),
+          label: 'Are vendor access rights reviewed on a periodic basis? (Q14b)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('named-vendors'),
+          label: 'Which material vendors are named on the application?',
+          value: vendors?.answer ?? 'See outsourced grid',
+        },
       ]
     case 'outsourced_services':
       return [
-        { label: 'Data backup', value: p.backupWeak ? 'Yes — provider not evidenced' : 'Yes' },
-        { label: 'Payment processing', value: p.retail || p.healthcare ? 'Yes' : 'No' },
-        { label: 'Data-center hosting / IT infrastructure', value: 'Yes' },
-        { label: 'IT security', value: p.saas || p.healthcare ? 'Yes' : 'No' },
-        { label: 'Web hosting / data processing', value: p.saas ? 'Yes' : 'No' },
         {
-          label: 'Hosting outage — alternative solution',
+          key: k('backup'),
+          label: 'Is data backup outsourced to a third party?',
+          value: p.backupWeak ? 'Yes — provider not evidenced' : 'Yes',
+        },
+        {
+          key: k('payments'),
+          label: 'Is payment processing outsourced to a third party?',
+          value: p.retail || p.healthcare ? 'Yes' : 'No',
+        },
+        {
+          key: k('hosting'),
+          label: 'Is data-center hosting or IT infrastructure outsourced?',
+          value: 'Yes',
+        },
+        {
+          key: k('it-sec'),
+          label: 'Is IT security outsourced to a managed provider?',
+          value: p.saas || p.healthcare ? 'Yes' : 'No',
+        },
+        {
+          key: k('web'),
+          label: 'Is web hosting or data processing outsourced?',
+          value: p.saas ? 'Yes' : 'No',
+        },
+        {
+          key: k('hosting-alt'),
+          label: 'If hosting fails, is an alternative solution documented?',
           value: incomplete ? 'Not answered' : 'Documented failover',
         },
         {
-          label: 'Payment processing — alternative means',
+          key: k('pay-alt'),
+          label: 'If payment processing fails, is an alternative means available?',
           value: p.retail ? (p.backupWeak ? 'No' : 'Yes') : 'N/A',
         },
       ]
     case 'loss_information':
       return [
         {
-          label: 'Q16 Disruption, breach, extortion, or privacy claim (3 years)',
+          key: k('q16'),
+          label:
+            'In the last three years, has there been a disruption, breach, extortion, or privacy claim? (Q16)',
           attested: p.lossYes ? 'Yes' : 'No',
           value: p.lossYes ? 'Yes / incomplete' : 'No',
         },
         {
-          label: 'Q17 Aware of circumstance that could give rise to a claim',
+          key: k('q17'),
+          label:
+            'Is the applicant aware of any circumstance that could give rise to a claim? (Q17)',
           attested: p.lossYes ? 'Yes' : 'No',
           value: p.lossYes ? 'Not clearly No' : 'No',
         },
         {
-          label: 'If Yes — costs, losses, corrective procedures',
+          key: k('q16-detail'),
+          label: 'If yes, are costs, losses, and corrective procedures documented?',
           value: p.lossYes ? 'Required attachment missing or incomplete' : 'N/A',
         },
       ]
     case 'requested_insurance_terms':
       return [
-        { label: 'Privacy and Security — limit', value: moneyShort(c.limitRequestedUsd) },
-        { label: 'Cyber Extortion — limit', value: moneyShort(Math.round(c.limitRequestedUsd * 0.15)) },
-        { label: 'Business Interruption — limit', value: moneyShort(Math.round(c.limitRequestedUsd * 0.25)) },
-        { label: 'Dependent Business Interruption — limit', value: moneyShort(Math.round(c.limitRequestedUsd * 0.1)) },
-        { label: 'Social Engineering Fraud — limit', value: moneyShort(Math.round(c.limitRequestedUsd * 0.05)) },
-        { label: 'Telecom Fraud / Reputation Harm', value: moneyShort(Math.round(c.limitRequestedUsd * 0.05)) },
-        { label: 'Retention requested (each agreement)', value: '$100,000' },
+        {
+          key: k('ps-limit'),
+          label: 'What Privacy and Security limit is requested?',
+          value: moneyShort(c.limitRequestedUsd),
+        },
+        {
+          key: k('ext-limit'),
+          label: 'What Cyber Extortion limit is requested?',
+          value: moneyShort(Math.round(c.limitRequestedUsd * 0.15)),
+        },
+        {
+          key: k('bi-limit'),
+          label: 'What Business Interruption limit is requested?',
+          value: moneyShort(Math.round(c.limitRequestedUsd * 0.25)),
+        },
+        {
+          key: k('dbi-limit'),
+          label: 'What Dependent Business Interruption limit is requested?',
+          value: moneyShort(Math.round(c.limitRequestedUsd * 0.1)),
+        },
+        {
+          key: k('sef-limit'),
+          label: 'What Social Engineering Fraud limit is requested?',
+          value: moneyShort(Math.round(c.limitRequestedUsd * 0.05)),
+        },
+        {
+          key: k('tel-limit'),
+          label: 'What Telecom Fraud or Reputation Harm limit is requested?',
+          value: moneyShort(Math.round(c.limitRequestedUsd * 0.05)),
+        },
+        {
+          key: k('retention'),
+          label: 'What retention is requested for each agreement?',
+          value: '$100,000',
+        },
       ]
     case 'requested_terms': {
       const start = c.policyStartAt?.trim() || c.receivedAt.slice(0, 10)
@@ -1066,20 +1249,48 @@ function fieldsForSectionRaw(c: CyberCase, sectionId: string): SectionField[] {
           return d.toISOString().slice(0, 10)
         })()
       return [
-        { label: 'Q18 Aggregate limit requested', value: moneyShort(c.limitRequestedUsd) },
-        { label: 'Q18 Effective date requested', value: start.slice(0, 10) },
-        { label: 'Proposed end date', value: end.slice(0, 10) },
+        {
+          key: k('q18-limit'),
+          label: 'What aggregate limit is the applicant requesting? (Q18)',
+          value: moneyShort(c.limitRequestedUsd),
+        },
+        {
+          key: k('q18-start'),
+          label: 'What effective date is requested for the policy? (Q18)',
+          value: start.slice(0, 10),
+        },
+        {
+          key: k('q18-end'),
+          label: 'What proposed end date follows from that inception?',
+          value: end.slice(0, 10),
+        },
       ]
     }
     case 'current_coverage':
       return [
-        { label: 'Q19 Currently purchase CyberRisk coverage', value: incomplete ? 'Not answered' : 'Yes' },
-        { label: 'Expiring carrier', value: incomplete ? '—' : c.broker },
-        { label: 'Expiring limit', value: incomplete ? '—' : moneyShort(Math.round(c.limitRequestedUsd * 0.8)) },
-        { label: 'Date coverage first purchased', value: incomplete ? '—' : '2019' },
+        {
+          key: k('q19'),
+          label: 'Does the applicant currently purchase CyberRisk coverage? (Q19)',
+          value: incomplete ? 'Not answered' : 'Yes',
+        },
+        {
+          key: k('carrier'),
+          label: 'Who is the expiring carrier?',
+          value: incomplete ? '—' : c.broker,
+        },
+        {
+          key: k('exp-limit'),
+          label: 'What is the expiring aggregate limit?',
+          value: incomplete ? '—' : moneyShort(Math.round(c.limitRequestedUsd * 0.8)),
+        },
+        {
+          key: k('first-purchased'),
+          label: 'When was cyber coverage first purchased?',
+          value: incomplete ? '—' : '2019',
+        },
       ]
     default:
-      return [{ label: 'Named insured', value: c.insured }]
+      return [{ key: k('insured'), label: 'Who is the named insured on this submission?', value: c.insured }]
   }
 }
 

@@ -52,7 +52,7 @@ function InherentRiskBubble({
         </span>
         <h4 className="cuw-type-title">Est. ALE {formatExposureUsd(aleUsd)}</h4>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={260}>
         <ScatterChart margin={{ top: 8, right: 12, bottom: 8, left: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis
@@ -159,7 +159,7 @@ function WorstCaseExposureChart({
           </span>
         </h4>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={240}>
         <BarChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
@@ -220,7 +220,7 @@ function CoverageAdequacyChart({
           <h4 className="cuw-type-title">{adequacyLabel}</h4>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis

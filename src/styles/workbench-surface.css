@@ -2369,14 +2369,14 @@
 
   .wb-risk-card__answer-label {
     font-size: 0.75rem;
-    font-weight: 600;
-    color: #334155;
+    font-weight: 700;
+    color: var(--cuw-ink);
   }
 
   .wb-risk-card__answer-value {
     font-size: 0.8125rem;
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 500;
+    color: var(--cuw-ink-secondary, #475569);
   }
 
   .wb-risk-card__answers-empty {
@@ -2795,6 +2795,106 @@
     color: var(--cuw-ink);
   }
 
+  /* Extracted-fields accordion (Policy Documents) */
+  .wb-extract-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .wb-extract-accordion__item {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    background:
+      linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 6px 16px rgba(15, 23, 42, 0.04);
+  }
+
+  .wb-extract-accordion__heading {
+    margin: 0;
+  }
+
+  .wb-extract-accordion__head {
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+    border-bottom: 1px solid transparent;
+    background: linear-gradient(90deg, rgba(239, 246, 255, 0.65) 0%, rgba(255, 255, 255, 0.4) 100%);
+  }
+
+  .wb-extract-accordion__item:has([aria-expanded='true']) .wb-extract-accordion__head {
+    border-bottom-color: rgba(226, 232, 240, 0.9);
+  }
+
+  .wb-extract-accordion__trigger {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.7rem 0.5rem 0.7rem 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+  }
+
+  .wb-extract-accordion__trigger:hover {
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .wb-extract-accordion__trigger:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, 0.45);
+    outline-offset: -2px;
+  }
+
+  .wb-extract-accordion__indicator {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--cuw-ink-tertiary);
+    transition: transform 0.18s ease;
+  }
+
+  .wb-extract-accordion__trigger[aria-expanded='true'] .wb-extract-accordion__indicator {
+    transform: rotate(180deg);
+    color: var(--cuw-ink-link);
+  }
+
+  .wb-extract-accordion__title-wrap {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .wb-extract-accordion__title {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    color: var(--cuw-ink-link);
+  }
+
+  .wb-extract-accordion__sub {
+    font-family: var(--font-ui);
+    font-size: 0.6875rem;
+    font-weight: 550;
+    color: var(--cuw-ink-tertiary);
+  }
+
+  .wb-extract-accordion__head .wb-q-pen {
+    margin: 0.55rem 0.65rem 0.55rem 0;
+    align-self: center;
+  }
+
+  .wb-extract-accordion__body {
+    padding: 0.75rem;
+  }
+
   .wb-q-cell__actions {
     display: flex;
     flex-shrink: 0;
@@ -2822,17 +2922,17 @@
   }
 
   .wb-q-cell__value {
-    font-family: var(--font-display);
+    font-family: var(--font-ui);
     font-size: 0.875rem;
-    font-weight: 650;
-    letter-spacing: -0.02em;
-    color: var(--cuw-ink);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--cuw-ink-secondary, #475569);
     word-break: break-word;
   }
 
   .wb-q-cell__value--measured {
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 550;
+    color: var(--cuw-ink-secondary, #475569);
   }
 
   .wb-q-cell__floor {
@@ -2981,14 +3081,16 @@
   .wb-risk-evidence__market {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: 100%;
   }
 
   .wb-rating {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 1.15rem;
-    min-height: 0;
+    height: 100%;
+    min-height: 100%;
     border: 1px solid rgba(210, 210, 215, 0.9);
     border-radius: 1rem;
     background:
@@ -3131,19 +3233,21 @@
 
   .wb-rating__body {
     display: grid;
+    flex: 1 1 auto;
     grid-template-columns: minmax(0, 1.4fr) minmax(12rem, 0.9fr);
     gap: 0.85rem;
-    align-items: start;
-    align-content: start;
+    align-items: stretch;
+    align-content: stretch;
     min-height: 0;
   }
 
   .wb-rating__chart {
     position: relative;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     min-width: 0;
-    min-height: 13.5rem;
+    min-height: 15.5rem;
     border: 1px solid var(--cuw-hairline);
     border-radius: 0.85rem;
     padding: 0.55rem 0.55rem 0.3rem;
@@ -3152,6 +3256,7 @@
 
   .wb-rating__vectors-wrap {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
   }
@@ -3423,12 +3528,26 @@
     color: var(--cuw-ink);
   }
 
-  /* Variant A — market | capacity split (content-height, no equal stretch) */
+  /* Variant A — market | capacity split (equal stretch fills left whitespace) */
   .wb-risk-evidence__split {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    gap: 1rem;
-    align-items: start;
+    gap: 1.15rem;
+    align-items: stretch;
+  }
+
+  .wb-risk-evidence__capacity {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .wb-capacity-ledger {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 1.15rem;
+    height: 100%;
   }
 
   .wb-capacity-ledger__table {
@@ -3476,8 +3595,16 @@
   /* Capacity digest chart grid */
   .wb-capacity-charts {
     display: grid;
-    gap: 1rem;
+    flex: 1 1 auto;
+    gap: 1.15rem;
     grid-template-columns: 1fr;
+    align-content: stretch;
+  }
+
+  .wb-capacity-charts > .cuw-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   @media (min-width: 1024px) {

@@ -1,4 +1,4 @@
-import { Button, Typography } from '@heroui/react'
+import { Accordion, Button, Typography } from '@heroui/react'
 import {
   CalendarCheck2,
   CalendarRange,
@@ -54,7 +54,7 @@ import { carrierExposureForCase } from '../data/riskVizDemo'
 import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
-import type { CyberCase, CyberTier, RiskJudgmentStatus } from '../types'
+import type { CyberCase, RiskJudgmentStatus } from '../types'
 import { checklistStatusForCase, missingDocsForCase } from '../utils/missingDocs'
 import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
 import { money } from './CyberPrimitives'
@@ -556,14 +556,22 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
 }
 
 
+function policyAdminSignOffStatus(c: CyberCase): string {
+  if (c.pasStatus === 'synced') return 'Synced to PAS'
+  if (isFinancialSignOffComplete(c.financialSignOff) && c.decision === 'pending') {
+    return 'Ready for policy admin'
+  }
+  if (isFinancialSignOffComplete(c.financialSignOff) && c.decision !== 'pending') {
+    return 'Ready for policy admin'
+  }
+  return 'Pending financial sign-off'
+}
+
 function FinancialSignOffPanel({ c }: { c: CyberCase }) {
   const saveFinancialSignOff = useCyberUwStore((s) => s.saveFinancialSignOff)
   const existing = c.financialSignOff
   const [limitUsd, setLimitUsd] = useState(existing?.limitUsd ?? c.limitRequestedUsd)
   const [sirUsd, setSirUsd] = useState(existing?.sirUsd ?? 100_000)
-  const [pricingTier, setPricingTier] = useState<CyberTier>(
-    existing?.pricingTier ?? c.tier,
-  )
   const [stubPremiumUsd, setStubPremiumUsd] = useState(
     existing?.stubPremiumUsd ?? Math.round(c.limitRequestedUsd * 0.012),
   )
@@ -573,6 +581,7 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
   const criticalOpen = c.gaps.filter(
     (g) => g.severity === 'critical' && g.disposition === 'open',
   ).length
+  const pricingTier = c.tier
   const within = isWithinJuniorAuthority(limitUsd, pricingTier)
   const needsCosign = needsManagerCosign({
     limitUsd,
@@ -580,13 +589,29 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
     criticalOpenGaps: criticalOpen,
   })
   const locked = Boolean(existing?.signedOffAt) && c.decision !== 'pending'
+  const pasStatusLabel = policyAdminSignOffStatus(c)
 
   if (isFinancialSignOffComplete(existing) && c.decision !== 'pending') {
     return (
-      <div className="wb-fin-signoff wb-fin-signoff--done rounded-lg px-3.5 py-3 text-sm">
-        Financial sign off recorded · {money(existing!.limitUsd)} limit · SIR{' '}
-        {money(existing!.sirUsd)} · Tier {existing!.pricingTier}
-        {existing!.managerCosign ? ' · Manager approved' : ''}
+      <div className="wb-fin-signoff space-y-3 rounded-lg p-3.5">
+        <p className="wb-fin-signoff__title text-sm font-semibold">Financial sign off</p>
+        <QuestionMetaGrid
+          items={[
+            { label: 'Aggregate limit', value: money(existing!.limitUsd), icon: Landmark },
+            { label: 'SIR / retention', value: money(existing!.sirUsd), icon: CircleDollarSign },
+            {
+              label: 'Stub premium',
+              value: money(
+                existing!.stubPremiumUsd ?? Math.round(existing!.limitUsd * 0.012),
+              ),
+              icon: CircleDollarSign,
+            },
+            { label: 'Policy Admin Sign-off', value: pasStatusLabel, icon: ClipboardCheck },
+          ]}
+        />
+        {existing!.managerCosign ? (
+          <p className="text-xs text-emerald-800">Manager approved</p>
+        ) : null}
       </div>
     )
   }
@@ -602,54 +627,58 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
         </span>
       </div>
       <p className="wb-fin-signoff__hint text-xs">
-        Confirm limit, SIR, and pricing tier before Quote (PAS-style delegated authority).
+        Confirm aggregate limit, SIR, and stub premium before Quote (PAS-style delegated authority).
       </p>
-      <div className="wb-q-grid">
-        <label className="wb-q-cell text-xs font-medium">
-          Aggregate limit (USD)
+      <div className="wb-q-grid wb-q-grid--meta">
+        <label className="wb-q-cell">
+          <span className="wb-q-cell__glyph" aria-hidden>
+            <Landmark size={15} strokeWidth={1.75} />
+          </span>
+          <span className="wb-q-cell__label">Aggregate limit</span>
           <input
             type="number"
-            className="wb-q-cell__input mt-1"
+            className="wb-q-cell__input mt-0.5"
             value={limitUsd}
             disabled={locked}
+            aria-label="Aggregate limit (USD)"
             onChange={(e) => setLimitUsd(Number(e.target.value) || 0)}
           />
         </label>
-        <label className="wb-q-cell text-xs font-medium">
-          SIR / retention (USD)
+        <label className="wb-q-cell">
+          <span className="wb-q-cell__glyph" aria-hidden>
+            <CircleDollarSign size={15} strokeWidth={1.75} />
+          </span>
+          <span className="wb-q-cell__label">SIR / retention</span>
           <input
             type="number"
-            className="wb-q-cell__input mt-1"
+            className="wb-q-cell__input mt-0.5"
             value={sirUsd}
             disabled={locked}
+            aria-label="SIR / retention (USD)"
             onChange={(e) => setSirUsd(Number(e.target.value) || 0)}
           />
         </label>
-        <label className="wb-q-cell text-xs font-medium">
-          Pricing tier
-          <select
-            className="wb-q-cell__input mt-1"
-            value={pricingTier}
-            disabled={locked}
-            onChange={(e) => setPricingTier(Number(e.target.value) as CyberTier)}
-          >
-            {[1, 2, 3, 4, 5].map((t) => (
-              <option key={t} value={t}>
-                Tier {t}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="wb-q-cell text-xs font-medium">
-          Stub premium (USD)
+        <label className="wb-q-cell">
+          <span className="wb-q-cell__glyph" aria-hidden>
+            <CircleDollarSign size={15} strokeWidth={1.75} />
+          </span>
+          <span className="wb-q-cell__label">Stub premium</span>
           <input
             type="number"
-            className="wb-q-cell__input mt-1"
+            className="wb-q-cell__input mt-0.5"
             value={stubPremiumUsd}
             disabled={locked}
+            aria-label="Stub premium (USD)"
             onChange={(e) => setStubPremiumUsd(Number(e.target.value) || 0)}
           />
         </label>
+        <div className="wb-q-cell">
+          <span className="wb-q-cell__glyph" aria-hidden>
+            <ClipboardCheck size={15} strokeWidth={1.75} />
+          </span>
+          <p className="wb-q-cell__label">Policy Admin Sign-off</p>
+          <p className="wb-q-cell__value">{pasStatusLabel}</p>
+        </div>
       </div>
       {needsCosign ? (
         <div className="space-y-2 border-t border-slate-200 pt-3">
@@ -896,41 +925,69 @@ function PolicyDocumentsStageBody({
 
       <section className="space-y-3">
         <h4 className="text-sm font-semibold text-slate-900">Extracted fields</h4>
-        {reports.map((report) => {
-          const editing = Boolean(editingSections[report.section.id])
-          return (
-            <div key={report.section.id} className="wb-qual-bucket">
-              <div className="wb-qual-bucket__head">
-                <h5 className="wb-qual-bucket__title">{report.section.title}</h5>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-medium text-slate-500">Q{report.section.questions}</span>
-                  <button
-                    type="button"
-                    className="wb-q-pen"
-                    aria-pressed={editing}
-                    aria-label={editing ? `Lock ${report.section.title}` : `Edit ${report.section.title}`}
-                    onClick={() =>
-                      setEditingSections((cur) => ({
-                        ...cur,
-                        [report.section.id]: !cur[report.section.id],
-                      }))
-                    }
-                  >
-                    {editing ? <PencilOff size={14} /> : <Pencil size={14} />}
-                  </button>
-                </div>
-              </div>
-              <div className="p-3">
-                <IngestQuestionGrid
-                  caseId={c.id}
-                  sectionId={report.section.id}
-                  fields={report.fields}
-                  editing={editing}
-                />
-              </div>
-            </div>
-          )
-        })}
+        <Accordion
+          allowsMultipleExpanded
+          defaultExpandedKeys={[]}
+          hideSeparator
+          className="wb-extract-accordion w-full"
+        >
+          {reports.map((report) => {
+            const editing = Boolean(editingSections[report.section.id])
+            const fieldCount = report.fields.length
+            return (
+              <Accordion.Item
+                key={report.section.id}
+                id={report.section.id}
+                className="wb-extract-accordion__item"
+              >
+                <Accordion.Heading className="wb-extract-accordion__heading">
+                  <div className="wb-extract-accordion__head">
+                    <Accordion.Trigger className="wb-extract-accordion__trigger">
+                      <Accordion.Indicator className="wb-extract-accordion__indicator">
+                        <ChevronDown size={16} strokeWidth={2} />
+                      </Accordion.Indicator>
+                      <span className="wb-extract-accordion__title-wrap">
+                        <span className="wb-extract-accordion__title">{report.section.title}</span>
+                        <span className="wb-extract-accordion__sub">
+                          {fieldCount} {fieldCount === 1 ? 'field' : 'fields'} · Q
+                          {report.section.questions}
+                        </span>
+                      </span>
+                    </Accordion.Trigger>
+                    <button
+                      type="button"
+                      className="wb-q-pen"
+                      aria-pressed={editing}
+                      aria-label={
+                        editing ? `Lock ${report.section.title}` : `Edit ${report.section.title}`
+                      }
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setEditingSections((cur) => ({
+                          ...cur,
+                          [report.section.id]: !cur[report.section.id],
+                        }))
+                      }}
+                    >
+                      {editing ? <PencilOff size={14} /> : <Pencil size={14} />}
+                    </button>
+                  </div>
+                </Accordion.Heading>
+                <Accordion.Panel>
+                  <Accordion.Body className="wb-extract-accordion__body">
+                    <IngestQuestionGrid
+                      caseId={c.id}
+                      sectionId={report.section.id}
+                      fields={report.fields}
+                      editing={editing}
+                    />
+                  </Accordion.Body>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )
+          })}
+        </Accordion>
       </section>
 
       {missing.length > 0 ? (
