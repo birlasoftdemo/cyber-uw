@@ -4615,91 +4615,27 @@
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 0.5rem 1rem;
+    gap: 0.75rem 1.25rem;
     background: #1d4ed8;
     padding: 0.4rem 0.85rem;
   }
 
   .cuw-float-dock {
     display: flex;
-    flex: 1 1 auto;
-    justify-content: center;
-    min-width: 0;
-    padding: 0;
-  }
-
-  .cuw-case-view-tabs {
-    display: flex;
     flex: 0 0 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem 0.85rem;
+    justify-content: flex-start;
     padding: 0;
-    border: 0;
-    background: transparent;
-  }
-
-  .cuw-case-view-tabs__tab {
-    position: relative;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    padding: 0.22rem 0.7rem 0.28rem;
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 650;
-    letter-spacing: -0.01em;
-    color: #fff;
-    text-decoration: underline;
-    text-underline-offset: 0.28rem;
-    cursor: pointer;
-  }
-
-  .cuw-case-view-tabs__tab:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .cuw-case-view-tabs__tab:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-
-  .cuw-case-view-tabs__tab--active {
-    color: #1e3a8a;
-    background: #fff;
-    text-decoration: none;
-    box-shadow: none;
-  }
-
-  .cuw-case-view-tabs__tab--active:hover {
-    color: #1e3a8a;
-    background: #fff;
   }
 
   .cuw-case-chrome-row__stepper {
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .cuw-case-chrome-row__stepper .wb-progress-stepper {
+    width: max-content;
+    flex-wrap: nowrap;
     justify-content: flex-end;
-  }
-
-  @media (max-width: 1100px) {
-    .cuw-case-chrome-row {
-      flex-wrap: wrap;
-    }
-
-    .cuw-float-dock,
-    .cuw-case-chrome-row__stepper {
-      flex: 1 1 100%;
-      justify-content: flex-start;
-    }
-
-    .cuw-case-chrome-row__stepper .wb-progress-stepper {
-      justify-content: flex-start;
-    }
   }
 
   .cuw-case-chrome-row .wb-progress-stepper__node {
@@ -4759,7 +4695,7 @@
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.7rem;
     border: 0;
     background: transparent;
@@ -4807,10 +4743,7 @@
 
   .cuw-float-bar__status-title {
     margin: 0;
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex: 0 0 auto;
     font-family: var(--font-ui);
     font-size: 0.75rem;
     font-weight: 600;

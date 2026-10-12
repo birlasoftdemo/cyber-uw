@@ -129,7 +129,7 @@ export function CyberProgressStepper({ c }: { c: CyberCase }) {
   return (
     <ol
       aria-label="Case progress"
-      className="wb-progress-stepper wb-progress-stepper--enlarged flex w-full flex-wrap items-center gap-x-1.5 gap-y-1.5"
+      className="wb-progress-stepper wb-progress-stepper--enlarged flex w-max flex-nowrap items-center gap-x-1.5"
     >
       {CYBER_FLOW_STAGES.map((step, i) => {
         const isComplete = i < currentIdx

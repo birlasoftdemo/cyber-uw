@@ -1115,46 +1115,10 @@ export function CaseWorkspace() {
 
   const onWorkflow = c.customer360Dismissed === true
 
-  const scrollToInsights = () => {
-    showCustomer360(c.id)
-    document.getElementById('cuw-c360-root')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }
-
-  const scrollToWorkbench = () => {
-    dismissCustomer360(c.id)
-    document.getElementById('cuw-workbench-root')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }
-
   return (
     <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="cuw-case-chrome-row shrink-0">
-          <div className="cuw-case-view-tabs" role="tablist" aria-label="Case view">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!onWorkflow}
-              className={`cuw-case-view-tabs__tab${!onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-              onClick={scrollToInsights}
-            >
-              Birlasoft Customer Insights
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={onWorkflow}
-              className={`cuw-case-view-tabs__tab${onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-              onClick={scrollToWorkbench}
-            >
-              Submission Workbench
-            </button>
-          </div>
           <div className="cuw-float-dock">
             <FloatingWorkflowBar
               c={c}
