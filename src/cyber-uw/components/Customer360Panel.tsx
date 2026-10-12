@@ -11,11 +11,14 @@ import {
   Layers,
   MapPin,
   Package,
+  Pencil,
   RefreshCw,
   Sparkles,
-  Timer,
+  type LucideIcon,
 } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import type { CyberCase } from '../types'
+import { useCyberUwStore, type CaseInsightPatch } from '../store/cyberUwStore'
 import { missingDocsForCase } from '../utils/missingDocs'
 import { buildC360AiSummary } from '../utils/c360AiSummary'
 import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
@@ -33,40 +36,332 @@ interface Props {
   c: CyberCase
 }
 
+function EditableInsight({
+  icon: Icon,
+  label,
+  display,
+  editor,
+}: {
+  icon: LucideIcon
+  label: string
+  display: string
+  editor: (done: () => void) => ReactNode
+}) {
+  const [editing, setEditing] = useState(false)
+  return (
+    <div className="cuw-c360-kpi">
+      <div className="cuw-c360-kpi__top">
+        <dt className="cuw-c360-kpi__label">
+          <span className="cuw-c360-kpi__glyph" aria-hidden>
+            <Icon size={13} strokeWidth={1.9} />
+          </span>
+          {label}
+        </dt>
+        {editing ? null : (
+          <button
+            type="button"
+            className="wb-q-pen"
+            aria-label={`Edit ${label}`}
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={13} strokeWidth={1.75} />
+          </button>
+        )}
+      </div>
+      {editing ? (
+        editor(() => setEditing(false))
+      ) : (
+        <dd className="cuw-c360-kpi__value">{display}</dd>
+      )}
+    </div>
+  )
+}
+
+function TextEditor({
+  label,
+  initial,
+  onSave,
+  done,
+  type = 'text',
+}: {
+  label: string
+  initial: string
+  onSave: (value: string) => void
+  done: () => void
+  type?: 'text' | 'number' | 'date'
+}) {
+  const [draft, setDraft] = useState(initial)
+  return (
+    <dd className="cuw-c360-edit">
+      <input
+        className="wb-q-cell__input"
+        type={type}
+        aria-label={label}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <button
+        type="button"
+        className="wb-q-save"
+        onClick={() => {
+          onSave(draft)
+          done()
+        }}
+      >
+        Save
+      </button>
+    </dd>
+  )
+}
+
+function RenewalEditor({
+  value,
+  done,
+  onSave,
+}: {
+  value: boolean
+  done: () => void
+  onSave: (patch: CaseInsightPatch) => void
+}) {
+  const [draft, setDraft] = useState(value ? 'yes' : 'no')
+  return (
+    <dd className="cuw-c360-edit">
+      <select
+        className="wb-q-cell__input"
+        aria-label="Renewal applicable"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      >
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <button
+        type="button"
+        className="wb-q-save"
+        onClick={() => {
+          onSave({ renewalApplicable: draft === 'yes' })
+          done()
+        }}
+      >
+        Save
+      </button>
+    </dd>
+  )
+}
+
+function LobEditor({
+  c,
+  done,
+  onSave,
+}: {
+  c: CyberCase
+  done: () => void
+  onSave: (patch: CaseInsightPatch) => void
+}) {
+  const [name, setName] = useState(c.lobName)
+  const [code, setCode] = useState(c.lobCode)
+  return (
+    <dd className="cuw-c360-edit">
+      <input
+        className="wb-q-cell__input"
+        aria-label="Line of business"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        className="wb-q-cell__input"
+        aria-label="LOB code"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+      />
+      <button
+        type="button"
+        className="wb-q-save"
+        onClick={() => {
+          onSave({ lobName: name, lobCode: code })
+          done()
+        }}
+      >
+        Save
+      </button>
+    </dd>
+  )
+}
+
 export function Customer360Panel({ c }: Props) {
   const missing = missingDocsForCase(c)
   const aiSummary = buildC360AiSummary(c)
   const period = policyPeriodForCase(c)
+  const updateCaseInsight = useCyberUwStore((s) => s.updateCaseInsight)
 
-  const kpis = [
-    { icon: MapPin, label: 'Address', value: c.insuredAddress },
-    { icon: Package, label: 'Product name', value: c.productName },
-    { icon: Hash, label: 'Product code', value: c.productCode },
+  const save = (patch: CaseInsightPatch) => updateCaseInsight(c.id, patch)
+
+  const fields: {
+    key: string
+    icon: LucideIcon
+    label: string
+    display: string
+    editor: (done: () => void) => ReactNode
+  }[] = [
     {
+      key: 'address',
+      icon: MapPin,
+      label: 'Address',
+      display: c.insuredAddress,
+      editor: (done) => (
+        <TextEditor
+          label="Address"
+          initial={c.insuredAddress}
+          done={done}
+          onSave={(value) => save({ insuredAddress: value })}
+        />
+      ),
+    },
+    {
+      key: 'productName',
+      icon: Package,
+      label: 'Product name',
+      display: c.productName,
+      editor: (done) => (
+        <TextEditor
+          label="Product name"
+          initial={c.productName}
+          done={done}
+          onSave={(value) => save({ productName: value })}
+        />
+      ),
+    },
+    {
+      key: 'productCode',
+      icon: Hash,
+      label: 'Product code',
+      display: c.productCode,
+      editor: (done) => (
+        <TextEditor
+          label="Product code"
+          initial={c.productCode}
+          done={done}
+          onSave={(value) => save({ productCode: value })}
+        />
+      ),
+    },
+    {
+      key: 'lob',
       icon: Layers,
       label: 'LOB & code',
-      value: `${c.lobName} · ${c.lobCode}`,
+      display: `${c.lobName} · ${c.lobCode}`,
+      editor: (done) => <LobEditor c={c} done={done} onSave={save} />,
     },
-    { icon: GitBranch, label: 'Product version', value: c.productVersion },
-    { icon: Timer, label: 'Product tenure', value: c.productTenure },
     {
+      key: 'version',
+      icon: GitBranch,
+      label: 'Product version',
+      display: c.productVersion,
+      editor: (done) => (
+        <TextEditor
+          label="Product version"
+          initial={c.productVersion}
+          done={done}
+          onSave={(value) => save({ productVersion: value })}
+        />
+      ),
+    },
+    {
+      key: 'renewal',
       icon: RefreshCw,
       label: 'Renewal applicable',
-      value: c.renewalApplicable ? 'Yes' : 'No',
+      display: c.renewalApplicable ? 'Yes' : 'No',
+      editor: (done) => (
+        <RenewalEditor value={c.renewalApplicable} done={done} onSave={save} />
+      ),
     },
-    { icon: Building2, label: 'Sector', value: c.sector },
-    { icon: Handshake, label: 'Broker', value: c.broker },
-    { icon: Landmark, label: 'Limit requested', value: money(c.limitRequestedUsd) },
-    { icon: CircleDollarSign, label: 'Revenue', value: money(c.revenueUsd) },
     {
+      key: 'sector',
+      icon: Building2,
+      label: 'Sector',
+      display: c.sector,
+      editor: (done) => (
+        <TextEditor
+          label="Sector"
+          initial={c.sector}
+          done={done}
+          onSave={(value) => save({ sector: value })}
+        />
+      ),
+    },
+    {
+      key: 'broker',
+      icon: Handshake,
+      label: 'Broker',
+      display: c.broker,
+      editor: (done) => (
+        <TextEditor
+          label="Broker"
+          initial={c.broker}
+          done={done}
+          onSave={(value) => save({ broker: value })}
+        />
+      ),
+    },
+    {
+      key: 'limit',
+      icon: Landmark,
+      label: 'Limit requested',
+      display: money(c.limitRequestedUsd),
+      editor: (done) => (
+        <TextEditor
+          label="Limit requested"
+          type="number"
+          initial={String(c.limitRequestedUsd)}
+          done={done}
+          onSave={(value) => save({ limitRequestedUsd: Number(value) || 0 })}
+        />
+      ),
+    },
+    {
+      key: 'revenue',
+      icon: CircleDollarSign,
+      label: 'Revenue',
+      display: money(c.revenueUsd),
+      editor: (done) => (
+        <TextEditor
+          label="Revenue"
+          type="number"
+          initial={String(c.revenueUsd)}
+          done={done}
+          onSave={(value) => save({ revenueUsd: Number(value) || 0 })}
+        />
+      ),
+    },
+    {
+      key: 'start',
       icon: CalendarRange,
       label: 'Proposed start date',
-      value: formatPolicyDate(period.startIso),
+      display: formatPolicyDate(period.startIso),
+      editor: (done) => (
+        <TextEditor
+          label="Proposed start date"
+          type="date"
+          initial={period.startIso}
+          done={done}
+          onSave={(value) => save({ policyStartAt: value })}
+        />
+      ),
     },
     {
+      key: 'end',
       icon: CalendarCheck2,
       label: 'Proposed end date',
-      value: formatPolicyDate(period.endIso),
+      display: formatPolicyDate(period.endIso),
+      editor: (done) => (
+        <TextEditor
+          label="Proposed end date"
+          type="date"
+          initial={period.endIso}
+          done={done}
+          onSave={(value) => save({ policyEndAt: value })}
+        />
+      ),
     },
   ]
 
@@ -87,16 +382,14 @@ export function Customer360Panel({ c }: Props) {
       </section>
 
       <dl className="cuw-c360__kpis">
-        {kpis.map((row) => (
-          <div key={row.label} className="cuw-c360-kpi">
-            <dt className="cuw-c360-kpi__label">
-              <span className="cuw-c360-kpi__glyph" aria-hidden>
-                <row.icon size={13} strokeWidth={1.9} />
-              </span>
-              {row.label}
-            </dt>
-            <dd className="cuw-c360-kpi__value">{row.value}</dd>
-          </div>
+        {fields.map((field) => (
+          <EditableInsight
+            key={field.key}
+            icon={field.icon}
+            label={field.label}
+            display={field.display}
+            editor={field.editor}
+          />
         ))}
       </dl>
 

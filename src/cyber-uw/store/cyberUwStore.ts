@@ -71,6 +71,25 @@ export interface DiscussionReferralInput {
   note: string
 }
 
+export type CaseInsightPatch = Partial<
+  Pick<
+    CyberCase,
+    | 'insuredAddress'
+    | 'productName'
+    | 'productCode'
+    | 'lobName'
+    | 'lobCode'
+    | 'productVersion'
+    | 'renewalApplicable'
+    | 'sector'
+    | 'broker'
+    | 'limitRequestedUsd'
+    | 'revenueUsd'
+    | 'policyStartAt'
+    | 'policyEndAt'
+  >
+>
+
 export type FinancialSignOffInput = Omit<
   FinancialSignOff,
   'signedOffAt' | 'signedOffBy' | 'withinAuthority'
@@ -149,6 +168,9 @@ interface CyberUwState {
   saveFinancialSignOff: (id: string, input: FinancialSignOffInput) => void
   togglePackageDocAccepted: (caseId: string, docId: string, accepted: boolean) => void
   setPackageDocKind: (caseId: string, docId: string, kind: string) => void
+  /** Mark a package file accepted without clearing Documents Complete. */
+  approvePackageDoc: (caseId: string, docId: string) => void
+  updateCaseInsight: (caseId: string, patch: CaseInsightPatch) => void
   setAnswerOverride: (caseId: string, key: string, value: string) => void
   toggleAnswerSigned: (caseId: string, key: string, signed: boolean) => void
   signSectionAnswers: (caseId: string, keys: string[]) => void
@@ -1162,6 +1184,33 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
           ),
         }
       }),
+    }))
+  },
+
+  approvePackageDoc: (caseId, docId) => {
+    set((s) => ({
+      cases: s.cases.map((c) => {
+        if (c.id !== caseId) return c
+        const accepted = new Set(c.packageSignOff?.acceptedDocIds ?? [])
+        accepted.add(docId)
+        return {
+          ...c,
+          packageSignOff: {
+            acceptedDocIds: [...accepted],
+            signedAnswerKeys: c.packageSignOff?.signedAnswerKeys
+              ? [...c.packageSignOff.signedAnswerKeys]
+              : undefined,
+            signedOffAt: c.packageSignOff?.signedOffAt,
+            signedOffBy: c.packageSignOff?.signedOffBy,
+          },
+        }
+      }),
+    }))
+  },
+
+  updateCaseInsight: (caseId, patch) => {
+    set((s) => ({
+      cases: s.cases.map((c) => (c.id === caseId ? { ...c, ...patch } : c)),
     }))
   },
 

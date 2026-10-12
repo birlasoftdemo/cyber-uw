@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Birlasoft Cyber UW Assistants — Faster quotes. Blind spots caught early.</title>
+  <meta name="description" content="A cyber underwriting workbench for carriers and MGAs. Pull the pack, catch control gaps, apply appetite, leave a paper trail. Your underwriters still bind." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #231f20;
+      --ink-soft: #58595b;
+      --paper: #f7f5f4;
+      --paper-deep: #ebe8e6;
+      --white: #ffffff;
+      --accent: #ec1c24;
+      --accent-deep: #c41820;
+      --accent-hot: #ff5a1f;
+      --accent-ember: #ff8a3d;
+      --accent-glow: #ffb08a;
+      --birla-gray: #949494;
+      --usp-bg: #2c2829;
+      --usp-bg-deep: #1f1c1d;
+      --line: rgba(35, 31, 32, 0.12);
+      --max: 1120px;
+      --r: 16px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --lift: 0.45s var(--ease);
+      --shade:
+        0 1px 0 rgba(255, 255, 255, 0.72) inset,
+        0 1px 2px rgba(35, 31, 32, 0.05),
+        0 10px 28px rgba(35, 31, 32, 0.08);
+      --shade-hover:
+        0 1px 0 rgba(255, 255, 255, 0.88) inset,
+        0 8px 16px rgba(35, 31, 32, 0.08),
+        0 28px 56px rgba(35, 31, 32, 0.14);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 1.02rem;
+      line-height: 1.5;
+      position: relative;
+      isolation: isolate;
+      background:
+        radial-gradient(120% 80% at 0% 0%, rgba(255, 196, 170, 0.14) 0%, transparent 55%),
+        radial-gradient(90% 70% at 100% 10%, rgba(236, 28, 36, 0.05) 0%, transparent 50%),
+        radial-gradient(80% 60% at 80% 100%, rgba(255, 138, 61, 0.08) 0%, transparent 55%),
+        linear-gradient(165deg, #faf9f8 0%, var(--paper) 48%, #f5f2f0 100%);
+      background-attachment: fixed;
+    }
+    body > *:not(.fluid-wash) {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Page-wide Birlasoft red–orange fluid wash */
+    .fluid-wash {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .fluid-wash__mesh {
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(ellipse 42% 36% at 12% 18%, rgba(236, 28, 36, 0.12) 0%, transparent 65%),
+        radial-gradient(ellipse 38% 42% at 88% 22%, rgba(255, 138, 61, 0.1) 0%, transparent 62%),
+        radial-gradient(ellipse 48% 40% at 70% 78%, rgba(255, 176, 138, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 36% 34% at 22% 82%, rgba(196, 24, 32, 0.07) 0%, transparent 58%),
+        radial-gradient(ellipse 30% 28% at 52% 48%, rgba(255, 196, 170, 0.08) 0%, transparent 52%);
+      filter: blur(64px) saturate(0.9);
+      transform: scale(1.05);
+      animation: fluid-drift 36s var(--ease) infinite alternate;
+    }
+    .fluid-wash__blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.22;
+      mix-blend-mode: multiply;
+      will-change: transform;
+    }
+    .fluid-wash__blob--a {
+      width: min(52vw, 520px);
+      height: min(52vw, 520px);
+      top: -8%;
+      left: -6%;
+      background: radial-gradient(circle at 35% 35%, rgba(255, 176, 138, 0.85) 0%, rgba(236, 28, 36, 0.45) 48%, transparent 72%);
+      animation: fluid-orb-a 28s ease-in-out infinite;
+    }
+    .fluid-wash__blob--b {
+      width: min(48vw, 480px);
+      height: min(48vw, 480px);
+      top: 28%;
+      right: -10%;
+      background: radial-gradient(circle at 40% 40%, rgba(255, 196, 170, 0.8) 0%, rgba(255, 138, 61, 0.35) 45%, transparent 78%);
+      animation: fluid-orb-b 32s ease-in-out infinite;
+    }
+    .fluid-wash__blob--c {
+      width: min(56vw, 560px);
+      height: min(56vw, 560px);
+      bottom: -12%;
+      left: 18%;
+      background: radial-gradient(circle at 50% 40%, rgba(255, 180, 170, 0.75) 0%, rgba(236, 28, 36, 0.3) 48%, transparent 72%);
+      animation: fluid-orb-c 30s ease-in-out infinite;
+    }
+    .fluid-wash__sheen {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          118deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.18) 32%,
+          transparent 48%,
+          rgba(255, 176, 138, 0.05) 62%,
+          transparent 78%,
+          rgba(236, 28, 36, 0.04) 90%,
+          transparent 100%
+        );
+      background-size: 220% 220%;
+      animation: fluid-sheen 28s linear infinite;
+      opacity: 0.35;
+    }
+    .fluid-wash__grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      mix-blend-mode: overlay;
+    }
+    @keyframes fluid-drift {
+      from { transform: scale(1.05) translate3d(-1.5%, 0, 0) rotate(0deg); }
+      to { transform: scale(1.12) translate3d(2%, 1.5%, 0) rotate(4deg); }
+    }
+    @keyframes fluid-orb-a {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(12%, 18%, 0) scale(1.12); }
+    }
+    @keyframes fluid-orb-b {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+      50% { transform: translate3d(-14%, 10%, 0) scale(0.92); }
+    }
+    @keyframes fluid-orb-c {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(10%, -16%, 0) scale(1.14); }
+    }
+    @keyframes fluid-sheen {
+      0% { background-position: 0% 40%; }
+      100% { background-position: 100% 60%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fluid-wash__mesh,
+      .fluid-wash__blob,
+      .fluid-wash__sheen {
+        animation: none;
+      }
+    }
+    h1, h2, h3, h4, .brand {
+      font-family: "Playfair Display", Georgia, serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      margin: 0;
+    }
+    p { margin: 0; }
+    a { color: inherit; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(100% - 2.5rem, var(--max)); margin-inline: auto; }
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--birla-gray);
+      margin-bottom: 0.65rem;
+    }
+    #product .eyebrow,
+    #architecture .eyebrow {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .lede { color: var(--ink-soft); font-size: 0.98rem; max-width: 36rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: transform var(--lift), box-shadow var(--lift), background var(--lift), border-color var(--lift);
+    }
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(180deg, #ff4d53 0%, var(--accent) 52%, var(--accent-deep) 100%);
+      border-color: rgba(196, 24, 32, 0.35);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 8px 22px rgba(236, 28, 36, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-ink {
+      color: #fff;
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+    .btn-ink:hover { transform: translateY(-2px); background: #000; }
+    .btn-outline {
+      border-color: rgba(35, 31, 32, 0.18);
+      background: var(--white);
+    }
+    .btn-outline:hover { transform: translateY(-2px); border-color: rgba(35, 31, 32, 0.35); }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.65s var(--ease), transform 0.65s var(--ease);
+    }
+    .reveal.is-in { opacity: 1; transform: none; }
+    .reveal-delay-1 { transition-delay: 0.08s; }
+    .reveal-delay-2 { transition-delay: 0.16s; }
+    .reveal-delay-3 { transition-delay: 0.24s; }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(14px) saturate(1.1);
+      -webkit-backdrop-filter: blur(14px) saturate(1.1);
+      background: rgba(255, 253, 252, 0.92);
+      border-bottom: 1px solid var(--line);
+    }
+    .site-nav .inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 0;
+      gap: 1rem;
+    }
+    .brand { font-size: 1.02rem; }
+    .brand span { color: var(--birla-gray); font-weight: 500; font-family: "Open Sans", system-ui, sans-serif; font-size: 0.9rem; }
+    .nav-links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.82rem; color: var(--ink-soft); }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover { color: var(--ink); }
+
+    /* ——— 1. HERO ——— */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100svh - 4.1rem);
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+      isolation: isolate;
+    }
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(2.5rem, 6vw, 5rem) clamp(1.75rem, 5vw, 4.5rem);
+      max-width: 36rem;
+      width: 100%;
+      margin-left: auto;
+    }
+    .hero-copy .reveal { opacity: 1; transform: none; }
+    .hero-brand {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 2.25rem;
+      color: var(--ink);
+    }
+    .hero-brand em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--accent);
+      margin-left: 0.2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.35rem, 4.6vw, 3.55rem);
+      font-weight: 700;
+      margin-bottom: 1.15rem;
+      max-width: 15ch;
+      letter-spacing: -0.03em;
+    }
+    .hero h1 .accent {
+      color: var(--accent);
+      font-style: italic;
+      font-weight: 600;
+    }
+    .hero .sub {
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+      line-height: 1.55;
+      margin-bottom: 1.85rem;
+      max-width: 30rem;
+    }
+    .hero .cta-row { gap: 0.85rem; }
+    .hero .btn {
+      border-radius: 2px;
+      padding: 0.9rem 1.35rem;
+      font-size: 0.9rem;
+    }
+    .hero .btn-primary {
+      box-shadow: none;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .hero .btn-primary:hover {
+      background: var(--accent-deep);
+      border-color: var(--accent-deep);
+    }
+    .hero .btn-outline {
+      background: var(--white);
+      border-color: var(--ink);
+      color: var(--ink);
+      box-shadow: none;
+    }
+    .hero-art {
+      position: relative;
+      overflow: visible;
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: clamp(2rem, 4vw, 3.5rem);
+    }
+    .hero-art-clip {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 0;
+      pointer-events: none;
+    }
+    .hero-art-bg {
+      position: absolute;
+      inset: -12%;
+      background:
+        radial-gradient(ellipse 55% 45% at 18% 22%, rgba(180, 40, 45, 0.55), transparent 58%),
+        radial-gradient(ellipse 50% 55% at 78% 70%, rgba(60, 80, 55, 0.55), transparent 60%),
+        radial-gradient(ellipse 40% 40% at 55% 40%, rgba(90, 70, 45, 0.4), transparent 55%),
+        linear-gradient(145deg, #2a2420 0%, #1a1816 40%, #243028 100%);
+      filter: blur(28px);
+      transform: scale(1.08);
+    }
+    .hero-glow {
+      position: absolute;
+      width: min(72%, 420px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 45%, transparent 70%);
+      top: 50%;
+      left: 48%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .hero-stage {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 460px);
+      aspect-ratio: 4 / 5;
+      max-height: min(72vh, 560px);
+    }
+    .hero-frame {
+      position: absolute;
+      inset: 4% 10% 6% 10%;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(160deg, #3a3436, #1f1c1d);
+      box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.45),
+        0 8px 20px rgba(0, 0, 0, 0.25);
+      animation: float-in 0.9s var(--ease) both;
+    }
+    .hero-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+    }
+    .hero-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(31, 28, 29, 0.35) 100%);
+      pointer-events: none;
+    }
+    .hero-overlays { display: none; }
+    @media (min-width: 961px) {
+      .hero-overlays {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+      .hero-q {
+        position: absolute;
+        left: -2%;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.85rem 0.55rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ink);
+        white-space: nowrap;
+        animation: float-in 0.85s var(--ease) both;
+      }
+      .hero-q:nth-child(1) { top: 18%; animation-delay: 0.1s; }
+      .hero-q:nth-child(2) { top: 30%; animation-delay: 0.18s; }
+      .hero-q:nth-child(3) { top: 42%; animation-delay: 0.26s; }
+      .hero-q .qi {
+        width: 1.55rem;
+        height: 1.55rem;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .hero-q .qi svg { width: 0.85rem; height: 0.85rem; }
+      .hero-q:nth-child(1) .qi { background: var(--accent); }
+      .hero-q:nth-child(2) .qi { background: #3d5a80; }
+      .hero-q:nth-child(3) .qi { background: #2c2829; }
+      .hero-glass {
+        position: absolute;
+        border-radius: 18px;
+        background: rgba(35, 31, 32, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+        color: #fff;
+        animation: float-in 0.95s var(--ease) both;
+      }
+      .hero-vp {
+        top: 6%;
+        right: -2%;
+        width: 11.25rem;
+        padding: 1.05rem 1rem 1.1rem;
+        animation-delay: 0.15s;
+      }
+      .hero-vp .eyebrow-mini {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.78;
+        margin-bottom: 0.2rem;
+      }
+      .hero-vp .big {
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 2.15rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.3rem;
+        color: #fff;
+      }
+      .hero-vp .cap {
+        font-size: 0.84rem;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .hero-risk {
+        right: -4%;
+        bottom: 4%;
+        width: min(82%, 268px);
+        padding: 0.9rem 1rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+        align-items: start;
+        animation-delay: 0.22s;
+      }
+      .hero-risk .thumb { display: none; }
+      .hero-risk .meta { min-width: 0; }
+      .hero-risk .name {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.78);
+        margin-bottom: 0.15rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .hero-risk .price {
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        line-height: 1.25;
+        color: #fff;
+        margin-bottom: 0.45rem;
+      }
+      .risk-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+      .risk-tabs span {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.22rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.95);
+        color: var(--ink);
+      }
+      .risk-tabs span.warn { background: #ffe8a3; color: #6b5200; }
+      .risk-tabs span.ok { background: #c8f0d4; color: #14532d; }
+      .risk-tabs span.hot { background: #ffd0d2; color: #8a1218; }
+    }
+    @keyframes float-in {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* ——— 2. PRODUCT ——— */
+    section { padding: 4.25rem 0; }
+    .section-head {
+      text-align: center;
+      margin: 0 auto 2.25rem;
+      max-width: 36rem;
+    }
+    .section-head h2 {
+      font-size: clamp(1.7rem, 3vw, 2.3rem);
+      margin-bottom: 0.55rem;
+    }
+    .action .section-head { max-width: 42rem; }
+    #product .section-head { max-width: 54rem; }
+    #product .section-head h2 {
+      font-size: clamp(1.45rem, 2.5vw, 2.05rem);
+      line-height: 1.18;
+    }
+    .section-head .lede { margin-inline: auto; }
+    .chrono-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.1rem;
+    }
+    .chrono-card {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.35rem 1.2rem 1.2rem;
+      box-shadow: var(--shade);
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--lift), box-shadow var(--lift);
+    }
+    .chrono-card:hover { transform: translateY(-3px); box-shadow: var(--shade-hover); }
+    .chrono-card .step {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--birla-gray);
+      margin-bottom: 0.55rem;
+    }
+    .chrono-card h3 {
+      font-size: 1.35rem;
+      margin-bottom: 0.45rem;
+    }
+    .chrono-card > p {
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      margin-bottom: 1.1rem;
+      flex: 0 0 auto;
+    }
+    .chrono-shot {
+      margin-top: auto;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      aspect-ratio: 4 / 3;
+      background:
+        linear-gradient(145deg, rgba(236, 28, 36, 0.08), rgba(148, 148, 148, 0.18));
+    }
+    .chrono-shot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top left;
+    }
+    .chrono-card:nth-child(1) .chrono-shot { background: linear-gradient(145deg, #f7d6d8, #f3ece4); }
+    .chrono-card:nth-child(2) .chrono-shot { background: linear-gradient(145deg, #ebe4d8, #e8eef3); }
+    .chrono-card:nth-child(3) .chrono-shot { background: linear-gradient(145deg, #e8eef3, #f0e6e7); }
+
+    /* ——— 3. WORK IN HOURS ——— */
+    .action {
+      background: var(--white);
+      border-block: 1px solid var(--line);
+      isolation: isolate;
+    }
+    .action .eyebrow { color: var(--accent); }
+    .savings-total {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      margin: 0 auto 2rem;
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(236, 28, 36, 0.22);
+      background: rgba(236, 28, 36, 0.06);
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+    .savings-total strong {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 1.35rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .ribbon-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      gap: 0;
+    }
+    .ribbon-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      align-items: end;
+    }
+    .ribbon-row.is-bottom { align-items: start; }
+    .ribbon-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+      margin: -0.35rem 0;
+    }
+    .ribbon-node {
+      text-align: center;
+      padding: 0 0.4rem;
+      min-height: 4.5rem;
+    }
+    .ribbon-node.is-empty { visibility: hidden; }
+    .ribbon-node .hours {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+      font-weight: 600;
+      color: var(--ink);
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+    .ribbon-node h3 {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: var(--ink);
+    }
+    .ribbon-node p {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      line-height: 1.4;
+      max-width: 17ch;
+      margin-inline: auto;
+    }
+    .fine {
+      margin-top: 1.35rem;
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--birla-gray);
+    }
+    .ribbon-mobile { display: none; }
+
+    /* ——— 4. ARCHITECTURE ——— */
+    .arch-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 2.25rem;
+      align-items: center;
+    }
+    .arch-copy h2 { font-size: clamp(1.6rem, 2.8vw, 2.15rem); margin-bottom: 0.55rem; }
+    .arch-copy .lede { margin-bottom: 1rem; }
+    .arch-vps { list-style: none; padding: 0; margin: 0 0 1.2rem; display: grid; gap: 0.55rem; }
+    .arch-vps li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.65rem;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+    .arch-vps strong { color: var(--ink); display: block; margin-bottom: 0.1rem; }
+    .dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 0.4rem;
+    }
+    .arch-diagram {
+      position: relative;
+      width: 100%;
+      max-width: 34rem;
+      margin-inline: auto;
+      filter: drop-shadow(0 18px 40px rgba(35, 31, 32, 0.14));
+    }
+    .arch-diagram svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .arch-diagram .slab-label {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 13px;
+      font-weight: 600;
+      fill: #fff;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+    .arch-diagram .slab-label.dark { fill: var(--ink); }
+    .arch-diagram .verb-label {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      fill: var(--ink-soft);
+      text-anchor: end;
+    }
+    .arch-diagram .sync-label {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--ink);
+    }
+    .arch-diagram .sync-sub {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      fill: var(--ink-soft);
+    }
+    .arch-diagram .feed-label {
+      font-family: "Open Sans", system-ui, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      fill: var(--ink-soft);
+      text-anchor: middle;
+    }
+    .arch-diagram .spine {
+      stroke: rgba(236, 28, 36, 0.72);
+      stroke-width: 1.25;
+      fill: none;
+      stroke-linecap: butt;
+    }
+    .arch-diagram .leader {
+      stroke: rgba(35, 31, 32, 0.35);
+      stroke-width: 1;
+      stroke-dasharray: 2.5 2.5;
+      fill: none;
+    }
+    .arch-diagram .sync-line {
+      stroke: rgba(35, 31, 32, 0.3);
+      stroke-width: 1;
+      stroke-dasharray: 2.5 2.5;
+      fill: none;
+    }
+    .arch-diagram .feed-icon {
+      fill: #fff;
+      stroke: rgba(35, 31, 32, 0.18);
+      stroke-width: 1;
+      filter: drop-shadow(0 2px 6px rgba(35, 31, 32, 0.08));
+    }
+    .arch-diagram .run-cell { fill: #2c2829; }
+    .arch-diagram .run-cell.on { fill: var(--accent); }
+    .arch-diagram .run-cell.on-soft { fill: var(--accent-hot); }
+    .arch-diagram .slab-face { transition: filter 0.35s var(--ease); }
+    .arch-diagram g.slab:hover .slab-face { filter: brightness(1.08); }
+
+    /* ——— 5. WHY BIRLASOFT ——— */
+    .why {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 250, 248, 0.92) 100%);
+      border-block: 1px solid var(--line);
+    }
+    .why-layout {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 2rem;
+      align-items: center;
+    }
+    .why-points {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+      margin-top: 1.15rem;
+    }
+    .why-points article { padding-top: 0.75rem; border-top: 1px solid var(--line); }
+    .why-points h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+    .why-points p { font-size: 0.86rem; color: var(--ink-soft); }
+    .why-visual { position: relative; }
+    .why-visual .device {
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: var(--shade-hover);
+    }
+    .why-visual .device.phone {
+      position: absolute;
+      width: 42%;
+      right: -3%;
+      bottom: -6%;
+      border-radius: 16px;
+      z-index: 2;
+    }
+    .why-visual .device.desktop img { aspect-ratio: 4/3; object-fit: cover; object-position: top; }
+    .why-visual .device.phone img { aspect-ratio: 9/14; object-fit: cover; object-position: left top; }
+
+    /* ——— 6. FAQs ——— */
+    .faqs .section-head { margin-bottom: 1.25rem; }
+    .faq-list { display: grid; gap: 0.55rem; max-width: 46rem; margin-inline: auto; }
+    details.faq-item {
+      background: rgba(255, 255, 255, 0.97);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    details.faq-item[open] { box-shadow: var(--shade); }
+    details.faq-item summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.95rem 1.1rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    details.faq-item summary::-webkit-details-marker { display: none; }
+    details.faq-item summary::after {
+      content: "+";
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 1.3rem;
+      color: var(--birla-gray);
+    }
+    details.faq-item[open] summary::after { content: "−"; color: var(--accent); }
+    details.faq-item .faq-body {
+      padding: 0 1.1rem 1rem;
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--line);
+      padding-top: 0.8rem;
+    }
+
+    .close { text-align: center; padding-bottom: 3.75rem; }
+    .close h2 { font-size: clamp(1.6rem, 2.8vw, 2.2rem); margin-bottom: 0.55rem; }
+    .close .lede { margin: 0 auto 1.2rem; }
+    .close .cta-row { justify-content: center; }
+
+    footer.site {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0 1.75rem;
+      font-size: 0.78rem;
+      color: var(--birla-gray);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+    footer .brand-mini {
+      font-family: "Playfair Display", Georgia, serif;
+      color: var(--ink);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 960px) {
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .hero-copy { margin: 0; max-width: none; padding: 2.5rem 1.5rem 2rem; }
+      .hero h1 { max-width: 16ch; }
+      .hero-art { min-height: 24rem; padding: 2rem 1.25rem 2.5rem; }
+      .hero-stage { width: min(100%, 340px); max-height: none; }
+      .chrono-grid { grid-template-columns: 1fr 1fr; }
+      .ribbon-desktop { display: none; }
+      .ribbon-mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+      .arch-layout, .why-layout { grid-template-columns: 1fr; }
+      .arch-diagram { max-width: 28rem; }
+      .why-visual .device.phone { position: relative; width: 55%; right: auto; bottom: auto; margin: -2.5rem auto 0; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 560px) {
+      .chrono-grid, .ribbon-mobile, .why-points { grid-template-columns: 1fr; }
+      .arch-diagram .verb-label { font-size: 8px; }
+      .arch-diagram .slab-label { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="fluid-wash" aria-hidden="true">
+    <div class="fluid-wash__mesh"></div>
+    <div class="fluid-wash__blob fluid-wash__blob--a"></div>
+    <div class="fluid-wash__blob fluid-wash__blob--b"></div>
+    <div class="fluid-wash__blob fluid-wash__blob--c"></div>
+    <div class="fluid-wash__sheen"></div>
+    <div class="fluid-wash__grain"></div>
+  </div>
+  
+  <!-- 1. CONTEXT -->
+  <header class="hero" id="context">
+    <div class="hero-copy">
+      <div class="hero-brand reveal">birlasoft<em>Cyber UW</em></div>
+      <h1 class="reveal reveal-delay-1">Turn applications into faster quotes that win the book. <span class="accent">Catch &amp; mitigate risk blind spots</span> early.</h1>
+      
+      <div class="cta-row reveal reveal-delay-3">
+        <a class="btn btn-primary" href="#product">See how it works</a>
+        <a class="btn btn-outline" href="#contact">Talk to us</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-label="Cyber UW workbench preview with gap and appetite overlays">
+      <div class="hero-art-clip" aria-hidden="true">
+        <div class="hero-art-bg"></div>
+        <div class="hero-glow"></div>
+      </div>
+      <div class="hero-stage">
+        <div class="hero-frame">
+          <img src="assets/08-risk-analysis.png" alt="Risk Analysis view with partner rating, capacity, and shortfall" />
+        </div>
+        <div class="hero-overlays" aria-hidden="true">
+          <div class="hero-q">
+            <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+            Did they really roll out MFA?
+          </div>
+          <div class="hero-q">
+            <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+            Quote, refer, or decline?
+          </div>
+          <div class="hero-q">
+            <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+            Can we push this to PAS?
+          </div>
+          <div class="hero-glass hero-vp">
+            <div class="eyebrow-mini">— Topline</div>
+            <div class="big">Faster</div>
+            <div class="cap">quote turnaround that wins the book</div>
+          </div>
+          <div class="hero-glass hero-risk">
+            <div class="meta">
+              <div class="name">— Blind spots</div>
+              <div class="price">Catch &amp; mitigate early</div>
+              <div class="risk-tabs">
+                <span class="warn">Gap found</span>
+                <span class="ok">Mitigated</span>
+                <span class="hot">Before bind</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. WORK IN HOURS -->
+  <section class="action" id="action">
+    <div class="wrap">
+      <div class="section-head reveal">
+
+        <h2>Gain competitive speed advantage to win more deals</h2>
+        
+      </div>
+      <div class="reveal" style="text-align:center;">
+        <div class="savings-total"><strong>~30–60 min</strong> less hunting per file*</div>
+      </div>
+      <div class="ribbon-wrap ribbon-desktop reveal">
+        <div class="ribbon-row is-top">
+          <div class="ribbon-node is-empty" aria-hidden="true"></div>
+          <article class="ribbon-node">
+            <span class="hours">Caught early</span>
+            <h3>Claims vs reality</h3>
+            <p>EDR and MFA stories checked before quote.</p>
+          </article>
+          <div class="ribbon-node is-empty" aria-hidden="true"></div>
+          <article class="ribbon-node">
+            <span class="hours">Defensible</span>
+            <h3>Own the decision</h3>
+            <p>Why you quoted. What you overrode. What went to PAS.</p>
+          </article>
+        </div>
+        <svg class="ribbon-svg" viewBox="0 0 980 220" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="ribbonGrad" x1="0" y1="110" x2="980" y2="110" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ff6b6f"/>
+              <stop offset="0.45" stop-color="#ec1c24"/>
+              <stop offset="1" stop-color="#231f20"/>
+            </linearGradient>
+          </defs>
+          <path
+            d="M20 110
+               H110
+               A55 55 0 1 0 220 110
+               H300
+               A55 55 0 1 1 410 110
+               H490
+               A55 55 0 1 0 600 110
+               H680
+               A55 55 0 1 1 790 110
+               H960"
+            stroke="url(#ribbonGrad)"
+            stroke-width="14"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <g>
+            <g transform="translate(165 55)">
+              <circle cx="0" cy="0" r="22" fill="#fff" stroke="#ec1c24" stroke-width="2"/>
+              <rect x="-7" y="-8" width="14" height="16" rx="1.5" stroke="#ec1c24" stroke-width="1.6" fill="none"/>
+              <path d="M-4 -3h8M-4 1h5" stroke="#ec1c24" stroke-width="1.6" stroke-linecap="round"/>
+            </g>
+            <g transform="translate(355 165)">
+              <circle cx="0" cy="0" r="22" fill="#fff" stroke="#c41820" stroke-width="2"/>
+              <path d="M-8 -4h16M-6 -4v12a2 2 0 002 2h8a2 2 0 002-2V-4" stroke="#c41820" stroke-width="1.6" fill="none"/>
+              <path d="M-2 0h6M-2 4h4" stroke="#c41820" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+            <g transform="translate(545 55)">
+              <circle cx="0" cy="0" r="22" fill="#fff" stroke="#8a1218" stroke-width="2"/>
+              <path d="M-7 1l5 5 9-11" stroke="#8a1218" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </g>
+            <g transform="translate(735 165)">
+              <circle cx="0" cy="0" r="22" fill="#fff" stroke="#231f20" stroke-width="2"/>
+              <path d="M0 -8l7 3.5v5.5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5V-4.5L0-8z" stroke="#231f20" stroke-width="1.6" fill="none"/>
+            </g>
+          </g>
+        </svg>
+        <div class="ribbon-row is-bottom">
+          <article class="ribbon-node">
+            <span class="hours">Less swivel</span>
+            <h3>Sort the pack</h3>
+            <p>From inbox noise to fields you can actually work.</p>
+          </article>
+          <div class="ribbon-node is-empty" aria-hidden="true"></div>
+          <article class="ribbon-node">
+            <span class="hours">Rules on</span>
+            <h3>Apply appetite</h3>
+            <p>Quote, refer, or decline with reasons you can change.</p>
+          </article>
+          <div class="ribbon-node is-empty" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="ribbon-mobile reveal">
+        <article class="ribbon-node">
+          <span class="hours">Less swivel</span>
+          <h3>Sort the pack</h3>
+          <p>From inbox noise to fields you can actually work.</p>
+        </article>
+        <article class="ribbon-node">
+          <span class="hours">Caught early</span>
+          <h3>Claims vs reality</h3>
+          <p>EDR and MFA stories checked before quote.</p>
+        </article>
+        <article class="ribbon-node">
+          <span class="hours">Rules on</span>
+          <h3>Apply appetite</h3>
+          <p>Quote, refer, or decline with reasons you can change.</p>
+        </article>
+        <article class="ribbon-node">
+          <span class="hours">Defensible</span>
+          <h3>Own the decision</h3>
+          <p>Why you quoted. What you overrode. What went to PAS.</p>
+        </article>
+      </div>
+      <p class="fine">*Illustrative. Mid specialty desks often make the spend case when research drops by about half an hour to an hour a file and weak control claims get caught early. Not Birlasoft production stats. Marsh GIMI Q2 2026: global cyber rates down 4%, twelfth straight quarterly drop.</p>
+    </div>
+  </section>
+
+  <!-- 3. PRODUCT -->
+  <section id="product">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">The product</div>
+        <h2>Advanced integrated risk modeling &amp; personalised rule-driven triaging compatible with 3rd party apps</h2>
+        <p class="lede">One file. Three moves. Not a chat window wearing underwriting clothes.</p>
+      </div>
+      <div class="chrono-grid">
+        <article class="chrono-card reveal">
+          <div class="step"># 01</div>
+          <h3>Get the pack in</h3>
+          <p>Email lands. Docs get typed. What’s missing shows up before someone retypes the whole application by hand.</p>
+          <div class="chrono-shot">
+            <img src="assets/06-policy-documents.png" alt="Policy Documents with checklist and extracted fields" />
+          </div>
+        </article>
+        <article class="chrono-card reveal reveal-delay-1">
+          <div class="step"># 02</div>
+          <h3>Check what they claimed</h3>
+          <p>They said MFA and backups. The scan says otherwise. You see the conflict, with the source, before anyone prices it.</p>
+          <div class="chrono-shot">
+            <img src="assets/07-risk-information.png" alt="Risk Information with open risks and source fields" />
+          </div>
+        </article>
+        <article class="chrono-card reveal reveal-delay-2">
+          <div class="step"># 03</div>
+          <h3>Make the call, then hand it off</h3>
+          <p>Appetite on. Limit and SIR locked. Quote, refer, or decline. Then push the decision into your policy system with a trail you can defend.</p>
+          <div class="chrono-shot">
+            <img src="assets/09-getting-ready-quote.png" alt="Getting Ready to Quote with financial numbers and sign-off" />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. ARCHITECTURE -->
+  <section id="architecture">
+    <div class="wrap arch-layout">
+      <div class="arch-copy reveal">
+        <div class="eyebrow">How it fits</div>
+        <h2>How Cyber UW integrates with your policy system</h2>
+        <p class="lede">Soft-market speed <strong>forces a new desk architecture</strong> — one that stages intake, gaps, appetite, and bind as <strong>a single system</strong>. Ratings and cat models stay partners. Your underwriters still own the paper.</p>
+        <ul class="arch-vps">
+          <li><span class="dot"></span><div><strong>You still bind</strong><span>Quote, refer, decline, and every outbound stay with the underwriter.</span></div></li>
+          <li><span class="dot"></span><div><strong>Gaps with a source</strong><span>What they attested vs what the signal shows. No mystery score floating above a chat.</span></div></li>
+          <li><span class="dot"></span><div><strong>One decision file</strong><span>Reasons, overrides, a light book alert, ready for policy admin.</span></div></li>
+          <li><span class="dot"></span><div><strong>Buy the feeds, don’t rebuild them</strong><span>Plug in BitSight-class ratings and cat engines. Day one is not “build CyberCube.”</span></div></li>
+        </ul>
+        <a class="btn btn-primary" href="#contact">Request a walkthrough</a>
+      </div>
+      <div class="arch-diagram reveal reveal-delay-1" aria-label="Cyber UW architecture: connect, hold, check, authorize, run">
+        <svg viewBox="0 0 520 560" role="img" aria-hidden="true">
+          <defs>
+            <linearGradient id="slabAuth" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#a0151c"/>
+              <stop offset="100%" stop-color="#ec1c24"/>
+            </linearGradient>
+            <linearGradient id="slabIntel" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#5a4542"/>
+              <stop offset="100%" stop-color="#7a615c"/>
+            </linearGradient>
+            <linearGradient id="slabSem" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#9a7f78"/>
+              <stop offset="100%" stop-color="#b89890"/>
+            </linearGradient>
+            <linearGradient id="slabConn" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#d4b8b0"/>
+              <stop offset="100%" stop-color="#e8d4cc"/>
+            </linearGradient>
+            <linearGradient id="slabRun" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#2c2829"/>
+              <stop offset="100%" stop-color="#1a1718"/>
+            </linearGradient>
+            <filter id="slabShadow" x="-20%" y="-20%" width="140%" height="160%">
+              <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#231f20" flood-opacity="0.18"/>
+            </filter>
+          </defs>
+
+          <!-- CONNECTIVITY (lightest = raw intake) -->
+          <g class="slab">
+            <path class="slab-face" d="M118 348 L362 348 L348 378 L132 378 Z" fill="url(#slabConn)" filter="url(#slabShadow)"/>
+            <path d="M132 378 L348 378 L348 388 L132 388 Z" fill="#c4a298"/>
+            <path d="M348 378 L362 348 L362 358 L348 388 Z" fill="#b89086"/>
+            <text class="slab-label dark" x="240" y="368">Connectivity layer</text>
+            <line class="leader" x1="72" y1="363" x2="118" y2="363"/>
+            <text class="verb-label" x="68" y="367">CONNECT</text>
+          </g>
+
+          <!-- EVIDENCE / SEMANTIC -->
+          <g class="slab">
+            <path class="slab-face" d="M126 278 L354 278 L342 308 L138 308 Z" fill="url(#slabSem)" filter="url(#slabShadow)"/>
+            <path d="M138 308 L342 308 L342 318 L138 318 Z" fill="#8a6e66"/>
+            <path d="M342 308 L354 278 L354 288 L342 318 Z" fill="#7a5e56"/>
+            <text class="slab-label" x="240" y="298">Evidence layer</text>
+            <line class="leader" x1="72" y1="293" x2="126" y2="293"/>
+            <text class="verb-label" x="68" y="297">HOLD</text>
+            <line class="sync-line" x1="354" y1="293" x2="392" y2="293"/>
+            <circle cx="400" cy="293" r="9" fill="#fff" stroke="rgba(35,31,32,0.15)"/>
+            <path d="M397 293h6M400 290v6" stroke="#ec1c24" stroke-width="1.4" stroke-linecap="round"/>
+            <text class="sync-label" x="414" y="291">Case file</text>
+            <text class="sync-sub" x="414" y="303">shared evidence</text>
+          </g>
+
+          <!-- INTELLIGENCE -->
+          <g class="slab">
+            <path class="slab-face" d="M134 208 L346 208 L336 238 L144 238 Z" fill="url(#slabIntel)" filter="url(#slabShadow)"/>
+            <path d="M144 238 L336 238 L336 248 L144 248 Z" fill="#4a3834"/>
+            <path d="M336 238 L346 208 L346 218 L336 248 Z" fill="#3e2e2a"/>
+            <text class="slab-label" x="240" y="228">Intelligence layer</text>
+            <line class="leader" x1="72" y1="223" x2="134" y2="223"/>
+            <text class="verb-label" x="68" y="227">CHECK</text>
+            <line class="sync-line" x1="346" y1="223" x2="392" y2="223"/>
+            <circle cx="400" cy="223" r="9" fill="#fff" stroke="rgba(35,31,32,0.15)"/>
+            <circle cx="400" cy="223" r="3.2" fill="#ff5a1f"/>
+            <text class="sync-label" x="414" y="221">Agents</text>
+            <text class="sync-sub" x="414" y="233">gaps · appetite</text>
+          </g>
+
+          <!-- AUTHORITY (darkest slab = highest governance value) -->
+          <g class="slab">
+            <path class="slab-face" d="M142 138 L338 138 L330 168 L150 168 Z" fill="url(#slabAuth)" filter="url(#slabShadow)"/>
+            <path d="M150 168 L330 168 L330 178 L150 178 Z" fill="#8a1218"/>
+            <path d="M330 168 L338 138 L338 148 L330 178 Z" fill="#6e0e14"/>
+            <text class="slab-label" x="240" y="158">Authority layer</text>
+            <line class="leader" x1="72" y1="153" x2="142" y2="153"/>
+            <text class="verb-label" x="68" y="157">AUTHORIZE</text>
+            <line class="sync-line" x1="338" y1="153" x2="392" y2="153"/>
+            <rect x="391" y="144" width="18" height="18" rx="3" fill="#fff" stroke="rgba(35,31,32,0.15)"/>
+            <text x="400" y="157" text-anchor="middle" font-family="Open Sans,system-ui,sans-serif" font-size="9" font-weight="800" fill="#ec1c24">UW</text>
+            <text class="sync-label" x="414" y="151">Human bind</text>
+            <text class="sync-sub" x="414" y="163">you own the paper</text>
+          </g>
+
+          <!-- RUN: workbench surface (execution value) -->
+          <g class="slab">
+            <path class="slab-face" d="M156 58 L324 58 L316 108 L164 108 Z" fill="url(#slabRun)" filter="url(#slabShadow)"/>
+            <path d="M164 108 L316 108 L316 116 L164 116 Z" fill="#100e0f"/>
+            <path d="M316 108 L324 58 L324 66 L316 116 Z" fill="#0c0a0b"/>
+            <!-- UI grid cells = live desk surface -->
+            <g transform="translate(178 68)">
+              <rect class="run-cell on" x="0" y="0" width="22" height="14" rx="2"/>
+              <rect class="run-cell" x="28" y="0" width="22" height="14" rx="2"/>
+              <rect class="run-cell on-soft" x="56" y="0" width="22" height="14" rx="2"/>
+              <rect class="run-cell" x="84" y="0" width="22" height="14" rx="2"/>
+              <rect class="run-cell" x="0" y="18" width="22" height="14" rx="2"/>
+              <rect class="run-cell on" x="28" y="18" width="22" height="14" rx="2"/>
+              <rect class="run-cell" x="56" y="18" width="22" height="14" rx="2"/>
+              <rect class="run-cell on-soft" x="84" y="18" width="22" height="14" rx="2"/>
+            </g>
+            <line class="leader" x1="72" y1="83" x2="156" y2="83"/>
+            <text class="verb-label" x="68" y="87">RUN</text>
+          </g>
+
+          <!-- Connectors sit in the gaps so they don't cut the layer names -->
+          <g class="spines" aria-hidden="true">
+            <line class="spine" x1="228" y1="116" x2="228" y2="138"/>
+            <line class="spine" x1="240" y1="116" x2="240" y2="138"/>
+            <line class="spine" x1="252" y1="116" x2="252" y2="138"/>
+            <line class="spine" x1="228" y1="178" x2="228" y2="208"/>
+            <line class="spine" x1="240" y1="178" x2="240" y2="208"/>
+            <line class="spine" x1="252" y1="178" x2="252" y2="208"/>
+            <line class="spine" x1="228" y1="248" x2="228" y2="278"/>
+            <line class="spine" x1="240" y1="248" x2="240" y2="278"/>
+            <line class="spine" x1="252" y1="248" x2="252" y2="278"/>
+            <line class="spine" x1="228" y1="318" x2="228" y2="348"/>
+            <line class="spine" x1="240" y1="318" x2="240" y2="348"/>
+            <line class="spine" x1="252" y1="318" x2="252" y2="348"/>
+          </g>
+
+          <!-- Feed stubs into connectivity = data ingress -->
+          <g class="feeds">
+            <line class="spine" x1="188" y1="388" x2="188" y2="455"/>
+            <line class="spine" x1="240" y1="388" x2="240" y2="455"/>
+            <line class="spine" x1="292" y1="388" x2="292" y2="455"/>
+
+            <rect class="feed-icon" x="172" y="455" width="32" height="28" rx="7"/>
+            <path d="M180 468h16M180 473h10" stroke="#ec1c24" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <text class="feed-label" x="188" y="502">Email</text>
+
+            <rect class="feed-icon" x="224" y="455" width="32" height="28" rx="7"/>
+            <circle cx="240" cy="469" r="6" fill="none" stroke="#ff5a1f" stroke-width="1.5"/>
+            <circle cx="240" cy="469" r="2" fill="#ff5a1f"/>
+            <text class="feed-label" x="240" y="502">Ratings</text>
+
+            <rect class="feed-icon" x="276" y="455" width="32" height="28" rx="7"/>
+            <path d="M284 464h16v12h-16z" fill="none" stroke="#c41820" stroke-width="1.4"/>
+            <path d="M288 468h8M288 472h6" stroke="#c41820" stroke-width="1.3" stroke-linecap="round"/>
+            <text class="feed-label" x="292" y="502">PAS</text>
+
+            <text class="feed-label" x="188" y="518" style="fill:#949494">Inbox</text>
+            <text class="feed-label" x="240" y="518" style="fill:#949494">Signals</text>
+            <text class="feed-label" x="292" y="518" style="fill:#949494">Policy admin</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. WHY BIRLASOFT -->
+  <section class="why" id="advantage">
+    <div class="wrap why-layout">
+      <div class="reveal">
+        <div class="eyebrow">Why Birlasoft</div>
+        <h2>For desks that keep their own paper</h2>
+        <p class="lede">You need Coalition-class turnaround. You do not need to become an insurer that also runs security products.</p>
+        <div class="why-points">
+          <article>
+            <h3>The spine buyers ask for</h3>
+            <p>Conflict board. Appetite you can version. A written why. Chat polish is not the product.</p>
+          </article>
+          <article>
+            <h3>Mid specialty, not SMB spray</h3>
+            <p>MGA and carrier cyber desks racing on speed while keeping their panel and their book.</p>
+          </article>
+          <article>
+            <h3>Keep what already binds</h3>
+            <p>We sit between broker email and PAS. Ratings stay partners. No rip-and-replace speech.</p>
+          </article>
+          <article>
+            <h3>Audit built in, not bolted on</h3>
+            <p>Override logs and cite-back from the start. Useful when someone asks for the evidence pack later.</p>
+          </article>
+        </div>
+      </div>
+      <div class="why-visual reveal reveal-delay-1">
+        <div class="device desktop">
+          <img src="assets/02-open-cases.png" alt="Open cases queue" />
+        </div>
+        <div class="device phone">
+          <img src="assets/04-customer-360.png" alt="Customer 360 summary" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. FAQs -->
+  <section class="faqs" id="faqs">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">FAQs</div>
+        <h2>Ask us straight</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item reveal" open>
+          <summary>Are you trying to be the next Coalition?</summary>
+          <div class="faq-body">No. Coalition sells insurance and a security bundle. We sell a workbench for desks that keep writing their own paper: pull the pack, catch control gaps, apply appetite, hand off to PAS. Wiring in ratings and cat feeds is intentional. It is not “we gave up.”</div>
+        </details>
+        <details class="faq-item reveal">
+          <summary>Do we have to throw out BitSight or our PAS?</summary>
+          <div class="faq-body">No. The tools that stick become the place everything meets: ratings and catastrophe models come in, policy admin gets the decision out. We live between broker email and your core. We do not replace either.</div>
+        </details>
+        <details class="faq-item reveal">
+          <summary>Will it bind on its own or invent answers on the app?</summary>
+          <div class="faq-body">No. That is how you lose trust and get into regulatory trouble. Humans still quote, refer, or decline. What came from the applicant vs what came from a scan stays clear on the file, even when the broker is yelling for a same-day quote.</div>
+        </details>
+        <details class="faq-item reveal">
+          <summary>Who is this actually for?</summary>
+          <div class="faq-body">Specialty mid-market MGA and carrier cyber desks that need speed without rebuilding an InsurSec stack. Complex or OT files where one submission eats hours. EU and UK books where evidence packs are not optional. Bad fit: SMB straight-through that Cowbell-class writers already own.</div>
+        </details>
+        <details class="faq-item reveal">
+          <summary>How is this different from a form chatbot?</summary>
+          <div class="faq-body">A chatbot pulls fields out of a PDF. That is the easy demo. A workbench stages the job: show the control gaps, apply appetite with an override log, leave a decision file you can defend. In a soft market, selection discipline is the score. Shiny questionnaire extraction is not.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" id="contact">
+    <div class="wrap reveal">
+      <h2>See a real pack go from inbox to bind-ready.</h2>
+      <p class="lede">We’ll walk a cyber submission with you. Gaps, appetite, handoff. No slide theater.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="mailto:hello@birlasoft.com?subject=Cyber%20UW%20Assistants%20walkthrough">Schedule a walkthrough</a>
+        <a class="btn btn-outline" href="#context">Back to top</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site wrap">
+    <div class="brand-mini">Cyber UW Assistants · A Birlasoft product</div>
+    <div>Draft · Illustrative numbers · Confidential · Not affiliated with Gartner</div>
+  </footer>
+
+  <script>
+    (function () {
+      var nodes = document.querySelectorAll(".reveal");
+      if (!("IntersectionObserver" in window)) {
+        nodes.forEach(function (n) { n.classList.add("is-in"); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+      nodes.forEach(function (n) { io.observe(n); });
+    })();
+  </script>
+</body>
+</html>

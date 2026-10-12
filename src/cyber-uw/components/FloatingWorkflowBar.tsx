@@ -18,23 +18,19 @@ import {
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberDecision } from '../types'
-import { decisionLabel } from './CyberPrimitives'
 
 const SCROLL_BOTTOM_PX = 64
 
 function WorkflowStatus({
   title,
-  detail,
   tone = 'neutral',
 }: {
   title: ReactNode
-  detail?: string
   tone?: 'neutral' | 'warn' | 'ok'
 }) {
   return (
     <div className={`cuw-float-bar__status cuw-float-bar__status--${tone}`}>
       <p className="cuw-float-bar__status-title">{title}</p>
-      {detail ? <p className="cuw-float-bar__status-detail">{detail}</p> : null}
     </div>
   )
 }
@@ -169,7 +165,6 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title="Birlasoft Customer Insights"
-          detail="Review the summary, then continue into Submission Workbench."
         />
         <PrimaryWorkflowCTA
           label="Continue to Submission Workbench →"
@@ -188,7 +183,6 @@ export function FloatingWorkflowBar({
     body = (
       <WorkflowStatus
         title="Decision locked"
-        detail={decisionLabel(c.decision === 'pending' ? 'quote' : c.decision)}
       />
     )
   } else if (isOps) {
@@ -197,7 +191,6 @@ export function FloatingWorkflowBar({
         <>
           <WorkflowStatus
             title="Handed off"
-            detail="Ready for UW. Decision Desk owns risk and financial sign off."
             tone="ok"
           />
           <Chip size="sm" variant="soft" color="success">
@@ -210,7 +203,6 @@ export function FloatingWorkflowBar({
         <>
           <WorkflowStatus
             title="Package incomplete"
-            detail={`${c.completenessPct}% complete — finish Policy Documents.`}
             tone="warn"
           />
           <PrimaryWorkflowCTA
@@ -225,7 +217,6 @@ export function FloatingWorkflowBar({
         <>
           <WorkflowStatus
             title="Package complete"
-            detail="Hand off to underwriter for risk analysis."
             tone="ok"
           />
           <PrimaryWorkflowCTA label="Ready for UW" onPress={() => markReadyForUw(c.id)} ready />
@@ -235,7 +226,6 @@ export function FloatingWorkflowBar({
       body = (
         <WorkflowStatus
           title="Ops owns Policy Documents"
-          detail="Risk analysis and Quote stay with UW."
         />
       )
     }
@@ -244,7 +234,6 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title="Package incomplete"
-          detail={`${c.completenessPct}% — finish Policy Documents before Risk Information.`}
           tone="warn"
         />
         <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -259,7 +248,6 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title="Documents not signed off"
-          detail="Mark Documents Complete to unlock Risk Information."
           tone="warn"
         />
         <PrimaryWorkflowCTA
@@ -280,7 +268,6 @@ export function FloatingWorkflowBar({
                 Review remaining information
               </span>
             }
-            detail="Scroll through Risk Information before continuing."
           />
           <PrimaryWorkflowCTA
             label={`Continue to ${nextTitle ?? 'Risk Analysis'} →`}
@@ -298,11 +285,6 @@ export function FloatingWorkflowBar({
                 <AlertTriangle size={14} strokeWidth={2.25} aria-hidden />
                 Items need attention
               </span>
-            }
-            detail={
-              unsignedIds.length
-                ? `${unsignedIds.length} required finding${unsignedIds.length === 1 ? '' : 's'} still pending.`
-                : 'Complete Documents Complete and required triage before continuing.'
             }
             tone="warn"
           />
@@ -324,7 +306,6 @@ export function FloatingWorkflowBar({
                 Risk Information complete
               </span>
             }
-            detail="All sections reviewed"
             tone="ok"
           />
           <PrimaryWorkflowCTA
@@ -340,7 +321,6 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title={`Next: ${nextTitle}`}
-          detail={idx === 2 ? 'Review exposure charts, then continue' : undefined}
         />
         <PrimaryWorkflowCTA
           label={`Continue to ${nextTitle} →`}
@@ -359,7 +339,6 @@ export function FloatingWorkflowBar({
               ? `AI recommends ${c.recommendation.toUpperCase()}`
               : 'Complete financial sign off before Quote'
           }
-          detail={finOk ? 'Ready for policy admin' : 'Getting Ready to Quote'}
           tone={finOk ? 'ok' : 'warn'}
         />
         <div className="cuw-float-bar__decide" onClick={(e) => e.stopPropagation()}>

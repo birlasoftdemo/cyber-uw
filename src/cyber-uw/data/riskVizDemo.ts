@@ -416,6 +416,10 @@ export interface ScoreCriterion {
 export interface CarrierExposureSummary {
   /** Estimated annualized loss expectancy (USD) */
   aleUsd: number
+  /** Privacy, business interruption, and extortion pieces of aleUsd */
+  alePrivacyUsd: number
+  aleBiUsd: number
+  aleExtortionUsd: number
   /** Industry / size factor note */
   aleBasis: string
   /** How ALE was built from the package */
@@ -455,7 +459,10 @@ export function carrierExposureForCase(c: {
   const aleBi = biSle * p.aro
   const sleExtortion = Math.min(c.limitRequestedUsd * 0.15, c.revenueUsd * 0.012)
   const aleExtortion = sleExtortion * p.aro * 0.6
-  const aleUsd = p.ineligibleActivity ? 0 : Math.round(alePrivacy + aleBi + aleExtortion)
+  const alePrivacyUsd = p.ineligibleActivity ? 0 : Math.round(alePrivacy)
+  const aleBiUsd = p.ineligibleActivity ? 0 : Math.round(aleBi)
+  const aleExtortionUsd = p.ineligibleActivity ? 0 : Math.round(aleExtortion)
+  const aleUsd = alePrivacyUsd + aleBiUsd + aleExtortionUsd
 
   const worstCase = p.ineligibleActivity
     ? [
@@ -570,6 +577,9 @@ export function carrierExposureForCase(c: {
 
   return {
     aleUsd,
+    alePrivacyUsd,
+    aleBiUsd,
+    aleExtortionUsd,
     aleBasis: p.ineligibleActivity
       ? `Not priced — ${p.ineligibleActivity}`
       : `${p.aroBaseLabel} · SLE_privacy ${formatUsdShort(Math.round(slePrivacy))} · ARO ${p.aro}`,

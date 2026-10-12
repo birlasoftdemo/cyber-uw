@@ -1,5 +1,6 @@
-import { type LucideIcon } from 'lucide-react'
-import { fieldKey, type SectionField } from '../data/cyberTriageRules'
+import { Lock, Pencil, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { fieldKey, isAnswerSigned, type SectionField } from '../data/cyberTriageRules'
 import { useCyberUwStore } from '../store/cyberUwStore'
 
 export function QuestionMetaGrid({
@@ -27,43 +28,94 @@ export function QuestionMetaGrid({
   )
 }
 
+function IngestField({
+  caseId,
+  sectionId,
+  field,
+}: {
+  caseId: string
+  sectionId: string
+  field: SectionField
+}) {
+  const setAnswerOverride = useCyberUwStore((s) => s.setAnswerOverride)
+  const toggleAnswerSigned = useCyberUwStore((s) => s.toggleAnswerSigned)
+  const signed = useCyberUwStore((s) => {
+    const item = s.cases.find((c) => c.id === caseId)
+    return item ? isAnswerSigned(item, field.key ?? fieldKey(sectionId, field.label)) : false
+  })
+  const stored = field.attested ?? field.value
+  const key = field.key ?? fieldKey(sectionId, field.label)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(stored)
+
+  const startEdit = () => {
+    setDraft(stored)
+    setEditing(true)
+  }
+
+  const save = () => {
+    setAnswerOverride(caseId, key, draft)
+    toggleAnswerSigned(caseId, key, true)
+    setEditing(false)
+  }
+
+  return (
+    <div id={`dossier-anchor-${sectionId}-${field.label}`} className="wb-q-cell">
+      <div className="wb-q-cell__head">
+        <p className="wb-q-cell__label">{field.label}</p>
+        <div className="wb-q-cell__actions">
+          {editing ? (
+            <button type="button" className="wb-q-save" onClick={save}>
+              Save
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="wb-q-pen"
+              aria-label={`Edit ${field.label}`}
+              onClick={startEdit}
+            >
+              <Pencil size={13} strokeWidth={1.75} />
+            </button>
+          )}
+        </div>
+      </div>
+      {editing ? (
+        <input
+          className="wb-q-cell__input"
+          value={draft}
+          aria-label={field.label}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+      ) : (
+        <p className="wb-q-cell__value">
+          {signed ? <Lock size={12} strokeWidth={2} className="wb-q-lock" aria-hidden /> : null}
+          {stored}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function IngestQuestionGrid({
   caseId,
   sectionId,
   fields,
-  editing,
 }: {
   caseId: string
   sectionId: string
   fields: SectionField[]
-  editing: boolean
 }) {
-  const setAnswerOverride = useCyberUwStore((s) => s.setAnswerOverride)
-
   return (
     <div className="wb-q-grid">
-      {fields.map((f) => {
-        const key = f.key ?? `${sectionId}::${f.label}`
-        return (
-          <div
-            key={key}
-            id={`dossier-anchor-${sectionId}-${f.label}`}
-            className="wb-q-cell"
-          >
-            <p className="wb-q-cell__label">{f.label}</p>
-            {editing ? (
-              <input
-                className="wb-q-cell__input"
-                value={f.attested ?? f.value}
-                aria-label={f.label}
-                onChange={(e) => setAnswerOverride(caseId, key, e.target.value)}
-              />
-            ) : (
-              <p className="wb-q-cell__value">{f.attested ?? f.value}</p>
-            )}
-          </div>
-        )
-      })}
+      {fields.map((field) => (
+        <IngestField
+          key={field.key ?? fieldKey(sectionId, field.label)}
+          caseId={caseId}
+          sectionId={sectionId}
+          field={field}
+        />
+      ))}
     </div>
   )
 }

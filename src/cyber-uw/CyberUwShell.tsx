@@ -136,7 +136,11 @@ export function CyberUwShell() {
         focusMode={showCaseDetail}
       />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <main className="workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main
+          className={`workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden${
+            showCaseDetail ? ' cuw-case-open' : shellView === 'workbench' ? ' cuw-list-open' : ''
+          }`}
+        >
           <WorkbenchPageHeader
               leading={<BirlasoftLogo />}
               title={pageTitle}

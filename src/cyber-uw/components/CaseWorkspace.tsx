@@ -1,7 +1,5 @@
-import { Accordion, Button, Typography } from '@heroui/react'
+import { Button, Typography } from '@heroui/react'
 import {
-  CalendarCheck2,
-  CalendarRange,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
@@ -14,9 +12,6 @@ import {
   Layers,
   Lock,
   Network,
-  Pencil,
-  PencilOff,
-  Percent,
   RefreshCw,
   Scale,
   ShieldAlert,
@@ -34,15 +29,14 @@ import {
 import {
   INELIGIBLE_ORGANIZATION_ACTIVITIES,
   riskSectionReportsForCase,
-  sectionReportsForCase,
   triageFindingsForCase,
   questionFieldMatchers,
   APP_SECTIONS,
   type SectionField,
   type TriageFinding,
 } from '../data/cyberTriageRules'
-import { PACKAGE_DOC_KINDS, openPackageDocument } from '../data/dossierPackage'
 import { Customer360Panel } from './Customer360Panel'
+import { ExtractedFieldTabs } from './ExtractedFieldTabs'
 import { RiskVizPanel } from './RiskVizCharts'
 import {
   RiskEvidenceCitePanel,
@@ -55,15 +49,14 @@ import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, RiskJudgmentStatus } from '../types'
-import { checklistStatusForCase, missingDocsForCase } from '../utils/missingDocs'
-import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
+import { missingDocsForCase } from '../utils/missingDocs'
+import { formatPolicyDate } from '../utils/policyPeriod'
 import { money } from './CyberPrimitives'
 import { CyberProgressStepper } from './CyberWorkbenchDesk'
 import { FloatingWorkflowBar } from './FloatingWorkflowBar'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
 import { DocumentsCompleteModal } from './DocumentsCompleteModal'
 import {
-  IngestQuestionGrid,
   QuestionMetaGrid,
 } from './QuestionFields'
 import {
@@ -292,8 +285,6 @@ function TriageFindingCard({
 
       {expanded ? (
         <div className="wb-risk-card__body">
-          <p className="wb-risk-card__summary wb-risk-card__summary--body">{finding.summary}</p>
-
           <div className="wb-risk-card__panes" role="group" aria-label="Received versus permitted">
             <div className="wb-risk-card__pane">
               <div className="wb-risk-card__pane-meta">
@@ -774,17 +765,12 @@ function PolicyDocumentsStageBody({
   onRequestDocumentsComplete: () => void
 }) {
   const missing = missingDocsForCase(c)
-  const checklist = checklistStatusForCase(c)
   const runMockSignal = useCyberUwStore((s) => s.runMockSignal)
   const submitDiscussionReferral = useCyberUwStore((s) => s.submitDiscussionReferral)
-  const setPackageDocKind = useCyberUwStore((s) => s.setPackageDocKind)
   const scanning = c.signalStatus === 'scanning'
   const [ingestReferDraft, setIngestReferDraft] = useState<DiscussionReferDraft | null>(null)
-  const [editingSections, setEditingSections] = useState<Record<string, boolean>>({})
-  const reports = sectionReportsForCase(c)
   const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
   const canComplete = missing.length === 0 && c.completenessPct >= 80 && !documentsComplete
-  const period = policyPeriodForCase(c)
 
   const openIngestRefer = () => {
     const label =
@@ -803,192 +789,34 @@ function PolicyDocumentsStageBody({
 
   return (
     <div className="space-y-4">
-      <QuestionMetaGrid
-        items={[
-          { label: 'Proposed start date', value: formatPolicyDate(period.startIso), icon: CalendarRange },
-          { label: 'Proposed end date', value: formatPolicyDate(period.endIso), icon: CalendarCheck2 },
-          { label: 'Completeness', value: `${c.completenessPct}%`, icon: Percent },
-          { label: 'Requested limit', value: money(c.limitRequestedUsd), icon: Landmark },
-        ]}
-      />
-
-      <section>
-        <h4 className="text-sm font-semibold text-slate-900">Required document checklist</h4>
-        <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
-          {checklist.map((row) => (
-            <li
-              key={row.required}
-              className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm ${
-                row.present
-                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900'
-                  : 'border-amber-200 bg-amber-50/70 text-amber-950'
-              }`}
-            >
-              <span
-                className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                  row.present ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
-                }`}
-                aria-hidden
-              >
-                {row.present ? '✓' : '!'}
-              </span>
-              <span className="font-medium text-inherit">{row.required}</span>
-              <span
-                className={`ml-auto text-[11px] font-semibold ${
-                  row.present ? 'text-emerald-900' : 'text-amber-950'
-                }`}
-              >
-                {row.present ? 'Present' : 'Missing'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h4 className="text-sm font-semibold text-slate-900">Package documents</h4>
-        {c.packageDocs.length ? (
-          <div className="wb-pkg-table-wrap mt-2">
-            <table className="wb-pkg-table">
-              <thead>
-                <tr>
-                  <th>Document</th>
-                  <th>Type of doc</th>
-                  <th>View</th>
-                </tr>
-              </thead>
-              <tbody>
-                {c.packageDocs.map((doc) => {
-                  const kinds = PACKAGE_DOC_KINDS.includes(
-                    doc.kind as (typeof PACKAGE_DOC_KINDS)[number],
-                  )
-                    ? PACKAGE_DOC_KINDS
-                    : ([doc.kind, ...PACKAGE_DOC_KINDS] as readonly string[])
-                  return (
-                    <tr key={doc.id} id={`dossier-anchor-${doc.id}`}>
-                      <td className="font-medium text-slate-900" title={doc.name}>
-                        {doc.name}
-                      </td>
-                      <td>
-                        <select
-                          className="wb-q-cell__input"
-                          value={doc.kind}
-                          aria-label={`Type of ${doc.name}`}
-                          onChange={(e) => setPackageDocKind(c.id, doc.id, e.target.value)}
-                        >
-                          {kinds.map((kind) => (
-                            <option key={kind} value={kind}>
-                              {kind}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="wb-pkg-view"
-                          onClick={() => openPackageDocument(doc)}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+      <div className="wb-doc-snap">
+        <section className="wb-doc-snap__section wb-doc-snap__section--fields">
+          <h2 className="wb-stage-h2">Extracted fields</h2>
+          <div className="wb-doc-snap__scroll">
+            <ExtractedFieldTabs c={c} />
           </div>
-        ) : (
-          <p className="mt-2 text-sm text-slate-500">No documents attached.</p>
-        )}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {documentsComplete ? (
-            <p className="text-xs font-medium text-emerald-800">
-              Documents complete
-              {c.packageSignOff?.signedOffBy ? ` · ${c.packageSignOff.signedOffBy}` : ''}
-              {c.packageSignOff?.signedOffAt
-                ? ` · ${formatPolicyDate(c.packageSignOff.signedOffAt)}`
-                : ''}
-            </p>
-          ) : (
-            <Button
-              size="sm"
-              variant="primary"
-              isDisabled={!canComplete}
-              onPress={onRequestDocumentsComplete}
-            >
-              Documents Complete
-            </Button>
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h4 className="text-sm font-semibold text-slate-900">Extracted fields</h4>
-        <Accordion
-          allowsMultipleExpanded
-          defaultExpandedKeys={[]}
-          hideSeparator
-          className="wb-extract-accordion w-full"
-        >
-          {reports.map((report) => {
-            const editing = Boolean(editingSections[report.section.id])
-            const fieldCount = report.fields.length
-            return (
-              <Accordion.Item
-                key={report.section.id}
-                id={report.section.id}
-                className="wb-extract-accordion__item"
+          <div className="wb-doc-snap__foot flex flex-wrap items-center gap-2">
+            {documentsComplete ? (
+              <p className="text-xs font-medium text-emerald-800">
+                Documents complete
+                {c.packageSignOff?.signedOffBy ? ` · ${c.packageSignOff.signedOffBy}` : ''}
+                {c.packageSignOff?.signedOffAt
+                  ? ` · ${formatPolicyDate(c.packageSignOff.signedOffAt)}`
+                  : ''}
+              </p>
+            ) : (
+              <Button
+                size="sm"
+                variant="primary"
+                isDisabled={!canComplete}
+                onPress={onRequestDocumentsComplete}
               >
-                <Accordion.Heading className="wb-extract-accordion__heading">
-                  <div className="wb-extract-accordion__head">
-                    <Accordion.Trigger className="wb-extract-accordion__trigger">
-                      <Accordion.Indicator className="wb-extract-accordion__indicator">
-                        <ChevronDown size={16} strokeWidth={2} />
-                      </Accordion.Indicator>
-                      <span className="wb-extract-accordion__title-wrap">
-                        <span className="wb-extract-accordion__title">{report.section.title}</span>
-                        <span className="wb-extract-accordion__sub">
-                          {fieldCount} {fieldCount === 1 ? 'field' : 'fields'} · Q
-                          {report.section.questions}
-                        </span>
-                      </span>
-                    </Accordion.Trigger>
-                    <button
-                      type="button"
-                      className="wb-q-pen"
-                      aria-pressed={editing}
-                      aria-label={
-                        editing ? `Lock ${report.section.title}` : `Edit ${report.section.title}`
-                      }
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setEditingSections((cur) => ({
-                          ...cur,
-                          [report.section.id]: !cur[report.section.id],
-                        }))
-                      }}
-                    >
-                      {editing ? <PencilOff size={14} /> : <Pencil size={14} />}
-                    </button>
-                  </div>
-                </Accordion.Heading>
-                <Accordion.Panel>
-                  <Accordion.Body className="wb-extract-accordion__body">
-                    <IngestQuestionGrid
-                      caseId={c.id}
-                      sectionId={report.section.id}
-                      fields={report.fields}
-                      editing={editing}
-                    />
-                  </Accordion.Body>
-                </Accordion.Panel>
-              </Accordion.Item>
-            )
-          })}
-        </Accordion>
-      </section>
+                Documents Complete
+              </Button>
+            )}
+          </div>
+        </section>
+      </div>
 
       {missing.length > 0 ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
@@ -1086,12 +914,7 @@ function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
           <SecurityRatingPanel c={c} onOpenCites={() => openCites('market')} />
         </div>
         <div className="wb-risk-evidence__capacity">
-          <RiskVizPanel
-            c={c}
-            activeThreatId={null}
-            onSelectThreat={() => {}}
-            onOpenCites={() => openCites('capacity')}
-          />
+          <RiskVizPanel c={c} onOpenCites={() => openCites('capacity')} />
         </div>
       </div>
       <RiskEvidenceCitePanel
@@ -1121,7 +944,21 @@ function WorkflowTab({
     if (!dossierFocusId) return
     const el = document.getElementById(`dossier-anchor-${dossierFocusId}`)
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const section = el.closest('.wb-doc-snap__section')
+      const snap = el.closest('.wb-doc-snap')
+      if (section instanceof HTMLElement && snap instanceof HTMLElement) {
+        const pane = snap.closest('.cuw-case-shell__pane')
+        if (pane instanceof HTMLElement) {
+          const paneTop =
+            snap.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop
+          pane.scrollTo({ top: paneTop, behavior: 'smooth' })
+        }
+        const innerTop =
+          section.getBoundingClientRect().top - snap.getBoundingClientRect().top + snap.scrollTop
+        snap.scrollTo({ top: innerTop, behavior: 'smooth' })
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
       el.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2')
       const t = window.setTimeout(() => {
         el.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2')
@@ -1237,13 +1074,22 @@ export function CaseWorkspace() {
     }
 
     root.addEventListener('scroll', syncFromScroll, { passive: true })
+    const applyPaneHeight = () => {
+      root.style.setProperty('--cuw-pane-h', `${root.clientHeight}px`)
+    }
+    applyPaneHeight()
+    const paneObserver = new ResizeObserver(applyPaneHeight)
+    paneObserver.observe(root)
     const dismissedOnOpen =
       useCyberUwStore.getState().cases.find((x) => x.id === caseId)?.customer360Dismissed === true
     if (dismissedOnOpen) {
       workbench.scrollIntoView({ behavior: 'instant', block: 'start' })
     }
     syncFromScroll()
-    return () => root.removeEventListener('scroll', syncFromScroll)
+    return () => {
+      root.removeEventListener('scroll', syncFromScroll)
+      paneObserver.disconnect()
+    }
   }, [caseId, dismissCustomer360, showCustomer360])
 
   if (!c) {
@@ -1288,45 +1134,48 @@ export function CaseWorkspace() {
   return (
     <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col">
-        <div
-          className="cuw-case-view-tabs shrink-0 px-3 pt-2 md:px-4"
-          role="tablist"
-          aria-label="Case view"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!onWorkflow}
-            className={`cuw-case-view-tabs__tab${!onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-            onClick={scrollToInsights}
-          >
-            Birlasoft Customer Insights
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={onWorkflow}
-            className={`cuw-case-view-tabs__tab${onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
-            onClick={scrollToWorkbench}
-          >
-            Submission Workbench
-          </button>
-        </div>
-
-        {onWorkflow ? (
-          <div className="wb-cyber-journey-rail shrink-0 border-b border-slate-200/80 px-3 py-2 md:px-4">
-            <div className="wb-cyber-journey-rail__shell">
-              <div className="wb-cyber-journey-rail__stepper min-w-0 flex-1">
-                <CyberProgressStepper c={c} />
-              </div>
-            </div>
+        <div className="cuw-case-chrome-row shrink-0">
+          <div className="cuw-case-view-tabs" role="tablist" aria-label="Case view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!onWorkflow}
+              className={`cuw-case-view-tabs__tab${!onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
+              onClick={scrollToInsights}
+            >
+              Birlasoft Customer Insights
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={onWorkflow}
+              className={`cuw-case-view-tabs__tab${onWorkflow ? ' cuw-case-view-tabs__tab--active' : ''}`}
+              onClick={scrollToWorkbench}
+            >
+              Submission Workbench
+            </button>
           </div>
-        ) : null}
+          <div className="cuw-float-dock">
+            <FloatingWorkflowBar
+              c={c}
+              surface={onWorkflow ? 'workflow' : 'c360'}
+              scrollRootRef={scrollRootRef}
+              onRequestDecision={(d) => setPendingDecision(d)}
+              onSignal={() => runMockSignal(c.id)}
+              onRequestDocumentsComplete={() => setDocsCompleteOpen(true)}
+            />
+          </div>
+          {onWorkflow ? (
+            <div className="cuw-case-chrome-row__stepper">
+              <CyberProgressStepper c={c} />
+            </div>
+          ) : null}
+        </div>
 
         <div className="cuw-case-workflow-pane min-h-0 flex-1">
           <div
             ref={scrollRootRef}
-            className="case-drawer-surface cuw-case-shell__pane case-drawer-surface--float-pad min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5"
+            className="case-drawer-surface cuw-case-shell__pane min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5"
           >
             <Customer360Panel c={c} />
             <div
@@ -1336,15 +1185,6 @@ export function CaseWorkspace() {
               <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
             </div>
           </div>
-
-          <FloatingWorkflowBar
-            c={c}
-            surface={onWorkflow ? 'workflow' : 'c360'}
-            scrollRootRef={scrollRootRef}
-            onRequestDecision={(d) => setPendingDecision(d)}
-            onSignal={() => runMockSignal(c.id)}
-            onRequestDocumentsComplete={() => setDocsCompleteOpen(true)}
-          />
         </div>
       </div>
 

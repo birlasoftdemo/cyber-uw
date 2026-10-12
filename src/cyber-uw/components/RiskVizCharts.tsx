@@ -1,347 +1,349 @@
-/** Case Review Risk charts — carrier exposure context (ALE, worst-case, coverage). */
+/** Case Review Risk charts — carrier exposure (ALE, controls, limit adequacy). */
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from 'recharts'
-import {
-  carrierExposureForCase,
-  formatExposureUsd,
-  inherentRiskPointsForCase,
-  type ThreatVizPoint,
-} from '../data/riskVizDemo'
-import {
-  AlertOctagon,
-  Radio,
-  Ruler,
-  Umbrella,
-} from 'lucide-react'
+import { applicationPosture, type ApplicationPosture } from '../data/cyberTriageRules'
+import { carrierExposureForCase, formatExposureUsd, type CarrierExposureSummary } from '../data/riskVizDemo'
 import type { CyberCase } from '../types'
 
-function formatImpact(usd: number): string {
-  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1)}M`
-  if (usd >= 1000) return `$${(usd / 1000).toFixed(usd >= 10000 ? 0 : 1)}k`
-  return `$${usd}`
+const ALE_COLORS = {
+  privacy: '#312e81',
+  bi: '#0891b2',
+  extortion: '#7c3aed',
+} as const
+
+const STACK_COLORS: Record<string, string> = {
+  'Cyber extortion': '#312e81',
+  'Data exfiltration': '#0891b2',
+  'Business interruption': '#c4b5fd',
+  Covered: '#67e8f9',
+  Shortfall: '#fb7185',
+  Headroom: '#a5b4fc',
 }
 
-function InherentRiskBubble({
-  points,
-  activeThreatId,
-  onSelectThreat,
-  aleUsd,
+type ControlRow = {
+  id: string
+  label: string
+  uplift: number
+  chip: string
+  text: string
+  dot: string
+  pale: string
+}
+
+function controlRows(posture: ApplicationPosture): ControlRow[] {
+  return [
+    {
+      id: 'mfa',
+      label: 'MFA',
+      uplift: posture.mfaGap ? 55 : 0,
+      chip: '#312e81',
+      text: '#fff',
+      dot: '#312e81',
+      pale: '#e0e7ff',
+    },
+    {
+      id: 'edr',
+      label: 'EDR / AV',
+      uplift: posture.edrGap ? 35 : 0,
+      chip: '#0891b2',
+      text: '#fff',
+      dot: '#0891b2',
+      pale: '#cffafe',
+    },
+    {
+      id: 'backup',
+      label: 'Backups',
+      uplift: posture.backupWeak ? 25 : 0,
+      chip: '#7dd3fc',
+      text: '#0f172a',
+      dot: '#0284c7',
+      pale: '#e0f2fe',
+    },
+    {
+      id: 'ir',
+      label: 'IR / DR test',
+      uplift: posture.irTested ? 0 : 20,
+      chip: '#c4b5fd',
+      text: '#1e1b4b',
+      dot: '#7c3aed',
+      pale: '#ede9fe',
+    },
+    {
+      id: 'loss',
+      label: 'Prior loss',
+      uplift: posture.lossYes ? 40 : 0,
+      chip: '#7c3aed',
+      text: '#fff',
+      dot: '#7c3aed',
+      pale: '#ede9fe',
+    },
+  ]
+}
+
+function lossCostLabel(aleUsd: number, revenueUsd: number, ineligible: boolean): string {
+  if (ineligible || revenueUsd <= 0) return 'Not priced'
+  const bps = (aleUsd / revenueUsd) * 10_000
+  const text = bps >= 10 ? String(Math.round(bps)) : bps.toFixed(1)
+  return `${text} bps`
+}
+
+function aleParts(exposure: CarrierExposureSummary) {
+  return [
+    { label: 'Privacy', usd: exposure.alePrivacyUsd, color: ALE_COLORS.privacy },
+    { label: 'Business interruption', usd: exposure.aleBiUsd, color: ALE_COLORS.bi },
+    { label: 'Extortion', usd: exposure.aleExtortionUsd, color: ALE_COLORS.extortion },
+  ]
+}
+
+function ExpectedLossCard({
+  exposure,
+  revenueUsd,
 }: {
-  points: ThreatVizPoint[]
-  activeThreatId: string | null
-  onSelectThreat: (threatId: string) => void
-  aleUsd: number
+  exposure: CarrierExposureSummary
+  revenueUsd: number
 }) {
+  const parts = aleParts(exposure)
+  const max = Math.max(...parts.map((part) => part.usd), 1)
+  const pill = lossCostLabel(exposure.aleUsd, revenueUsd, Boolean(exposure.ineligibleActivity))
   return (
-    <div className="cuw-panel">
-      <div className="cuw-panel__head">
-        <span className="cuw-glyph" aria-hidden>
-          <Radio size={16} strokeWidth={1.75} />
-        </span>
-        <h4 className="cuw-type-title">Est. ALE {formatExposureUsd(aleUsd)}</h4>
-      </div>
-      <ResponsiveContainer width="100%" height={260}>
-        <ScatterChart margin={{ top: 8, right: 12, bottom: 8, left: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis
-            type="number"
-            dataKey="likelihoodPct"
-            name="Likelihood"
-            unit="%"
-            domain={[0, 100]}
-            tick={{ fontSize: 11 }}
-            label={{ value: 'Likelihood', position: 'insideBottom', offset: -2, fontSize: 10 }}
-          />
-          <YAxis
-            type="number"
-            dataKey="impactUsd"
-            name="Impact"
-            tick={{ fontSize: 11 }}
-            width={44}
-            tickFormatter={(v) => formatImpact(Number(v))}
-            label={{ value: 'Impact $', angle: -90, position: 'insideLeft', fontSize: 10 }}
-          />
-          <ZAxis type="number" dataKey="exposureWeight" range={[80, 420]} />
-          <Tooltip
-            cursor={{ strokeDasharray: '3 3' }}
-            content={({ active, payload }) => {
-              if (!active || !payload?.[0]) return null
-              const p = payload[0].payload as ThreatVizPoint
-              return (
-                <div className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm">
-                  <p className="font-semibold text-slate-900">{p.label}</p>
-                  <p className="text-slate-600">
-                    {p.likelihoodPct}% · {formatImpact(p.impactUsd)} · wt {p.exposureWeight}
-                  </p>
-                </div>
-              )
-            }}
-          />
-          <Scatter
-            data={points}
-            cursor="pointer"
-            onClick={(data) => {
-              const raw = data as unknown as Partial<ThreatVizPoint> & {
-                payload?: ThreatVizPoint
-              }
-              const hit = raw.payload?.threatId
-                ? raw.payload
-                : raw.threatId
-                  ? (raw as ThreatVizPoint)
-                  : null
-              if (hit?.threatId) onSelectThreat(hit.threatId)
-            }}
-          >
-            {points.map((p) => (
-              <Cell
-                key={p.threatId}
-                fill={p.color}
-                stroke={activeThreatId === p.threatId ? '#0f172a' : 'transparent'}
-                strokeWidth={activeThreatId === p.threatId ? 2 : 0}
-                opacity={activeThreatId && activeThreatId !== p.threatId ? 0.45 : 0.9}
+    <article className="wb-expo-card">
+      <h3 className="wb-expo-card__title">Expected annual loss</h3>
+      <p className="wb-expo-pill-row">
+        <span className="wb-expo-pill-row__label">Loss cost, bps of revenue</span>
+        <span className="wb-expo-pill">{pill}</span>
+      </p>
+      <div
+        className="wb-expo-bars"
+        role="img"
+        aria-label={parts
+          .map((part) => `${part.label} ${formatExposureUsd(part.usd)}`)
+          .join(', ')}
+      >
+        {parts.map((part) => (
+          <div key={part.label} className="wb-expo-bars__col">
+            <span className="wb-expo-bars__value">{formatExposureUsd(part.usd)}</span>
+            <div className="wb-expo-bars__track">
+              <div
+                className="wb-expo-bars__bar"
+                style={{
+                  height: `${Math.max(4, (part.usd / max) * 100)}%`,
+                  background: part.color,
+                }}
               />
-            ))}
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
-      <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 px-1">
-        {points.map((p) => (
-          <li key={p.threatId}>
-            <button
-              type="button"
-              className={`inline-flex items-center gap-1.5 text-[11px] ${
-                activeThreatId === p.threatId ? 'font-semibold text-slate-900' : 'text-slate-600'
-              }`}
-              onClick={() => onSelectThreat(p.threatId)}
-            >
-              <span className="inline-block size-2 rounded-full" style={{ background: p.color }} />
-              {p.label}
-            </button>
-          </li>
+            </div>
+            <span className="wb-expo-bars__name">{part.label}</span>
+          </div>
         ))}
-      </ul>
-    </div>
-  )
-}
-
-function WorstCaseExposureChart({
-  rows,
-  totalUsd,
-  limitUsd,
-}: {
-  rows: { label: string; usd: number }[]
-  totalUsd: number
-  limitUsd: number
-}) {
-  const data = rows.map((r) => ({ name: r.label, usd: r.usd }))
-  return (
-    <div className="cuw-panel">
-      <div className="cuw-panel__head">
-        <span className="cuw-glyph" aria-hidden>
-          <AlertOctagon size={16} strokeWidth={1.75} />
-        </span>
-        <h4 className="cuw-type-title">
-          Stacked exposure {formatExposureUsd(totalUsd)}
-          <span className="cuw-type-caption ml-1 font-medium">
-            · limit {formatExposureUsd(limitUsd)}
-          </span>
-        </h4>
       </div>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            width={44}
-            tickFormatter={(v) => formatImpact(Number(v))}
-          />
-          <Tooltip formatter={(value) => formatExposureUsd(Number(value ?? 0))} />
-          <Bar dataKey="usd" name="USD" radius={[4, 4, 0, 0]}>
-            {data.map((d) => (
-              <Cell
-                key={d.name}
-                fill={
-                  d.name.toLowerCase().includes('limit')
-                    ? '#2563eb'
-                    : d.name.toLowerCase().includes('extortion')
-                      ? '#0f172a'
-                      : d.name.toLowerCase().includes('exfil')
-                        ? '#64748b'
-                        : '#94a3b8'
-                }
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    </article>
   )
 }
 
-function CoverageAdequacyChart({
-  limitUsd,
-  worstCaseTotalUsd,
-  adequacyLabel,
-  adequacyDetail,
-  adequacy,
-}: {
-  limitUsd: number
-  worstCaseTotalUsd: number
-  adequacyLabel: string
-  adequacyDetail: string
-  adequacy: 'adequate' | 'tight' | 'shortfall'
-}) {
-  const data = [
-    { name: 'Requested limit', usd: limitUsd, fill: '#0058b0' },
-    { name: 'Worst-case stack', usd: worstCaseTotalUsd, fill: '#3d4f66' },
+function ControlLoadCard({ posture }: { posture: ApplicationPosture }) {
+  const rows = controlRows(posture)
+  return (
+    <article className="wb-expo-card">
+      <h3 className="wb-expo-card__title">Control frequency load</h3>
+      <div className="wb-expo-scale" aria-hidden>
+        <span className="wb-expo-scale__meter">
+          <span>LOW</span>
+          <span>MED</span>
+          <span>HIGH</span>
+        </span>
+      </div>
+      <ul className="wb-expo-rows">
+        {rows.map((row) => {
+          const filled = Math.round((row.uplift / 55) * 10)
+          return (
+            <li key={row.id} className="wb-expo-row">
+              <span className="wb-expo-chip" style={{ background: row.chip, color: row.text }}>
+                {row.label}
+              </span>
+              <span className="wb-expo-row__pct">{row.uplift > 0 ? `+${row.uplift}%` : '0%'}</span>
+              <span className="wb-expo-meter" aria-hidden>
+                {Array.from({ length: 10 }, (_, index) => (
+                  <span
+                    key={index}
+                    style={{ background: index < filled ? row.dot : row.pale }}
+                  />
+                ))}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="wb-expo-note">Frequency load versus a control that is already in force.</p>
+    </article>
+  )
+}
+
+function AggregateCard({ exposure }: { exposure: CarrierExposureSummary }) {
+  const losses = exposure.worstCase.filter((row) => row.label !== 'Requested limit')
+  const scale = Math.max(exposure.worstCaseTotalUsd, exposure.limitRequestedUsd, 1)
+  const covered = Math.min(exposure.limitRequestedUsd, exposure.worstCaseTotalUsd)
+  const shortfall = Math.max(0, exposure.worstCaseTotalUsd - exposure.limitRequestedUsd)
+  const headroom = Math.max(0, exposure.limitRequestedUsd - exposure.worstCaseTotalUsd)
+  const limitSegments = [
+    covered > 0 ? { label: 'Covered', usd: covered } : null,
+    shortfall > 0 ? { label: 'Shortfall', usd: shortfall } : null,
+    headroom > 0 ? { label: 'Headroom', usd: headroom } : null,
+  ].filter((segment): segment is { label: string; usd: number } => segment != null)
+  const limitTotal = limitSegments.reduce((sum, segment) => sum + segment.usd, 0) || 1
+
+  const legend = [
+    ...losses.map((row) => row.label),
+    ...limitSegments.map((segment) => segment.label),
   ]
 
   return (
-    <div className="cuw-panel">
-      <div className="cuw-panel__head">
-        <span className="cuw-glyph" aria-hidden>
-          <Umbrella size={16} strokeWidth={1.75} />
-        </span>
-        <div>
-          <p className="cuw-type-kicker">{adequacy === 'adequate' ? 'Adequate' : adequacy === 'tight' ? 'Tight' : 'Shortfall'}</p>
-          <h4 className="cuw-type-title">{adequacyLabel}</h4>
+    <article className="wb-expo-card">
+      <h3 className="wb-expo-card__title">Aggregate vs stacked worst case</h3>
+      <div className="wb-expo-stacks">
+        <StackBar
+          name="Worst case"
+          total={exposure.worstCaseTotalUsd}
+          widthPct={(exposure.worstCaseTotalUsd / scale) * 100}
+          segments={losses.map((row) => ({
+            label: row.label,
+            pct: exposure.worstCaseTotalUsd > 0 ? (row.usd / exposure.worstCaseTotalUsd) * 100 : 0,
+          }))}
+        />
+        <StackBar
+          name="Requested aggregate"
+          total={exposure.limitRequestedUsd}
+          widthPct={(limitTotal / scale) * 100}
+          segments={limitSegments.map((segment) => ({
+            label: segment.label,
+            pct: (segment.usd / limitTotal) * 100,
+          }))}
+        />
+      </div>
+      <ul className="wb-expo-legend">
+        {legend.map((label) => (
+          <li key={label}>
+            <span style={{ background: STACK_COLORS[label] ?? '#94a3b8' }} aria-hidden />
+            {label}
+          </li>
+        ))}
+      </ul>
+      <p className="wb-expo-note">{exposure.adequacyDetail}</p>
+    </article>
+  )
+}
+
+function StackBar({
+  name,
+  total,
+  widthPct,
+  segments,
+}: {
+  name: string
+  total: number
+  widthPct: number
+  segments: { label: string; pct: number }[]
+}) {
+  return (
+    <div className="wb-expo-stack">
+      <span className="wb-expo-stack__name">{name}</span>
+      <div
+        className="wb-expo-stack__track"
+        role="img"
+        aria-label={`${name} ${formatExposureUsd(total)}. ${segments
+          .map((segment) => `${segment.label} ${Math.round(segment.pct)}%`)
+          .join(', ')}`}
+      >
+        <div className="wb-expo-stack__bar" style={{ width: `${Math.max(widthPct, 8)}%` }}>
+          {segments.map((segment) => (
+            <span
+              key={segment.label}
+              style={{
+                width: `${segment.pct}%`,
+                background: STACK_COLORS[segment.label] ?? '#94a3b8',
+              }}
+            />
+          ))}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis
-            type="number"
-            tick={{ fontSize: 11 }}
-            tickFormatter={(v) => formatImpact(Number(v))}
-          />
-          <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} />
-          <Tooltip formatter={(value) => formatExposureUsd(Number(value ?? 0))} />
-          <Bar dataKey="usd" name="USD" radius={[0, 4, 4, 0]} barSize={22}>
-            {data.map((d) => (
-              <Cell key={d.name} fill={d.fill} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <p className="cuw-type-caption mt-2">{adequacyDetail}</p>
+      <span className="wb-expo-stack__total">{formatExposureUsd(total)}</span>
     </div>
+  )
+}
+
+function AleMixCard({ exposure }: { exposure: CarrierExposureSummary }) {
+  const parts = aleParts(exposure)
+  const total = parts.reduce((sum, part) => sum + part.usd, 0)
+  let cursor = 0
+  const stops =
+    total <= 0
+      ? ['#e5e7eb 0% 100%']
+      : parts.map((part) => {
+          const start = (cursor / total) * 100
+          cursor += part.usd
+          const end = (cursor / total) * 100
+          return `${part.color} ${start}% ${end}%`
+        })
+  return (
+    <article className="wb-expo-card">
+      <h3 className="wb-expo-card__title">Where the annual loss sits</h3>
+      <div className="wb-expo-donut-row">
+        <div
+          className="wb-expo-donut"
+          style={{ background: `conic-gradient(${stops.join(', ')})` }}
+          role="img"
+          aria-label={
+            total <= 0
+              ? 'Annual loss is not priced'
+              : parts
+                  .map(
+                    (part) =>
+                      `${part.label} ${Math.round((part.usd / total) * 100)} percent`,
+                  )
+                  .join(', ')
+          }
+        >
+          <div className="wb-expo-donut__hole">
+            <span>ALE</span>
+            <strong>{formatExposureUsd(exposure.aleUsd)}</strong>
+          </div>
+        </div>
+        <ul className="wb-expo-legend wb-expo-legend--donut">
+          {parts.map((part) => (
+            <li key={part.label}>
+              <span style={{ background: part.color }} aria-hidden />
+              {part.label}
+              <em>{total > 0 ? `${Math.round((part.usd / total) * 100)}%` : '0%'}</em>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </article>
   )
 }
 
 export function RiskVizPanel({
   c,
-  activeThreatId,
-  onSelectThreat,
   onOpenCites,
 }: {
   c: CyberCase
-  activeThreatId: string | null
-  onSelectThreat: (threatId: string) => void
   onOpenCites?: () => void
 }) {
-  const points = inherentRiskPointsForCase(c)
   const exposure = carrierExposureForCase(c)
-  const adequacyTone =
-    exposure.adequacy === 'adequate'
-      ? 'Adequate'
-      : exposure.adequacy === 'tight'
-        ? 'Tight'
-        : 'Shortfall'
+  const posture = applicationPosture(c)
 
   return (
-    <div className="wb-capacity-ledger space-y-4" aria-label="Book capacity ledger">
-      <div className="cuw-panel">
-        <div className="cuw-panel__head">
-          <span className="cuw-glyph" aria-hidden>
-            <Ruler size={16} strokeWidth={1.75} />
-          </span>
-          <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
-            <div>
-              <h4 className="cuw-type-title">Book capacity</h4>
-              
-            </div>
-            {onOpenCites ? (
-              <button type="button" className="wb-risk-cite-open" onClick={onOpenCites}>
-                View sources
-              </button>
-            ) : null}
-          </div>
-        </div>
-        <table className="wb-capacity-ledger__table">
-          <thead>
-            <tr>
-              <th scope="col">Line</th>
-              <th scope="col" className="wb-capacity-ledger__num">
-                Amount
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Requested limit</td>
-              <td className="wb-capacity-ledger__num tabular-nums">
-                {formatExposureUsd(exposure.limitRequestedUsd)}
-              </td>
-            </tr>
-            <tr>
-              <td>Est. ALE</td>
-              <td className="wb-capacity-ledger__num tabular-nums">
-                {formatExposureUsd(exposure.aleUsd)}
-              </td>
-            </tr>
-            <tr>
-              <td>Worst-case stack</td>
-              <td className="wb-capacity-ledger__num tabular-nums">
-                {formatExposureUsd(exposure.worstCaseTotalUsd)}
-              </td>
-            </tr>
-            <tr>
-              <td>Adequacy</td>
-              <td className="wb-capacity-ledger__num">
-                {adequacyTone} · {exposure.adequacyLabel}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <p className="wb-capacity-ledger__formula font-mono">{exposure.aleFormula}</p>
-        
+    <div className="wb-capacity-ledger wb-expo-board" aria-label="Internal risk insights">
+      <div className="wb-expo-head">
+        <h3 className="cuw-type-title">Internal risk insights</h3>
+        {onOpenCites ? (
+          <button type="button" className="wb-risk-cite-open" onClick={onOpenCites}>
+            View sources
+          </button>
+        ) : null}
       </div>
-
-      <div className="wb-capacity-charts">
-        <InherentRiskBubble
-          points={points}
-          activeThreatId={activeThreatId}
-          onSelectThreat={onSelectThreat}
-          aleUsd={exposure.aleUsd}
-        />
-        <WorstCaseExposureChart
-          rows={exposure.worstCase}
-          totalUsd={exposure.worstCaseTotalUsd}
-          limitUsd={exposure.limitRequestedUsd}
-        />
-        <div className="wb-capacity-charts__span">
-          <CoverageAdequacyChart
-            limitUsd={exposure.limitRequestedUsd}
-            worstCaseTotalUsd={exposure.worstCaseTotalUsd}
-            adequacy={exposure.adequacy}
-            adequacyLabel={exposure.adequacyLabel}
-            adequacyDetail={exposure.adequacyDetail}
-          />
-        </div>
+      <div className="wb-expo">
+        <ExpectedLossCard exposure={exposure} revenueUsd={c.revenueUsd} />
+        <ControlLoadCard posture={posture} />
+        <AggregateCard exposure={exposure} />
+        <AleMixCard exposure={exposure} />
       </div>
     </div>
   )
