@@ -125,6 +125,39 @@ export const APP_SECTIONS: AppSection[] = [
   { id: 'current_coverage', title: 'Current Coverage', questions: '19', tabLabel: 'Current Coverage' },
 ]
 
+/** Policy Documents primary tabs. Secondary order follows the application grouping. */
+export const POLICY_PRIMARY_TABS: { id: string; label: string; sectionIds: string[] }[] = [
+  {
+    id: 'data_privacy',
+    label: 'Data & Privacy Exposure',
+    sectionIds: ['data_inventory', 'privacy_controls', 'payment_card'],
+  },
+  {
+    id: 'security_resilience',
+    label: 'Security & Resilience',
+    sectionIds: ['network_security', 'content_liability', 'bc_dr_ir'],
+  },
+  {
+    id: 'third_party',
+    label: 'Third-Party Risk',
+    sectionIds: ['vendor_controls', 'outsourced_services'],
+  },
+  {
+    id: 'coverage_loss',
+    label: 'Coverage & Loss History',
+    sectionIds: [
+      'current_coverage',
+      'loss_information',
+      'requested_insurance_terms',
+      'requested_terms',
+    ],
+  },
+]
+
+export function policyPrimaryIdForSection(sectionId: string): string | undefined {
+  return POLICY_PRIMARY_TABS.find((tab) => tab.sectionIds.includes(sectionId))?.id
+}
+
 /** Risk Information tab order: terms and highest-severity floors first. */
 export const RISK_REVIEW_SECTION_IDS = [
   'requested_terms',

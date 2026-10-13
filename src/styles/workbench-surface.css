@@ -2962,25 +2962,34 @@
   .wb-extract-tabs__source {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
+    min-height: 2.25rem;
     border: 0;
-    background: transparent;
-    padding: 0;
-    color: #1d4ed8;
+    border-radius: 0.45rem;
+    background: #4338ca;
+    padding: 0.35rem 0.85rem;
+    color: #fff;
     font-family: var(--font-ui);
-    font-size: 0.75rem;
-    font-weight: 650;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
     cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
   }
 
   .wb-extract-tabs__source:hover {
-    color: #1e3a8a;
+    background: #3730a3;
+    color: #fff;
+  }
+
+  .wb-extract-tabs__source[aria-expanded='true'] {
+    background: #4338ca;
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.28);
   }
 
   .wb-extract-tabs__source:focus-visible {
-    outline: 2px solid #1e3a8a;
+    outline: 2px solid #1e1b4b;
     outline-offset: 2px;
   }
 
@@ -4323,6 +4332,83 @@
 
   .wb-pkg-tabs .tabs__panel[hidden] {
     display: none;
+  }
+
+  /* Secondary sections sit inside the selected primary panel. */
+  .wb-pkg-tabs .wb-pkg-subtabs {
+    width: 100%;
+    gap: 0;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__list-container {
+    width: 100%;
+    background: transparent;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__list[data-orientation='horizontal'] {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0 0 0.85rem;
+    border-bottom: 0;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab {
+    flex: 1 1 5.25rem !important;
+    width: auto !important;
+    max-width: none;
+    min-width: 5.25rem;
+    min-height: 4.25rem;
+    height: auto;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0;
+    border: 0;
+    border-radius: 0.45rem;
+    padding: 0.7rem 0.4rem 0.6rem;
+    background: #e7f6df;
+    color: #166534;
+    font-size: 0.75rem;
+    font-weight: 650;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab svg {
+    width: 18px;
+    height: 18px;
+    color: #166534;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab:not([data-selected='true']):hover,
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab[data-hovered='true']:not([data-selected='true']) {
+    background: #d7f0cb;
+    color: #14532d;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab[data-selected='true'],
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab[data-selected='true']:hover,
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab[data-selected='true'][data-hovered='true'] {
+    margin-bottom: 0;
+    border: 2px solid #4338ca;
+    border-radius: 0.45rem;
+    background: #4338ca;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__tab[data-selected='true'] svg {
+    color: #fff;
+  }
+
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__panel,
+  .wb-pkg-tabs .wb-pkg-subtabs .tabs__panel[data-orientation='horizontal'] {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.85rem 0 0;
   }
 
   .wb-pkg-doc + .wb-pkg-doc {

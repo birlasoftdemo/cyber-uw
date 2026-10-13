@@ -15,7 +15,12 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useState } from 'react'
-import { sectionReportsForCase } from '../data/cyberTriageRules'
+import {
+  POLICY_PRIMARY_TABS,
+  policyPrimaryIdForSection,
+  sectionReportsForCase,
+  type SectionReport,
+} from '../data/cyberTriageRules'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase } from '../types'
 import { SectionSourcePreview } from './PackageDocumentTabs'
@@ -36,6 +41,23 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   current_coverage: ShieldCheck,
 }
 
+const PRIMARY_ICON: Record<string, LucideIcon> = {
+  data_privacy: Database,
+  security_resilience: Shield,
+  third_party: Handshake,
+  coverage_loss: Scale,
+}
+
+function sectionsInPrimary(primaryId: string, reports: SectionReport[]) {
+  const group = POLICY_PRIMARY_TABS.find((tab) => tab.id === primaryId)
+  if (!group) return []
+  const byId = new Map(reports.map((report) => [report.section.id, report]))
+  return group.sectionIds.flatMap((id) => {
+    const report = byId.get(id)
+    return report ? [report] : []
+  })
+}
+
 export function ExtractedFieldTabs({ c }: { c: CyberCase }) {
   const reports = sectionReportsForCase(c)
   const focusId = useCyberUwStore((s) => s.dossierFocusId)
@@ -54,68 +76,106 @@ export function ExtractedFieldTabs({ c }: { c: CyberCase }) {
     if (focusSection) setSelected(focusSection)
   }
 
-  if (!reports.length) {
+  const primaries = POLICY_PRIMARY_TABS.filter((tab) => sectionsInPrimary(tab.id, reports).length > 0)
+
+  if (!reports.length || !primaries.length) {
     return <p className="mt-2 text-sm text-slate-500">No extracted fields.</p>
   }
 
-  const active =
+  const activeSection =
     selected && reports.some((report) => report.section.id === selected)
       ? selected
       : reports[0].section.id
+  const activePrimary = policyPrimaryIdForSection(activeSection) ?? primaries[0].id
 
   return (
     <Tabs
       className="wb-pkg-tabs mt-2"
-      selectedKey={active}
+      selectedKey={activePrimary}
       onSelectionChange={(key) => {
-        if (key != null) setSelected(String(key))
+        if (key == null) return
+        const next = sectionsInPrimary(String(key), reports)
+        if (!next.some((report) => report.section.id === activeSection)) {
+          setSelected(next[0]?.section.id ?? null)
+        }
       }}
     >
       <Tabs.ListContainer>
-        <Tabs.List aria-label="Extracted fields">
-          {reports.map((report) => {
-            const Icon = SECTION_ICON[report.section.id] ?? FileText
+        <Tabs.List aria-label="Policy document groups">
+          {primaries.map((tab) => {
+            const Icon = PRIMARY_ICON[tab.id] ?? FileText
             return (
-              <Tabs.Tab key={report.section.id} id={report.section.id}>
+              <Tabs.Tab key={tab.id} id={tab.id}>
                 <Icon size={18} strokeWidth={1.75} aria-hidden />
-                <span>{report.section.tabLabel}</span>
+                <span>{tab.label}</span>
               </Tabs.Tab>
             )
           })}
         </Tabs.List>
       </Tabs.ListContainer>
-      {reports.map((report) => {
-        const showingSource = sourceOpen === report.section.id
+      {primaries.map((tab) => {
+        const sections = sectionsInPrimary(tab.id, reports)
+        const sectionKey = sections.some((report) => report.section.id === activeSection)
+          ? activeSection
+          : sections[0]?.section.id
         return (
-          <Tabs.Panel key={report.section.id} id={report.section.id}>
-            <div className="wb-extract-tabs__meta-row">
-              <p className="wb-extract-tabs__meta">
-                {report.fields.length} {report.fields.length === 1 ? 'field' : 'fields'} · Q
-                {report.section.questions}
-              </p>
-              <button
-                type="button"
-                className="wb-extract-tabs__source"
-                aria-expanded={showingSource}
-                onClick={() =>
-                  setSourceOpen((current) =>
-                    current === report.section.id ? null : report.section.id,
-                  )
-                }
-              >
-                <FileText size={14} strokeWidth={1.75} aria-hidden />
-                View Source Document
-              </button>
-            </div>
-            {showingSource ? (
-              <SectionSourcePreview sectionId={report.section.id} />
-            ) : (
-              <IngestQuestionGrid
-                caseId={c.id}
-                sectionId={report.section.id}
-                fields={report.fields}
-              />
-            )}
+          <Tabs.Panel key={tab.id} id={tab.id}>
+            <Tabs
+              className="wb-pkg-subtabs"
+              selectedKey={sectionKey}
+              onSelectionChange={(key) => {
+                if (key != null) setSelected(String(key))
+              }}
+            >
+              <Tabs.ListContainer>
+                <Tabs.List aria-label={`${tab.label} sections`}>
+                  {sections.map((report) => {
+                    const Icon = SECTION_ICON[report.section.id] ?? FileText
+                    return (
+                      <Tabs.Tab key={report.section.id} id={report.section.id}>
+                        <Icon size={18} strokeWidth={1.75} aria-hidden />
+                        <span>{report.section.tabLabel}</span>
+                      </Tabs.Tab>
+                    )
+                  })}
+                </Tabs.List>
+              </Tabs.ListContainer>
+              {sections.map((report) => {
+                const showingSource = sourceOpen === report.section.id
+                return (
+                  <Tabs.Panel key={report.section.id} id={report.section.id}>
+                    <div className="wb-extract-tabs__meta-row">
+                      <p className="wb-extract-tabs__meta">
+                        {report.fields.length} {report.fields.length === 1 ? 'field' : 'fields'} · Q
+                        {report.section.questions}
+                      </p>
+                      <button
+                        type="button"
+                        className="wb-extract-tabs__source"
+                        aria-expanded={showingSource}
+                        onClick={() =>
+                          setSourceOpen((current) =>
+                            current === report.section.id ? null : report.section.id,
+                          )
+                        }
+                      >
+                        <FileText size={14} strokeWidth={1.75} aria-hidden />
+                        View Source Document
+                      </button>
+                    </div>
+                    {showingSource ? (
+                      <SectionSourcePreview sectionId={report.section.id} />
+                    ) : (
+                      <IngestQuestionGrid
+                        caseId={c.id}
+                        sectionId={report.section.id}
+                        fields={report.fields}
+                      />
+                    )}
+                  </Tabs.Panel>
+                )
+              })}
+            </Tabs>
           </Tabs.Panel>
         )
       })}
