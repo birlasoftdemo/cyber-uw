@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: idle
-stopped_at: Planned quick 261014-moy (document extraction and Policy Documents user story)
-last_updated: "2026-10-14T16:20:00.000Z"
+stopped_at: Completed quick 261014-moy (document extraction and Policy Documents user story)
+last_updated: "2026-10-14T10:58:39.000Z"
 last_activity: 2026-10-14
-last_activity_desc: "Planned quick 261014-moy: user story for document extraction and Policy Documents (not yet executed)"
+last_activity_desc: "Completed quick 261014-moy: user story for document extraction and Policy Documents"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -16,7 +16,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-10-14 - Planned quick 261014-moy (document extraction and Policy Documents user story; not yet executed)
+Last activity: 2026-10-14 - Completed quick 261014-moy (document extraction and Policy Documents user story)
 
 ### Blockers/Concerns
 
@@ -34,6 +34,7 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 261014-moy | Document extraction and Policy Documents user story | 2026-10-14 | 649d0e0 | [261014-moy-write-a-user-story-for-the-document-extr](./quick/261014-moy-write-a-user-story-for-the-document-extr/) |
 | 260918-oa9 | Risk Analysis left-column whitespace redistribute + high-contrast Detailed Ratings / capacity / FinancialSignOff | 2026-09-18 | 49ed42d | [260918-oa9-risk-analysis-left-column-whitespace-red](./quick/260918-oa9-risk-analysis-left-column-whitespace-red/) |
 | 260917-ptj | Policy Documents Proposed start/end date KPI labels + Source Sans 3 / Source Serif 4 type | 2026-09-17 | 6f2791a | [260917-ptj-policy-documents-kpi-labels-to-proposed-](./quick/260917-ptj-policy-documents-kpi-labels-to-proposed-/) |
 | 260917-p0f | Sketch 002 + Risk Analysis dual-region evidence + shared cite panel + copy locks | 2026-09-17 | 2caa03c | [260917-p0f-complete-pending-stages-including-sketch](./quick/260917-p0f-complete-pending-stages-including-sketch/) |
@@ -51,6 +52,7 @@ None.
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
+| Quick 261014-moy P01 | 4min | 2 tasks | 1 files |
 | Quick 260918-oa9 P01 | 5min | 2 tasks | 3 files |
 | Quick 260917-ptj P01 | 9min | 2 tasks | 5 files |
 | Quick 260917-p0f P01 | 7min | 2 tasks | 8 files |
@@ -58,6 +60,7 @@ None.
 
 ## Decisions
 
+- [2026-10-14]: Document extraction user story covers New Submission ingest and Policy Documents only; later stages, quote, and policy-admin sync stay out of scope
 - [Phase ?]: Script-only Apple launch VO; no Remotion edits; HITL owns bind; tier is guidance only
 - [2026-09-17]: Risk Analysis — objective dual proof (market spatial + capacity ledger); shared cite slide-in; no bias/tension framing
 - [2026-09-17]: Risk Analysis desk ships Variant A: market comparative + capacity ledger + shared cite panel; copy locks applied
@@ -66,6 +69,6 @@ None.
 
 ## Session
 
-**Last session:** 2026-10-14T16:20:00.000Z
-**Stopped at:** Planned quick 261014-moy (document extraction and Policy Documents user story)
-**Resume file:** .planning/quick/261014-moy-write-a-user-story-for-the-document-extr/261014-moy-PLAN.md
+**Last session:** 2026-10-14T10:58:39.000Z
+**Stopped at:** Completed quick 261014-moy (document extraction and Policy Documents user story)
+**Resume file:** None
