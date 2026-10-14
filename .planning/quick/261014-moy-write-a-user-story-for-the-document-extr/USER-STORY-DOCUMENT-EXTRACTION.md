@@ -55,3 +55,15 @@ This story does not cover Risk Information triage, Risk Analysis evidence, Getti
 | 7 | Documents Complete gate, modal copy, Confirm records sign-off, signed line | `CaseWorkspace.tsx`, `DocumentsCompleteModal.tsx`, `cyberFlow.ts` (`canLeavePolicyDocuments`) |
 | 8 | Missing documents list, incomplete-package sentence, Run ingest again, Scanning…, Escalate to Broker | `CaseWorkspace.tsx`, `missingDocs.ts` (`missingDocsForCase`) |
 | 9 | Ops sees Policy Documents only; later stages are UW only; Ready for UW; underwriter continues after the Documents Complete gate | `CaseWorkspace.tsx` (`UwLockedStage`), `cyberFlow.ts` (`canOpsMarkReadyForUw`, `canLeavePolicyDocuments`), `FloatingWorkflowBar.tsx` |
+
+## Source check
+
+- PASS — 1: `CyberNewSubmissionModal` package-source tabs Upload and Mail MCP, drop zone "Drop app, loss runs, or evidence", helper "PDF, images, email", extraction helper, and Ingest package `isDisabled={!canSubmit}`.
+- PASS — 2: `buildIngestionThinkingSteps` titles Ingest submission package, Classify documents, Extract structured fields, and Confidence gate; ready copy in `CyberNewSubmissionModal` for the decision queue and the Ops package (`isOpsPackage`).
+- PASS — 3: `PolicyDocumentsStageBody` meta grid labels Proposed start date, Proposed end date, Completeness, and Requested limit.
+- PASS — 4: `REQUIRED_PACKAGE_DOCS` rows rendered by `PolicyDocumentsStageBody` as Present or Missing.
+- PASS — 5: `PolicyDocumentsStageBody` package table columns Document, Type of doc, and View; empty copy "No documents attached."; kind options from `PACKAGE_DOC_KINDS`.
+- PASS — 6: `PolicyDocumentsStageBody` Extracted fields accordion (`defaultExpandedKeys={[]}`), section titles and the media/publish/advertising gate from `sectionReportsForCase`, pencil edit toggle, and `IngestQuestionGrid` displaying `attested ?? value` via `setAnswerOverride`.
+- PASS — 7: `PolicyDocumentsStageBody` `canComplete` gate, `DocumentsCompleteModal` body and Confirm Documents Complete, `signOffPackage` from the confirm handler, signed line "Documents complete", and `canLeavePolicyDocuments`.
+- PASS — 8: `PolicyDocumentsStageBody` Missing documents branch and incomplete-package sentence, Run ingest again / "Scanning…" while `signalStatus === 'scanning'`, and Escalate to Broker opening the discussion referral.
+- PASS — 9: `UwLockedStage` for Risk Information, Risk Analysis, and Getting Ready to Quote when the role is Ops; `canOpsMarkReadyForUw` and the Ready for UW control in `FloatingWorkflowBar`; underwriter Continue only after `canLeavePolicyDocuments`.
