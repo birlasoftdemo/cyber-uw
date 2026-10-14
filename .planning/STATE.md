@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: idle
-stopped_at: Completed quick 260918-oa9 (Risk Analysis whitespace + contrast)
-last_updated: "2026-09-18T12:08:35.000Z"
-last_activity: 2026-09-18
-last_activity_desc: "Completed quick 260918-oa9: left-column whitespace redistribute + high-contrast Detailed Ratings / capacity / FinancialSignOff"
+stopped_at: Planned quick 261014-moy (document extraction and Policy Documents user story)
+last_updated: "2026-10-14T16:20:00.000Z"
+last_activity: 2026-10-14
+last_activity_desc: "Planned quick 261014-moy: user story for document extraction and Policy Documents (not yet executed)"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -16,7 +16,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-09-18 - Completed quick 260918-oa9 (Risk Analysis whitespace + contrast)
+Last activity: 2026-10-14 - Planned quick 261014-moy (document extraction and Policy Documents user story; not yet executed)
 
 ### Blockers/Concerns
 
@@ -66,6 +66,6 @@ None.
 
 ## Session
 
-**Last session:** 2026-09-18T12:09:05.083Z
-**Stopped at:** Completed quick 260918-oa9 (Risk Analysis whitespace + contrast)
-**Resume file:** None
+**Last session:** 2026-10-14T16:20:00.000Z
+**Stopped at:** Planned quick 261014-moy (document extraction and Policy Documents user story)
+**Resume file:** .planning/quick/261014-moy-write-a-user-story-for-the-document-extr/261014-moy-PLAN.md
