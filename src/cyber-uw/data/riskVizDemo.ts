@@ -413,6 +413,54 @@ export interface ScoreCriterion {
   applied: string
 }
 
+export interface DeskLossParts {
+  privacySleUsd: number
+  privacyAleUsd: number
+  extortionSleUsd: number
+  extortionAleUsd: number
+  biSleUsd: number
+  biAleUsd: number
+  recordsBand: string
+  recordsMidpoint: number
+  costPerRecord: number
+  encryptionEf: number
+  encryptionNote: string
+  dataClass: string
+  rtoBand: string
+  rtoHours: number
+  /** Loss event frequency for privacy and business interruption. */
+  aro: number
+  /** Extortion contact frequency, 0.6 × ARO. */
+  extortionFrequency: number
+}
+
+export type ActuarialCheckStatus = 'matches' | 'reported' | 'withheld'
+
+export interface ActuarialCheck {
+  id: string
+  standard: string
+  title: string
+  formula: string
+  result: string
+  status: ActuarialCheckStatus
+}
+
+export interface ExceedancePoint {
+  lossUsd: number
+  exceedance: number
+}
+
+export interface ActuarialValidation {
+  seal: 'matches' | 'withheld'
+  meanUsd: number
+  stdDevUsd: number
+  probabilityAnyLoss: number
+  probabilityOverLimit: number
+  curveDomainUsd: number
+  curve: ExceedancePoint[]
+  checks: ActuarialCheck[]
+}
+
 export interface CarrierExposureSummary {
   /** Estimated annualized loss expectancy (USD) */
   aleUsd: number
@@ -432,6 +480,10 @@ export interface CarrierExposureSummary {
   adequacyLabel: string
   adequacyDetail: string
   ineligibleActivity: string | null
+  /** Privacy, extortion, and business-interruption terms already inside the ALE. */
+  lossParts: DeskLossParts
+  /** Open FAIR identity and compound-Poisson mean recomputed from the same inputs. */
+  actuarial: ActuarialValidation
 }
 
 /** Carrier-facing exposure: ALE = SLE × ARO from application answers (Q1–19). */
@@ -568,6 +620,55 @@ export function carrierExposureForCase(c: {
     },
   ]
 
+  const lossParts: DeskLossParts = {
+    privacySleUsd: p.ineligibleActivity ? 0 : Math.round(slePrivacy),
+    privacyAleUsd: p.ineligibleActivity ? 0 : Math.round(alePrivacy),
+    extortionSleUsd: p.ineligibleActivity ? 0 : Math.round(sleExtortion),
+    extortionAleUsd: p.ineligibleActivity ? 0 : Math.round(aleExtortion),
+    biSleUsd: p.ineligibleActivity ? 0 : Math.round(biSle),
+    biAleUsd: p.ineligibleActivity ? 0 : Math.round(aleBi),
+    recordsBand: p.recordsBand,
+    recordsMidpoint: p.recordsMidpoint,
+    costPerRecord: p.costPerRecord,
+    encryptionEf: p.encryptionEf,
+    encryptionNote: p.encryptionNote,
+    dataClass: p.dataClass,
+    rtoBand: p.rtoBand,
+    rtoHours: p.rtoHours,
+    aro: p.ineligibleActivity ? 0 : p.aro,
+    extortionFrequency: p.ineligibleActivity ? 0 : Number((p.aro * 0.6).toFixed(4)),
+  }
+
+  const actuarial = buildDeskActuarial({
+    ineligible: Boolean(p.ineligibleActivity),
+    aleUsd,
+    limitUsd: c.limitRequestedUsd,
+    worstCaseUsd: worstCaseTotalUsd,
+    frequency: lossParts.aro,
+    extortionFrequency: p.ineligibleActivity ? 0 : p.aro * 0.6,
+    privacySle: p.ineligibleActivity ? 0 : slePrivacy,
+    biSle: p.ineligibleActivity ? 0 : biSle,
+    extortionSle: p.ineligibleActivity ? 0 : sleExtortion,
+    privacyAle: lossParts.privacyAleUsd,
+    biAle: lossParts.biAleUsd,
+    extortionAle: lossParts.extortionAleUsd,
+  })
+
+  scoreCriteria.push(
+    {
+      id: 'open-fair',
+      title: 'Open FAIR loss exposure',
+      formula: 'Loss exposure = loss event frequency × loss magnitude',
+      applied: actuarial.checks[0]?.result ?? 'Not computed',
+    },
+    {
+      id: 'poisson-mean',
+      title: 'Compound Poisson mean',
+      formula: 'E[L] = λ × SLE_privacy + λ × SLE_BI + 0.6λ × SLE_extortion',
+      applied: actuarial.checks[1]?.result ?? 'Not computed',
+    },
+  )
+
   return {
     aleUsd,
     aleBasis: p.ineligibleActivity
@@ -586,6 +687,206 @@ export function carrierExposureForCase(c: {
     adequacyLabel,
     adequacyDetail,
     ineligibleActivity: p.ineligibleActivity,
+    lossParts,
+    actuarial,
+  }
+}
+
+const POISSON_COUNT_CAP = 12
+
+function poissonPmf(count: number, lambda: number): number {
+  if (lambda <= 0) return count === 0 ? 1 : 0
+  if (count < 0) return 0
+  let logP = -lambda
+  if (count > 0) logP += count * Math.log(lambda)
+  for (let i = 2; i <= count; i += 1) logP -= Math.log(i)
+  return Math.exp(logP)
+}
+
+function compoundAtoms(
+  perils: { lambda: number; severity: number }[],
+): { loss: number; p: number }[] {
+  const pmfs = perils.map((peril) => {
+    const rows: number[] = []
+    let used = 0
+    for (let count = 0; count < POISSON_COUNT_CAP; count += 1) {
+      const probability = poissonPmf(count, peril.lambda)
+      rows.push(probability)
+      used += probability
+    }
+    rows.push(Math.max(0, 1 - used))
+    return rows
+  })
+  const [privacy, interruption, extortion] = perils
+  const [privacyPmf, interruptionPmf, extortionPmf] = pmfs
+  const atoms: { loss: number; p: number }[] = []
+  for (let i = 0; i <= POISSON_COUNT_CAP; i += 1) {
+    for (let j = 0; j <= POISSON_COUNT_CAP; j += 1) {
+      const pair = privacyPmf[i] * interruptionPmf[j]
+      if (pair < 1e-18) continue
+      for (let k = 0; k <= POISSON_COUNT_CAP; k += 1) {
+        const probability = pair * extortionPmf[k]
+        if (probability < 1e-18) continue
+        atoms.push({
+          loss: i * privacy.severity + j * interruption.severity + k * extortion.severity,
+          p: probability,
+        })
+      }
+    }
+  }
+  atoms.sort((left, right) => left.loss - right.loss)
+  return atoms
+}
+
+function exceedanceAbove(atoms: { loss: number; p: number }[], threshold: number): number {
+  let probability = 0
+  for (const atom of atoms) {
+    if (atom.loss > threshold + 0.5) probability += atom.p
+  }
+  return probability
+}
+
+function buildDeskActuarial(input: {
+  ineligible: boolean
+  aleUsd: number
+  limitUsd: number
+  worstCaseUsd: number
+  frequency: number
+  extortionFrequency: number
+  privacySle: number
+  biSle: number
+  extortionSle: number
+  privacyAle: number
+  biAle: number
+  extortionAle: number
+}): ActuarialValidation {
+  const mean =
+    input.frequency * input.privacySle +
+    input.frequency * input.biSle +
+    input.extortionFrequency * input.extortionSle
+  const variance =
+    input.frequency * input.privacySle ** 2 +
+    input.frequency * input.biSle ** 2 +
+    input.extortionFrequency * input.extortionSle ** 2
+  const meanUsd = input.ineligible ? 0 : mean
+  const stdDevUsd = input.ineligible ? 0 : Math.sqrt(Math.max(0, variance))
+  const identityHolds = input.ineligible || Math.abs(Math.round(mean) - input.aleUsd) <= 1
+  const seal: ActuarialValidation['seal'] = input.ineligible || !identityHolds ? 'withheld' : 'matches'
+
+  const emptyCurve: ExceedancePoint[] = [
+    { lossUsd: 0, exceedance: 0 },
+    { lossUsd: Math.max(input.limitUsd, 1), exceedance: 0 },
+  ]
+
+  if (input.ineligible) {
+    return {
+      seal,
+      meanUsd: 0,
+      stdDevUsd: 0,
+      probabilityAnyLoss: 0,
+      probabilityOverLimit: 0,
+      curveDomainUsd: Math.max(input.limitUsd, 1),
+      curve: emptyCurve,
+      checks: [
+        {
+          id: 'open-fair',
+          standard: 'Open FAIR',
+          title: 'Loss exposure identity',
+          formula: 'Loss exposure = loss event frequency × loss magnitude',
+          result: 'ALE withheld. This organization is outside the eligible classes, so the desk does not publish a loss.',
+          status: 'withheld',
+        },
+        {
+          id: 'poisson-mean',
+          standard: 'Compound Poisson',
+          title: 'Frequency-severity mean',
+          formula: 'E[L] = λ × SLE_privacy + λ × SLE_BI + 0.6λ × SLE_extortion',
+          result: 'Mean withheld with the annualized loss.',
+          status: 'withheld',
+        },
+        {
+          id: 'components',
+          standard: 'Desk additivity',
+          title: 'Component annual losses',
+          formula: 'ALE = privacy ALE + interruption ALE + extortion ALE',
+          result: 'Components withheld with the annualized loss.',
+          status: 'withheld',
+        },
+        {
+          id: 'exceedance',
+          standard: 'Compound Poisson',
+          title: 'Chance the annual loss exceeds the limit',
+          formula: 'P(L > limit) from independent Poisson counts and the three severities',
+          result: 'Exceedance withheld with the annualized loss.',
+          status: 'withheld',
+        },
+      ],
+    }
+  }
+
+  const atoms = compoundAtoms([
+    { lambda: input.frequency, severity: input.privacySle },
+    { lambda: input.frequency, severity: input.biSle },
+    { lambda: input.extortionFrequency, severity: input.extortionSle },
+  ])
+  const probabilityAnyLoss = exceedanceAbove(atoms, 0)
+  const probabilityOverLimit = exceedanceAbove(atoms, input.limitUsd)
+  const curveDomainUsd = Math.max(input.limitUsd, input.worstCaseUsd, 1) * 1.08
+  const steps = 32
+  const curve: ExceedancePoint[] = []
+  for (let step = 0; step <= steps; step += 1) {
+    const lossUsd = (curveDomainUsd * step) / steps
+    curve.push({ lossUsd, exceedance: exceedanceAbove(atoms, lossUsd) })
+  }
+
+  const componentSum = input.privacyAle + input.biAle + input.extortionAle
+  const openFairResult = `LEF × LM = ${formatUsdShort(Math.round(meanUsd))}. Desk ALE = ${formatUsdShort(input.aleUsd)}.`
+  const poissonResult = `E[L] = ${formatUsdShort(Math.round(meanUsd))} at λ ${input.frequency} and extortion frequency ${input.extortionFrequency.toFixed(4)}.`
+  const componentResult = `${formatUsdShort(input.privacyAle)} + ${formatUsdShort(input.biAle)} + ${formatUsdShort(input.extortionAle)} = ${formatUsdShort(componentSum)}.`
+  const exceedanceResult = `P(annual loss > 0) = ${(probabilityAnyLoss * 100).toFixed(1)}%. P(annual loss > limit) = ${(probabilityOverLimit * 100).toFixed(1)}%. Annual spread σ = ${formatUsdShort(Math.round(stdDevUsd))}.`
+
+  return {
+    seal,
+    meanUsd,
+    stdDevUsd,
+    probabilityAnyLoss,
+    probabilityOverLimit,
+    curveDomainUsd,
+    curve,
+    checks: [
+      {
+        id: 'open-fair',
+        standard: 'Open FAIR',
+        title: 'Loss exposure identity',
+        formula: 'Loss exposure = loss event frequency × loss magnitude',
+        result: openFairResult,
+        status: identityHolds ? 'matches' : 'withheld',
+      },
+      {
+        id: 'poisson-mean',
+        standard: 'Compound Poisson',
+        title: 'Frequency-severity mean',
+        formula: 'E[L] = λ × SLE_privacy + λ × SLE_BI + 0.6λ × SLE_extortion',
+        result: poissonResult,
+        status: identityHolds ? 'matches' : 'withheld',
+      },
+      {
+        id: 'components',
+        standard: 'Desk additivity',
+        title: 'Component annual losses',
+        formula: 'ALE = privacy ALE + interruption ALE + extortion ALE',
+        result: componentResult,
+        status: Math.abs(componentSum - input.aleUsd) <= 2 ? 'matches' : 'withheld',
+      },
+      {
+        id: 'exceedance',
+        standard: 'Compound Poisson',
+        title: 'Chance the annual loss exceeds the limit',
+        formula: 'P(L > limit) from independent Poisson counts and the three severities',
+        result: exceedanceResult,
+        status: 'reported',
+      },
+    ],
   }
 }
 
