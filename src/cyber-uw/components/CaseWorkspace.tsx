@@ -1,4 +1,4 @@
-import { Accordion, Button, Typography } from '@heroui/react'
+import { Accordion, Button, Tabs, Typography } from '@heroui/react'
 import {
   CalendarCheck2,
   CalendarRange,
@@ -23,7 +23,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CYBER_FLOW_STAGES,
   cyberFlowIndex,
@@ -43,6 +43,8 @@ import {
 } from '../data/cyberTriageRules'
 import { PACKAGE_DOC_KINDS, openPackageDocument } from '../data/dossierPackage'
 import { Customer360Panel } from './Customer360Panel'
+import { CyencePanel } from './CyencePanel'
+import { CytoraPanel } from './CytoraPanel'
 import { RiskVizPanel } from './RiskVizCharts'
 import {
   RiskEvidenceCitePanel,
@@ -50,11 +52,12 @@ import {
   type RiskEvidenceCiteSource,
 } from './RiskEvidenceCitePanel'
 import { SecurityRatingPanel } from './SecurityRatingPanel'
+import { cyenceReadingForCase, cytoraReadingForCase } from '../data/enrichmentDemo'
 import { carrierExposureForCase } from '../data/riskVizDemo'
 import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
-import type { CyberCase, RiskJudgmentStatus } from '../types'
+import type { CyberCase, EnrichmentModelId, RiskJudgmentStatus } from '../types'
 import { checklistStatusForCase, missingDocsForCase } from '../utils/missingDocs'
 import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
 import { money } from './CyberPrimitives'
@@ -1050,18 +1053,112 @@ function PolicyDocumentsStageBody({
   )
 }
 
-function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
-  const [citeOpen, setCiteOpen] = useState(false)
-  const [citeSource, setCiteSource] = useState<RiskEvidenceCiteSource>('market')
+function useNarrowRail() {
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 960px)').matches,
+  )
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 960px)')
+    const sync = () => setNarrow(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
+  return narrow
+}
 
-  const marketRows: RiskEvidenceCiteRow[] = securityRatingForCase(c).citeBacks.map((row) => ({
+function VendorReading({
+  model,
+  c,
+  onOpenCites,
+}: {
+  model: EnrichmentModelId
+  c: CyberCase
+  onOpenCites: () => void
+}) {
+  switch (model) {
+    case 'bitsight':
+      return <SecurityRatingPanel c={c} onOpenCites={onOpenCites} />
+    case 'cyence':
+      return <CyencePanel c={c} onOpenCites={onOpenCites} />
+    case 'cytora':
+      return <CytoraPanel c={c} onOpenCites={onOpenCites} />
+    default: {
+      const neverModel: never = model
+      return neverModel
+    }
+  }
+}
+
+function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const [armed, setArmed] = useState(false)
+  const [read, setRead] = useState(false)
+  const [citeOpen, setCiteOpen] = useState(false)
+  const [citeSource, setCiteSource] = useState<RiskEvidenceCiteSource>('bitsight')
+  const [section, setSection] = useState<'vendor' | 'desk'>('vendor')
+  const [vendor, setVendor] = useState<EnrichmentModelId>('bitsight')
+  const narrow = useNarrowRail()
+  const consented = c.enrichmentConsent?.models ?? []
+  const vendorKey = consented.includes(vendor) ? vendor : consented[0]
+
+  useLayoutEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) {
+      setArmed(false)
+      setRead(false)
+      return
+    }
+    setRead(false)
+    setArmed(true)
+    const el = sceneRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setRead(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [c.id, section, vendorKey])
+
+  const bitsightRows: RiskEvidenceCiteRow[] = securityRatingForCase(c).citeBacks.map((row) => ({
     id: row.id,
     label: row.bucketLabel,
     finding: row.finding,
   }))
-
+  const cyence = cyenceReadingForCase(c)
+  const cyenceRows: RiskEvidenceCiteRow[] = [
+    ...cyence.scenarios.map((row) => ({
+      id: row.id,
+      label: row.label,
+      finding: `${row.evidence} · ${row.lossUsd}`,
+    })),
+    {
+      id: 'pml',
+      label: 'Probable maximum loss',
+      finding: cyence.positionSentence,
+    },
+  ]
+  const cytora = cytoraReadingForCase(c)
+  const cytoraRows: RiskEvidenceCiteRow[] = [
+    ...cytora.factors.map((row) => ({
+      id: row.id,
+      label: row.name,
+      finding: row.evidence,
+    })),
+    ...cytora.evidence.map((row, index) => ({
+      id: `evidence-${index}`,
+      label: row.section,
+      finding: row.line,
+    })),
+  ]
   const exposure = carrierExposureForCase(c)
-  const capacityRows: RiskEvidenceCiteRow[] = [
+  const deskRows: RiskEvidenceCiteRow[] = [
     ...exposure.ingestInputs.map((row, i) => ({
       id: `ingest-${i}-${row.label}`,
       label: `${row.source} · ${row.label}`,
@@ -1074,31 +1171,93 @@ function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
     })),
   ]
 
+  const citeRows =
+    citeSource === 'bitsight'
+      ? bitsightRows
+      : citeSource === 'cyence'
+        ? cyenceRows
+        : citeSource === 'cytora'
+          ? cytoraRows
+          : deskRows
+
   const openCites = (source: RiskEvidenceCiteSource) => {
     setCiteSource(source)
     setCiteOpen(true)
   }
 
+  const sceneClass = [
+    'wb-risk-evidence',
+    armed ? 'wb-risk-evidence--arm' : '',
+    read ? 'wb-risk-evidence--read' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  if (consented.length === 0 || !vendorKey) {
+    return (
+      <div className="wb-risk-evidence">
+        <p className="wb-instrument__note">
+          Third-party enrichment needs your consent. Continue from Risk Information to choose models.
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <div className="wb-risk-evidence space-y-3">
-      <div className="wb-risk-evidence__split">
-        <div className="wb-risk-evidence__market">
-          <SecurityRatingPanel c={c} onOpenCites={() => openCites('market')} />
-        </div>
-        <div className="wb-risk-evidence__capacity">
+    <div ref={sceneRef} className={sceneClass}>
+      <Tabs
+        className="wb-enrich-tabs"
+        orientation={narrow ? 'horizontal' : 'vertical'}
+        selectedKey={section}
+        onSelectionChange={(key) => {
+          const next = String(key)
+          if (next === 'vendor' || next === 'desk') setSection(next)
+        }}
+      >
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Risk analysis">
+            <Tabs.Tab id="vendor">Vendor models</Tabs.Tab>
+            <Tabs.Tab id="desk">Desk model</Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+        <Tabs.Panel id="vendor">
+          <Tabs
+            className="wb-vendor-tabs"
+            variant="secondary"
+            selectedKey={vendorKey}
+            onSelectionChange={(key) => {
+              const next = String(key)
+              if (next === 'bitsight' || next === 'cyence' || next === 'cytora') setVendor(next)
+            }}
+          >
+            <Tabs.ListContainer>
+              <Tabs.List aria-label="Vendor models">
+                {consented.map((model) => (
+                  <Tabs.Tab key={model} id={model}>
+                    {model === 'bitsight' ? 'Bitsight' : model === 'cyence' ? 'Cyence' : 'Cytora'}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </Tabs.ListContainer>
+            <Tabs.Panel id={vendorKey}>
+              <VendorReading model={vendorKey} c={c} onOpenCites={() => openCites(vendorKey)} />
+            </Tabs.Panel>
+          </Tabs>
+        </Tabs.Panel>
+        <Tabs.Panel id="desk">
           <RiskVizPanel
             c={c}
             activeThreatId={null}
             onSelectThreat={() => {}}
-            onOpenCites={() => openCites('capacity')}
+            onOpenCites={() => openCites('desk')}
           />
-        </div>
-      </div>
+        </Tabs.Panel>
+      </Tabs>
       <RiskEvidenceCitePanel
         open={citeOpen}
         onClose={() => setCiteOpen(false)}
         source={citeSource}
-        rows={citeSource === 'market' ? marketRows : capacityRows}
+        rows={citeRows}
       />
     </div>
   )

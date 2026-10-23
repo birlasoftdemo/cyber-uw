@@ -1,7 +1,7 @@
 import { Button } from '@heroui/react'
 import { X } from 'lucide-react'
 
-export type RiskEvidenceCiteSource = 'market' | 'capacity'
+export type RiskEvidenceCiteSource = 'bitsight' | 'cyence' | 'cytora' | 'desk'
 
 export interface RiskEvidenceCiteRow {
   id: string
@@ -17,11 +17,13 @@ interface Props {
 }
 
 const SOURCE_LABEL: Record<RiskEvidenceCiteSource, string> = {
-  market: 'Market · sources',
-  capacity: 'Capacity · sources',
+  bitsight: 'Bitsight · sources',
+  cyence: 'Cyence · sources',
+  cytora: 'Cytora · sources',
+  desk: 'Desk model · sources',
 }
 
-/** Shared right slide-in for Risk Analysis cite-backs (market or capacity opener). */
+/** Shared right slide-in for Risk Analysis cite-backs. */
 export function RiskEvidenceCitePanel({ open, onClose, source, rows }: Props) {
   if (!open) return null
 

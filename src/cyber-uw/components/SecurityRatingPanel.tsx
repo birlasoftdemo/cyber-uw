@@ -1,57 +1,218 @@
+import { useEffect, useState } from 'react'
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { Activity, Layers, ShieldCheck } from 'lucide-react'
-import { SECURITY_RATING_BANDS, securityRatingForCase } from '../data/securityRatingDemo'
+  securityRatingForCase,
+  type SecurityRatingLetter,
+  type SecurityRatingTrendPoint,
+} from '../data/securityRatingDemo'
 import type { CyberCase } from '../types'
 
-function RatingTooltip({
-  active,
-  payload,
-  label,
+function ordinal(n: number): string {
+  const mod100 = n % 100
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`
+  const mod10 = n % 10
+  if (mod10 === 1) return `${n}st`
+  if (mod10 === 2) return `${n}nd`
+  if (mod10 === 3) return `${n}rd`
+  return `${n}th`
+}
+
+function initials(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean).slice(0, 2)
+  const letters = parts.map((part) => part[0]?.toUpperCase() ?? '').join('')
+  return letters || 'UW'
+}
+
+function gradeColor(grade: SecurityRatingLetter): string {
+  switch (grade) {
+    case 'A':
+      return '#1f9d55'
+    case 'B':
+      return '#2f80ed'
+    case 'C':
+      return '#e0a100'
+    case 'D':
+      return '#e07a2f'
+    case 'E':
+      return '#e24b3b'
+    case 'F':
+      return '#9f1239'
+    default: {
+      const neverGrade: never = grade
+      return neverGrade
+    }
+  }
+}
+
+function markerLeft(factor: number): string {
+  const t = Math.max(0.08, Math.min(0.92, 1 - (factor - 0.7) / 4.4))
+  return `${(t * 100).toFixed(1)}%`
+}
+
+function Spectrum({
+  rating,
+  industry,
+  hot,
 }: {
-  active?: boolean
-  payload?: { dataKey?: string; value?: number; color?: string }[]
-  label?: string
+  rating: number
+  industry: number
+  hot: number | null
 }) {
-  if (!active || !payload?.length) return null
-  const insured = payload.find((p) => p.dataKey === 'rating')
-  const industry = payload.find((p) => p.dataKey === 'industryAvg')
+  const place = (value: number) => `${(((value - 250) / 650) * 100).toFixed(1)}%`
   return (
-    <div className="rounded-md border px-2.5 py-1.5" style={{ borderColor: 'var(--cuw-hairline)', background: '#fff' }}>
-      <p className="cuw-type-title text-[0.8125rem]">{label}</p>
-      <p className="cuw-type-caption">
-        {insured?.value ?? '—'} · industry {industry?.value ?? '—'}
-      </p>
+    <div className="bs-spectrum" aria-hidden>
+      <div className="bs-spectrum__bar">
+        <span style={{ width: '38%' }} />
+        <span style={{ width: '22%' }} />
+        <span style={{ width: '16%' }} />
+        <span style={{ width: '24%' }} />
+      </div>
+      <i className="bs-spectrum__pin bs-spectrum__pin--industry" style={{ left: place(industry) }} />
+      <i className="bs-spectrum__pin bs-spectrum__pin--company" style={{ left: place(rating) }} />
+      {hot != null ? <i className="bs-spectrum__pin bs-spectrum__pin--hot" style={{ left: place(hot) }} /> : null}
+      <div className="bs-spectrum__ends">
+        <span>250</span>
+        <span>640</span>
+        <span>740</span>
+        <span>900</span>
+      </div>
     </div>
   )
 }
 
-const BAND_TONE: Record<string, string> = {
-  Basic: 'wb-rating__band--basic',
-  Intermediate: 'wb-rating__band--mid',
-  Advanced: 'wb-rating__band--adv',
+function Likelihood({ title, factor, note }: { title: string; factor: number; note: string }) {
+  return (
+    <div className="bs-like">
+      <p className="bs-like__title">{title}</p>
+      <p className="bs-like__factor">{factor.toFixed(1)}× as likely vs a 750+ company</p>
+      <div className="bs-like__bar">
+        <i style={{ left: markerLeft(factor) }} />
+      </div>
+      <div className="bs-like__ends">
+        <span>High risk</span>
+        <span>Low risk</span>
+      </div>
+      <p className="bs-like__note">{note}</p>
+    </div>
+  )
 }
 
-const GRADE_TONE: Record<string, string> = {
-  A: 'wb-rating__grade--a',
-  B: 'wb-rating__grade--b',
-  C: 'wb-rating__grade--c',
-  D: 'wb-rating__grade--d',
-  E: 'wb-rating__grade--e',
-  F: 'wb-rating__grade--f',
+function PeerAnalytics({
+  rating,
+  industry,
+  percentile,
+}: {
+  rating: number
+  industry: number
+  percentile: number
+}) {
+  const width = 640
+  const height = 228
+  const plotL = 28
+  const plotR = 12
+  const plotT = 36
+  const plotB = 28
+  const innerW = width - plotL - plotR
+  const innerH = height - plotT - plotB
+  const floors = [300, 380, 450, 510, 560, 610, 650, 690, 730, 770, 820]
+  const sd = 72
+  const weights = floors.map((floor) => {
+    const center = floor + 28
+    const z = (center - industry) / sd
+    return Math.exp(-0.5 * z * z)
+  })
+  const sum = weights.reduce((total, weight) => total + weight, 0) || 1
+  const bins = floors.map((floor, index) => ({
+    floor,
+    center: floor + 28,
+    share: weights[index] / sum,
+  }))
+  const maxShare = Math.max(...bins.map((bin) => bin.share), 0.01)
+  const xFor = (value: number) => plotL + ((value - 280) / 620) * innerW
+  const barW = (innerW / bins.length) * 0.62
+
+  return (
+    <svg className="bs-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Peer distribution. Company rating ${rating}, industry ${industry}, ${ordinal(percentile)} percentile.`}>
+      {[0.25, 0.5, 0.75, 1].map((tick) => {
+        const y = plotT + innerH * (1 - tick)
+        return <line key={tick} x1={plotL} x2={width - plotR} y1={y} y2={y} className="bs-chart__grid" />
+      })}
+      {bins.map((bin) => {
+        const h = (bin.share / maxShare) * innerH
+        const x = xFor(bin.center) - barW / 2
+        const y = plotT + innerH - h
+        const fill = bin.center < 560 ? '#e06a3a' : bin.center < 660 ? '#f0a04b' : bin.center < 740 ? '#7eb6f0' : '#3d8bfd'
+        const label = Math.round(bin.share * 100)
+        return (
+          <g key={bin.floor}>
+            {bin.share >= 0.03 ? <rect x={x} y={y} width={barW} height={h} rx={3} fill={fill} /> : null}
+            {label >= 8 ? (
+              <text x={x + barW / 2} y={y - 6} textAnchor="middle" className="bs-chart__bar-label">
+                {label}%
+              </text>
+            ) : null}
+          </g>
+        )
+      })}
+      <line x1={xFor(industry)} x2={xFor(industry)} y1={plotT} y2={plotT + innerH} className="bs-chart__industry" />
+      <line x1={xFor(rating)} x2={xFor(rating)} y1={plotT - 4} y2={plotT + innerH} className="bs-chart__company" />
+      <text x={xFor(rating)} y={14} textAnchor="middle" className="bs-chart__company-label">
+        {rating}
+      </text>
+      {[400, 500, 600, 700, 800].map((tick) => (
+        <text key={tick} x={xFor(tick)} y={height - 8} textAnchor="middle" className="bs-chart__axis">
+          {tick}
+        </text>
+      ))}
+    </svg>
+  )
 }
 
-/** Map 250–900 rating onto 0–100% track position. */
-function scalePct(rating: number): number {
-  return Math.max(0, Math.min(100, ((rating - 250) / 650) * 100))
+function YearChart({ trend }: { trend: SecurityRatingTrendPoint[] }) {
+  const width = 640
+  const height = 210
+  const plotL = 36
+  const plotR = 16
+  const plotT = 12
+  const plotB = 28
+  const innerW = width - plotL - plotR
+  const innerH = height - plotT - plotB
+  const yMin = 400
+  const yMax = 900
+  const yFor = (value: number) => plotT + (1 - (Math.min(yMax, Math.max(yMin, value)) - yMin) / (yMax - yMin)) * innerH
+  const xFor = (index: number) =>
+    plotL + (trend.length <= 1 ? innerW / 2 : (index / (trend.length - 1)) * innerW)
+  const line = (values: number[]) =>
+    values
+      .map((value, index) => `${index === 0 ? 'M' : 'L'}${xFor(index).toFixed(1)} ${yFor(value).toFixed(1)}`)
+      .join(' ')
+  const y900 = yFor(yMax)
+  const y740 = yFor(740)
+  const y640 = yFor(640)
+  const y250 = yFor(yMin)
+  const last = trend[trend.length - 1]
+
+  return (
+    <svg className="bs-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={last ? `Twelve-month rating ends at ${last.rating}. Industry ends at ${last.industryAvg}.` : 'Twelve-month rating'}>
+      <rect x={plotL} y={y900} width={innerW} height={y740 - y900} fill="#3aaa4a" />
+      <rect x={plotL} y={y740} width={innerW} height={y640 - y740} fill="#e2b93b" />
+      <rect x={plotL} y={y640} width={innerW} height={Math.max(0, y250 - y640)} fill="#d64545" />
+      <path d={line(trend.map((point) => point.industryAvg))} className="bs-year__industry" />
+      <path d={line(trend.map((point) => point.rating))} className="bs-year__insured" />
+      {trend.map((point, index) => (
+        <g key={`${point.month}-${index}`}>
+          <circle cx={xFor(index)} cy={yFor(point.rating)} r={4.5} className="bs-year__dot" />
+          <text x={xFor(index)} y={height - 8} textAnchor="middle" className="bs-chart__axis">
+            {point.month}
+          </text>
+        </g>
+      ))}
+      {last ? (
+        <text x={xFor(trend.length - 1) - 8} y={yFor(last.rating) - 10} textAnchor="end" className="bs-year__value">
+          {last.rating}
+        </text>
+      ) : null}
+    </svg>
+  )
 }
 
 export function SecurityRatingPanel({
@@ -62,141 +223,149 @@ export function SecurityRatingPanel({
   onOpenCites?: () => void
 }) {
   const snap = securityRatingForCase(c)
-  const delta = snap.rating - snap.industryAvg
-  const thresholds = SECURITY_RATING_BANDS.slice(1).map((b) => b.floor)
-  const insuredPct = scalePct(snap.rating)
-  const industryPct = scalePct(snap.industryAvg)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const active = snap.vectors.find((vector) => vector.id === activeId) ?? null
+  const findings = active ? snap.vectors.filter((vector) => vector.id === active.id) : snap.vectors
+  const ransom = snap.multipliers.find((row) => row.label === 'Ransomware loss')
+  const breach = snap.multipliers.find((row) => row.label === 'Breach likelihood')
+
+  useEffect(() => {
+    setActiveId(null)
+  }, [c.id])
+
+  if (!Number.isFinite(snap.rating)) {
+    return <p className="wb-instrument__note">No Bitsight reading on this submission.</p>
+  }
 
   return (
-    <section className="wb-rating" aria-label="Security rating">
-      <div className="cuw-panel__head mb-0">
-        <span className="cuw-glyph" aria-hidden>
-          <ShieldCheck size={16} strokeWidth={1.75} />
-        </span>
-        <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
-          <h4 className="cuw-type-title">Security rating</h4>
+    <article className="bs-report" aria-label="Bitsight security rating">
+      <aside className="bs-report__rail">
+        <div className="bs-report__company">
+          <span className="bs-report__avatar">{initials(c.insured)}</span>
+          <div>
+            <p className="bs-report__company-name">{c.insured}</p>
+            <p>{c.sector}</p>
+            <p>{c.broker}</p>
+          </div>
+        </div>
+
+        <div className="bs-report__card">
+          <p className="bs-report__card-kicker">Bitsight Security Rating</p>
+          <p className="bs-report__score tabular-nums">{snap.rating}</p>
+          <p className="bs-report__band">{snap.band}</p>
+          <Spectrum rating={snap.rating} industry={snap.industryAvg} hot={active ? active.score : null} />
+          <p className="bs-report__compare">
+            <span><i className="bs-swatch bs-swatch--company" /> Company {snap.rating}</span>
+            <span><i className="bs-swatch bs-swatch--industry" /> Industry {snap.industryAvg}</span>
+          </p>
+          <ul className="bs-report__legend">
+            <li><i className="bs-swatch bs-swatch--basic" /> Basic 250–639</li>
+            <li><i className="bs-swatch bs-swatch--mid" /> Intermediate 640–739</li>
+            <li><i className="bs-swatch bs-swatch--adv" /> Advanced 740–900</li>
+          </ul>
+        </div>
+
+        {ransom ? (
+          <Likelihood title="Likelihood of ransomware incidents" factor={ransom.factor} note={ransom.note} />
+        ) : null}
+        {breach ? (
+          <Likelihood title="Likelihood of data breach incidents" factor={breach.factor} note={breach.note} />
+        ) : null}
+
+        <div className="bs-report__about">
+          <p className="bs-report__card-kicker">What is a Bitsight Security Rating?</p>
+          <p>
+            A 250–900 reading of security performance that can be seen from outside the company. Higher is
+            better. It is a hygiene rating, not a dollar loss.
+          </p>
+        </div>
+        <p className="bs-report__wordmark">Bitsight</p>
+      </aside>
+
+      <div className="bs-report__sheet">
+        <header className="bs-report__sheet-head">
+          <div>
+            <p className="bs-report__kicker">Executive report</p>
+            <h4>{c.insured}</h4>
+            <p className="bs-report__cohort">
+              {ordinal(snap.peerPercentile)} percentile · {snap.peerCohortLabel}
+            </p>
+          </div>
           {onOpenCites ? (
-            <button type="button" className="wb-risk-cite-open" onClick={onOpenCites}>
+            <button type="button" className="bs-report__sources" onClick={onOpenCites}>
               View sources
             </button>
           ) : null}
-        </div>
-      </div>
+        </header>
 
-      <ul className="wb-rating__multipliers">
-        {snap.multipliers.map((m) => (
-          <li key={m.label}>
-            <span className="tabular-nums">{m.factor.toFixed(1)}×</span>
-            <span>{m.label}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="wb-rating__hero">
-        <div className="wb-rating__score-block">
-          <p className="wb-rating__score-label">Overall</p>
-          <p className="wb-rating__score">{snap.rating}</p>
-          <span className={`wb-rating__band ${BAND_TONE[snap.band] ?? ''}`}>{snap.band}</span>
-          <div className="wb-rating__scale" aria-hidden>
-            <span
-              className="wb-rating__scale-fill"
-              style={{ width: `${((snap.rating - 250) / 650) * 100}%` }}
-            />
-          </div>
-          <p className="wb-rating__scale-ends">
-            <span>250</span>
-            <span>900</span>
+        <section className="bs-report__block">
+          <h5>Peer analytics</h5>
+          <p className="bs-report__lead">
+            Share of companies in {c.sector}. The orange line is this company. The dashed line is the industry average.
           </p>
-        </div>
-
-        {/* Comparative peer space — spatial figure, not four identical KPI tiles */}
-        <div className="wb-rating__compare">
-          <p className="wb-rating__slot-label wb-rating__slot-label--inline">Market placement</p>
-          <div className="wb-rating__compare-track" aria-hidden>
-            <span className="wb-rating__compare-mark wb-rating__compare-mark--industry" style={{ left: `${industryPct}%` }} />
-            <span className="wb-rating__compare-mark wb-rating__compare-mark--insured" style={{ left: `${insuredPct}%` }} />
-          </div>
-          <div className="wb-rating__compare-ends">
-            <span>250</span>
-            <span>Industry {snap.industryAvg}</span>
-            <span>900</span>
-          </div>
-          <dl className="wb-rating__compare-meta">
-            <div>
-              <dt>vs industry</dt>
-              <dd className="tabular-nums">
-                {delta >= 0 ? '+' : ''}
-                {delta}
-              </dd>
-            </div>
-            <div>
-              <dt>Percentile</dt>
-              <dd className="tabular-nums">{snap.peerPercentile}th</dd>
-            </div>
-            <div>
-              <dt>Cohort</dt>
-              <dd>{snap.peerCohortLabel}</dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      <div className="wb-rating__body">
-        <div className="wb-rating__chart">
-          <p className="wb-rating__slot-label">
-            <Activity size={12} strokeWidth={2} className="mr-1 inline" aria-hidden />
-            12 mo
-          </p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={snap.trend} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={0} />
-              <YAxis domain={[250, 900]} tick={{ fontSize: 10 }} width={32} />
-              {thresholds.map((y) => (
-                <ReferenceLine key={y} y={y} stroke="#94a3b8" strokeDasharray="4 4" />
-              ))}
-              <Tooltip content={<RatingTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="rating"
-                name="Insured"
-                stroke="#0f172a"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="industryAvg"
-                name="Industry"
-                stroke="#64748b"
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="wb-rating__vectors-wrap">
-          <p className="cuw-type-caption mb-2">
-            <Layers size={12} strokeWidth={2} className="mr-1 inline" aria-hidden />
-            Detailed Ratings
-          </p>
-          <ul className="wb-rating__vectors">
-            {snap.vectors.map((v) => (
-              <li key={v.id}>
-                <span className={`wb-rating__grade ${GRADE_TONE[v.grade] ?? ''}`}>{v.grade}</span>
-                <span className="wb-rating__vector-meta">
-                  <span className="wb-rating__vector-score tabular-nums">{v.score}</span>
-                  <span className="wb-rating__vector-name">{v.label}</span>
-                </span>
-              </li>
-            ))}
+          <PeerAnalytics rating={snap.rating} industry={snap.industryAvg} percentile={snap.peerPercentile} />
+          <ul className="bs-report__key">
+            <li><i className="bs-swatch bs-swatch--company" /> Company rating</li>
+            <li><i className="bs-swatch bs-swatch--industry" /> Industry average</li>
           </ul>
-        </div>
+        </section>
+
+        <section className="bs-report__block">
+          <h5>Performance over the last 12 months</h5>
+          <p className="bs-report__lead">
+            Green is Advanced, amber is Intermediate, red is Basic. The line is this company. Dashed is the industry.
+          </p>
+          {snap.trend.length === 0 ? (
+            <p className="bs-report__empty">No 12-month history on this reading.</p>
+          ) : (
+            <YearChart trend={snap.trend} />
+          )}
+        </section>
+
+        <section className="bs-report__block">
+          <h5>Risk categories</h5>
+          {snap.vectors.length === 0 ? (
+            <p className="bs-report__empty">Risk vectors are not on this reading.</p>
+          ) : (
+            <ul className="bs-cats">
+              {snap.vectors.map((vector) => (
+                <li key={vector.id}>
+                  <button
+                    type="button"
+                    aria-pressed={activeId === vector.id}
+                    onClick={() => setActiveId(vector.id)}
+                    onFocus={() => setActiveId(vector.id)}
+                  >
+                    <span className="bs-cats__grade" style={{ background: gradeColor(vector.grade) }}>
+                      {vector.grade}
+                    </span>
+                    <span className="bs-cats__score tabular-nums">{vector.score}</span>
+                    <span className="bs-cats__name">{vector.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <h5 className="bs-report__findings-title">Findings</h5>
+          {findings.length === 0 ? (
+            <p className="bs-report__empty">No findings on this reading.</p>
+          ) : (
+            <ul className="bs-findings">
+              {findings.map((vector) => (
+                <li key={vector.id}>
+                  <span className="bs-cats__grade" style={{ background: gradeColor(vector.grade) }}>
+                    {vector.grade}
+                  </span>
+                  <span>
+                    <strong>{vector.label}</strong>
+                    <em>{vector.detail}</em>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </section>
+    </article>
   )
 }

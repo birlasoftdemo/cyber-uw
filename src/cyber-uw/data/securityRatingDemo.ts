@@ -66,23 +66,23 @@ const INDUSTRY_AVG: Record<string, number> = {
 
 const VECTOR_SPECS: { id: string; label: string; detail: string }[] = [
   {
+    id: 'compromised-systems',
+    label: 'Compromised Systems',
+    detail: 'Botnet, malware, and command-and-control observations over the last year.',
+  },
+  {
     id: 'diligence',
     label: 'Diligence',
     detail: 'Internet-facing hygiene, patch cadence, and certificate posture versus peers.',
   },
   {
-    id: 'compromised-systems',
-    label: 'Compromised systems',
-    detail: 'Botnet, malware, and command-and-control observations over the last year.',
-  },
-  {
     id: 'user-behavior',
-    label: 'User behavior',
+    label: 'User Behavior',
     detail: 'Credential stuffing, phishing susceptibility, and privileged-access hygiene.',
   },
   {
     id: 'public-disclosures',
-    label: 'Public disclosures',
+    label: 'Public Disclosures',
     detail: 'Regulatory filings, breach notices, and public dark-web mentions.',
   },
 ]

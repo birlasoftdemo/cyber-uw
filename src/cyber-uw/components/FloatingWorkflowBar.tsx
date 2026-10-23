@@ -19,6 +19,7 @@ import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberDecision } from '../types'
 import { decisionLabel } from './CyberPrimitives'
+import { EnrichmentConsentModal } from './EnrichmentConsentModal'
 
 const SCROLL_BOTTOM_PX = 64
 
@@ -147,9 +148,12 @@ export function FloatingWorkflowBar({
   onSignal,
   onRequestDocumentsComplete,
 }: FloatingWorkflowBarProps) {
-  const role = useAuthStore((s) => s.user?.role)
+  const user = useAuthStore((s) => s.user)
+  const role = user?.role
   const isOps = role === 'ops'
   const advanceWorkflowStage = useCyberUwStore((s) => s.advanceWorkflowStage)
+  const recordEnrichmentConsent = useCyberUwStore((s) => s.recordEnrichmentConsent)
+  const [consentOpen, setConsentOpen] = useState(false)
   const dismissCustomer360 = useCyberUwStore((s) => s.dismissCustomer360)
   const markReadyForUw = useCyberUwStore((s) => s.markReadyForUw)
   const markPackageComplete = useCyberUwStore((s) => s.markPackageComplete)
@@ -329,7 +333,13 @@ export function FloatingWorkflowBar({
           />
           <PrimaryWorkflowCTA
             label={`Continue to ${nextTitle ?? 'Risk Analysis'} →`}
-            onPress={() => advanceWorkflowStage(c.id)}
+            onPress={() => {
+              if (c.enrichmentConsent?.models.length) {
+                advanceWorkflowStage(c.id)
+                return
+              }
+              setConsentOpen(true)
+            }}
             ready
           />
         </>
@@ -340,7 +350,7 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title={`Next: ${nextTitle}`}
-          detail={idx === 2 ? 'Review exposure charts, then continue' : undefined}
+          detail={idx === 2 ? 'Review vendor models and the desk model, then continue' : undefined}
         />
         <PrimaryWorkflowCTA
           label={`Continue to ${nextTitle} →`}
@@ -408,6 +418,7 @@ export function FloatingWorkflowBar({
       : `Focus ${CYBER_FLOW_STAGES[Math.min(idx, CYBER_FLOW_STAGES.length - 1)]?.title ?? 'current'} stage`
 
   return (
+    <>
     <div className="cuw-float-bar" role="region" aria-label="Workflow actions">
       <div
         className="cuw-float-bar__inner cuw-float-bar__inner--scrollable"
@@ -425,5 +436,19 @@ export function FloatingWorkflowBar({
         {body}
       </div>
     </div>
+    <EnrichmentConsentModal
+      caseItem={c}
+      open={consentOpen}
+      onCancel={() => setConsentOpen(false)}
+      onConfirm={(models) => {
+        recordEnrichmentConsent(c.id, models, {
+          userId: user?.email ?? 'underwriter',
+          userName: user?.name ?? 'Underwriter',
+        })
+        setConsentOpen(false)
+        advanceWorkflowStage(c.id)
+      }}
+    />
+    </>
   )
 }

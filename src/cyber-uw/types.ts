@@ -129,6 +129,17 @@ export interface PackageSignOff {
   signedOffBy?: string
 }
 
+/** Licensed enrichment models offered on this desk. */
+export type EnrichmentModelId = 'bitsight' | 'cyence' | 'cytora'
+
+export interface EnrichmentConsent {
+  caseId: string
+  userId: string
+  userName: string
+  consentedAt: string
+  models: EnrichmentModelId[]
+}
+
 export interface CyberCase {
   id: string
   insured: string
@@ -182,6 +193,8 @@ export interface CyberCase {
   policyEndAt?: string
   /** UW / Ops confirmation that ingested documents are the right package. */
   packageSignOff?: PackageSignOff
+  /** Consent to run licensed enrichment models before Risk Analysis. */
+  enrichmentConsent?: EnrichmentConsent
   /** UW edits to extracted application answers (`sectionId::label`). */
   answerOverrides?: Record<string, string>
   /** When true, skip Customer Insights and open workflow stages. */

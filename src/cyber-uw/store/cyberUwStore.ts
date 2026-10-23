@@ -29,6 +29,7 @@ import type {
   PlatformSignOff,
   ReferralKind,
   ReferralStatus,
+  EnrichmentModelId,
   ReferralTicket,
   RiskJudgmentStatus,
 } from '../types'
@@ -153,6 +154,12 @@ interface CyberUwState {
   toggleAnswerSigned: (caseId: string, key: string, signed: boolean) => void
   signSectionAnswers: (caseId: string, keys: string[]) => void
   signOffPackage: (caseId: string) => void
+  /** Record which licensed models the underwriter agreed to run. */
+  recordEnrichmentConsent: (
+    caseId: string,
+    models: EnrichmentModelId[],
+    signer: { userId: string; userName: string },
+  ) => void
   /** Advance UW through Policy Documents → Risk Information → Risk Analysis → Getting Ready to Quote. */
   advanceWorkflowStage: (id: string) => void
   /** Jump to a stage. */
@@ -177,6 +184,9 @@ function cloneCases(): CyberCase[] {
         }
       : undefined,
     answerOverrides: c.answerOverrides ? { ...c.answerOverrides } : undefined,
+    enrichmentConsent: c.enrichmentConsent
+      ? { ...c.enrichmentConsent, models: [...c.enrichmentConsent.models] }
+      : undefined,
     riskJudgments: { ...c.riskJudgments },
     appetiteHits: [...c.appetiteHits],
     audit: [...c.audit],
@@ -1245,6 +1255,51 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
     }))
   },
 
+  recordEnrichmentConsent: (caseId, models, signer) => {
+    const order: EnrichmentModelId[] = ['bitsight', 'cyence', 'cytora']
+    const chosen = order.filter((id) => models.includes(id))
+    if (chosen.length === 0) return
+    const now = new Date().toISOString()
+    const labels = chosen.map((id) => {
+      switch (id) {
+        case 'bitsight':
+          return 'Bitsight'
+        case 'cyence':
+          return 'Cyence'
+        case 'cytora':
+          return 'Cytora'
+        default: {
+          const neverId: never = id
+          return neverId
+        }
+      }
+    })
+    set((s) => ({
+      cases: s.cases.map((c) =>
+        c.id === caseId
+          ? {
+              ...c,
+              enrichmentConsent: {
+                caseId,
+                userId: signer.userId,
+                userName: signer.userName,
+                consentedAt: now,
+                models: chosen,
+              },
+              audit: [
+                ...c.audit,
+                {
+                  at: now,
+                  actor: signer.userName,
+                  action: `Consented to enrichment: ${labels.join(', ')}`,
+                },
+              ],
+            }
+          : c,
+      ),
+    }))
+  },
+
   signOffPackage: (caseId) => {
     const now = new Date().toISOString()
     set((s) => {
@@ -1308,6 +1363,13 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
         return {
           ...s,
           toastMessage: 'Approve, Escalate, or Ignore required triage findings before Risk Analysis.',
+          toastTone: 'warn' as const,
+        }
+      }
+      if (from === 1 && !current.enrichmentConsent?.models.length) {
+        return {
+          ...s,
+          toastMessage: 'Consent to an enrichment model before Risk Analysis.',
           toastTone: 'warn' as const,
         }
       }
