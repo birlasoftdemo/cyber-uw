@@ -1,4 +1,4 @@
-import { Accordion, Button, Tabs, Typography } from '@heroui/react'
+import { Button, Tabs, Typography } from '@heroui/react'
 import {
   CalendarCheck2,
   CalendarRange,
@@ -14,8 +14,6 @@ import {
   Layers,
   Lock,
   Network,
-  Pencil,
-  PencilOff,
   Percent,
   RefreshCw,
   Scale,
@@ -34,7 +32,6 @@ import {
 import {
   INELIGIBLE_ORGANIZATION_ACTIVITIES,
   riskSectionReportsForCase,
-  sectionReportsForCase,
   triageFindingsForCase,
   questionFieldMatchers,
   APP_SECTIONS,
@@ -65,10 +62,8 @@ import { CyberProgressStepper } from './CyberWorkbenchDesk'
 import { FloatingWorkflowBar } from './FloatingWorkflowBar'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
 import { DocumentsCompleteModal } from './DocumentsCompleteModal'
-import {
-  IngestQuestionGrid,
-  QuestionMetaGrid,
-} from './QuestionFields'
+import { QuestionMetaGrid } from './QuestionFields'
+import { ExtractedFieldTabs } from './ExtractedFieldTabs'
 import {
   DiscussionReferModal,
   type DiscussionReferDraft,
@@ -783,8 +778,6 @@ function PolicyDocumentsStageBody({
   const setPackageDocKind = useCyberUwStore((s) => s.setPackageDocKind)
   const scanning = c.signalStatus === 'scanning'
   const [ingestReferDraft, setIngestReferDraft] = useState<DiscussionReferDraft | null>(null)
-  const [editingSections, setEditingSections] = useState<Record<string, boolean>>({})
-  const reports = sectionReportsForCase(c)
   const documentsComplete = Boolean(c.packageSignOff?.signedOffAt)
   const canComplete = missing.length === 0 && c.completenessPct >= 80 && !documentsComplete
   const period = policyPeriodForCase(c)
@@ -928,69 +921,7 @@ function PolicyDocumentsStageBody({
 
       <section className="space-y-3">
         <h4 className="text-sm font-semibold text-slate-900">Extracted fields</h4>
-        <Accordion
-          allowsMultipleExpanded
-          defaultExpandedKeys={[]}
-          hideSeparator
-          className="wb-extract-accordion w-full"
-        >
-          {reports.map((report) => {
-            const editing = Boolean(editingSections[report.section.id])
-            const fieldCount = report.fields.length
-            return (
-              <Accordion.Item
-                key={report.section.id}
-                id={report.section.id}
-                className="wb-extract-accordion__item"
-              >
-                <Accordion.Heading className="wb-extract-accordion__heading">
-                  <div className="wb-extract-accordion__head">
-                    <Accordion.Trigger className="wb-extract-accordion__trigger">
-                      <Accordion.Indicator className="wb-extract-accordion__indicator">
-                        <ChevronDown size={16} strokeWidth={2} />
-                      </Accordion.Indicator>
-                      <span className="wb-extract-accordion__title-wrap">
-                        <span className="wb-extract-accordion__title">{report.section.title}</span>
-                        <span className="wb-extract-accordion__sub">
-                          {fieldCount} {fieldCount === 1 ? 'field' : 'fields'} · Q
-                          {report.section.questions}
-                        </span>
-                      </span>
-                    </Accordion.Trigger>
-                    <button
-                      type="button"
-                      className="wb-q-pen"
-                      aria-pressed={editing}
-                      aria-label={
-                        editing ? `Lock ${report.section.title}` : `Edit ${report.section.title}`
-                      }
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setEditingSections((cur) => ({
-                          ...cur,
-                          [report.section.id]: !cur[report.section.id],
-                        }))
-                      }}
-                    >
-                      {editing ? <PencilOff size={14} /> : <Pencil size={14} />}
-                    </button>
-                  </div>
-                </Accordion.Heading>
-                <Accordion.Panel>
-                  <Accordion.Body className="wb-extract-accordion__body">
-                    <IngestQuestionGrid
-                      caseId={c.id}
-                      sectionId={report.section.id}
-                      fields={report.fields}
-                      editing={editing}
-                    />
-                  </Accordion.Body>
-                </Accordion.Panel>
-              </Accordion.Item>
-            )
-          })}
-        </Accordion>
+        <ExtractedFieldTabs c={c} />
       </section>
 
       {missing.length > 0 ? (
