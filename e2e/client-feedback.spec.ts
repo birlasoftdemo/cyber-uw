@@ -48,9 +48,11 @@ test.describe('Client feedback demo', () => {
 
     await goTracker(page, 'New Submission')
     await expect(page.getByRole('heading', { name: /cyber documents received/i })).toBeVisible()
-    await expect(page.getByText(/Insured matched/i)).toBeVisible()
-    await expect(page.getByText(/Duplicate check completed/i)).toBeVisible()
-    await expect(page.getByText(/Broker identified/i)).toBeVisible()
+    await expect(page.getByLabel('Intake metrics')).toBeVisible()
+    await expect(page.getByText('Submission Completeness', { exact: true })).toBeVisible()
+    await expect(page.getByText('Missing Documents', { exact: true })).toBeVisible()
+    await expect(page.getByText('Broker Follow-ups', { exact: true })).toBeVisible()
+    await expect(page.locator('.spec-grid__total')).toHaveCount(0)
     await page.screenshot({
       path: path.join(shotDir, `${testInfo.project.name}-03-intake.png`),
       fullPage: true,

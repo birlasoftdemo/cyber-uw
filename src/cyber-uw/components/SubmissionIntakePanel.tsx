@@ -1,5 +1,4 @@
 import {
-  entityMatchForCase,
   intakeMetricsForCase,
   type IntakeDocStatus,
 } from '../data/clientFeedbackDemo'
@@ -23,31 +22,44 @@ function statusClass(status: IntakeDocStatus) {
   }
 }
 
-/** Cyber document checklist + completeness / match metrics for Submission intake. */
+function MetricIcon() {
+  return (
+    <span className="intake-metric__icon" aria-hidden="true">
+      <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+        <rect x="5.5" y="3.5" width="9" height="12" rx="1.4" stroke="#fff" strokeWidth="1.4" />
+        <rect x="3.5" y="5.5" width="9" height="12" rx="1.4" fill="#1b1564" stroke="#fff" strokeWidth="1.4" />
+      </svg>
+    </span>
+  )
+}
+
+/** Cyber document checklist + completeness metrics for Submission intake. */
 export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
   const metrics = intakeMetricsForCase(c)
-  const match = entityMatchForCase(c)
 
   return (
     <section className="spec-info-panel" aria-label="Submission intake">
       <header className="spec-info-panel__bar">
         <h3>Cyber documents received</h3>
-        <p>Document package status · duplicate and entity match</p>
+        <p>Document package status</p>
       </header>
 
-      <div className="intake-panel__metrics">
-        <div>
-          <span>Submission completeness</span>
-          <strong>{metrics.completenessPct}%</strong>
-        </div>
-        <div>
-          <span>Missing documents</span>
-          <strong>{metrics.missingDocs}</strong>
-        </div>
-        <div>
-          <span>Broker follow-up questions</span>
-          <strong>{metrics.brokerFollowUps}</strong>
-        </div>
+      <div className="intake-panel__metrics" aria-label="Intake metrics">
+        <article className="intake-metric">
+          <MetricIcon />
+          <span className="intake-metric__label">Submission Completeness</span>
+          <strong className="intake-metric__value">{metrics.completenessPct}%</strong>
+        </article>
+        <article className="intake-metric">
+          <MetricIcon />
+          <span className="intake-metric__label">Missing Documents</span>
+          <strong className="intake-metric__value">{metrics.missingDocs}</strong>
+        </article>
+        <article className="intake-metric">
+          <MetricIcon />
+          <span className="intake-metric__label">Broker Follow-ups</span>
+          <strong className="intake-metric__value">{metrics.brokerFollowUps}</strong>
+        </article>
       </div>
 
       <div className="spec-grid-wrap">
@@ -77,16 +89,6 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
                 <td>{c.broker}</td>
               </tr>
             ))}
-            <tr className="spec-grid__total">
-              <td colSpan={2}>
-                <strong>Package</strong>
-              </td>
-              <td colSpan={2}>
-                {match.insuredMatched ? 'Insured matched' : 'Insured unmatched'} ·{' '}
-                {match.duplicateCheckCompleted ? 'Duplicate check completed' : 'Duplicate check pending'} ·{' '}
-                {match.brokerIdentified ? `Broker identified (${match.broker})` : 'Broker not identified'}
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>

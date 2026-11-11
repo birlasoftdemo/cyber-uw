@@ -306,7 +306,7 @@ export function CasesHome({
                     <th>Submission ID</th>
                     <th>Insured</th>
                     <th>UMR</th>
-                    <th>Class</th>
+                    <th>Complete %</th>
                     <th>Sub-Class</th>
                     <th>Inception Date</th>
                     <th>Status</th>
@@ -335,7 +335,7 @@ export function CasesHome({
                         <td className="spec-table__id">{c.id}</td>
                         <td>{c.insured}</td>
                         <td>{c.productCode}</td>
-                        <td>{c.lobName}</td>
+                        <td className="spec-table__num">{c.completenessPct}%</td>
                         <td>{c.sector}</td>
                         <td>{inceptionLabel(c)}</td>
                         <td>
