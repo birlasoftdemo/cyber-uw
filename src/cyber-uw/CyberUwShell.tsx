@@ -21,6 +21,7 @@ import { InsightsLanding } from './insights/InsightsLanding'
 import { useAuthStore } from './store/authStore'
 import { useCyberUwStore } from './store/cyberUwStore'
 import type { CyberShellView } from './components/CyberShellToolbar'
+import { CaseContextHeader } from './components/CaseContextHeader'
 import { CaseMetaChips, decisionTitle } from './components/CyberPrimitives'
 
 function defaultViewForRole(_role: 'underwriter' | 'ops' | undefined): CyberShellView {
@@ -218,6 +219,8 @@ export function CyberUwShell() {
                 ) : undefined
               }
             />
+
+          {selectedCase && shellView !== 'workbench' ? <CaseContextHeader c={selectedCase} /> : null}
 
           {shellView === 'shipping' ? (
             <div className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-hidden p-3 md:p-4">

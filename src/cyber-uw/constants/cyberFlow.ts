@@ -11,6 +11,12 @@ export const CYBER_FLOW_STAGES = [
     pain: 'P2.1 · P2.6 · P2.7',
   },
   {
+    key: 'evidence',
+    title: 'Evidence Verification',
+    subtext: 'Declarations checked against documents and external observation',
+    pain: 'P2.11',
+  },
+  {
     key: 'triage',
     title: 'Risk Information',
     subtext: 'Triage rules from ingested documents',
@@ -32,6 +38,13 @@ export const CYBER_FLOW_STAGES = [
 
 export type CyberFlowKey = (typeof CYBER_FLOW_STAGES)[number]['key']
 
+export const FLOW_LAST_INDEX = CYBER_FLOW_STAGES.length - 1
+
+export function flowStageIndex(key: CyberFlowKey): number {
+  const index = CYBER_FLOW_STAGES.findIndex((stage) => stage.key === key)
+  return index < 0 ? 0 : index
+}
+
 export function riskReviewUnsignedCount(
   requiredIds: string[],
   judgments: Record<string, RiskJudgment> | undefined,
@@ -49,7 +62,7 @@ export function cyberFlowFloor(c: {
   pasStatus: string
 }): number {
   if (c.pasStatus === 'synced') return CYBER_FLOW_STAGES.length
-  if (c.decision !== 'pending') return 3
+  if (c.decision !== 'pending') return FLOW_LAST_INDEX
   if (c.completenessPct < 80) return 0
   return 0
 }
@@ -65,10 +78,10 @@ export function cyberFlowIndex(c: {
   workflowStage?: number
 }): number {
   if (c.pasStatus === 'synced') return CYBER_FLOW_STAGES.length
-  if (c.decision !== 'pending') return 3
+  if (c.decision !== 'pending') return FLOW_LAST_INDEX
   const floor = cyberFlowFloor(c)
   const stage = c.workflowStage ?? 0
-  return Math.min(3, Math.max(floor, stage))
+  return Math.min(FLOW_LAST_INDEX, Math.max(floor, stage))
 }
 
 export function flowStageTitle(c: {

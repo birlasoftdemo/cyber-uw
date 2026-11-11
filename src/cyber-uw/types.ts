@@ -1,6 +1,6 @@
 import type { QualificationBucketId } from './constants/qualificationBuckets'
 
-export type CyberDecision = 'pending' | 'quote' | 'refer' | 'decline'
+export type CyberDecision = 'pending' | 'quote' | 'refer' | 'decline' | 'request_info'
 export type CyberTier = 1 | 2 | 3 | 4 | 5
 export type GapSeverity = 'critical' | 'high' | 'medium' | 'info'
 export type GapDisposition = 'open' | 'resolved' | 'referred'

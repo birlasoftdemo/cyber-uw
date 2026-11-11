@@ -80,7 +80,7 @@ export function CytoraPanel({ c, onOpenCites }: { c: CyberCase; onOpenCites?: ()
     <article className={`ct-report ${appetiteClass(reading.appetite)}`} aria-label="Cytora appetite">
       <header className="ct-report__banner">
         <div>
-          <p className="ct-report__brand">Cytora</p>
+          <p className="ct-report__brand">Cytora · Simulated</p>
           <p className="ct-report__kicker">Submission risk evaluation</p>
           <h4>{c.insured}</h4>
         </div>

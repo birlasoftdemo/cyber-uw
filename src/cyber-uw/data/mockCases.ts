@@ -1,3 +1,4 @@
+import { flowStageIndex } from '../constants/cyberFlow'
 import { inferBucketFromControl } from '../constants/qualificationBuckets'
 import { defaultFormSignals, packageDocsFromNames } from './dossierPackage'
 import { buildPlatformCards } from './platformDemo'
@@ -47,7 +48,7 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     signalScore: 62,
     signalStatus: 'ready',
     pasStatus: 'idle',
-    workflowStage: 1,
+    workflowStage: flowStageIndex('triage'),
     riskJudgments: {},
     packageSignOff: signedPackage('CYB-2401', 7, '2026-07-20T09:10:00Z'),
     packageDocs: packageDocsFromNames('CYB-2401', [
@@ -63,8 +64,8 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
       insured: 'Airbnb',
       sector: 'Travel / Hospitality Marketplace',
       limitUsd: 25_000_000,
-      mfaAnswer: 'Yes — all privileged accounts',
-      mfaSignal: 'Exposed admin bastion without MFA challenge on 2 hosts',
+      mfaAnswer: 'MFA applies to all users',
+      mfaSignal: 'Evidence shows privileged users only, without MFA for the rest of the workforce',
       mfaGapId: 'g1',
       edrAnswer: 'Endpoint detection and response on 100% of endpoints',
       edrSignal: 'Endpoint detection and response telemetry coverage ~78% of discovered assets',
@@ -77,8 +78,8 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
       gap({
         id: 'g1',
         control: 'MFA on external admin',
-        attested: 'Yes — all privileged accounts',
-        signal: 'Exposed admin bastion without MFA challenge on 2 hosts',
+        attested: 'MFA applies to all users',
+        signal: 'Evidence shows privileged users only, without MFA for the rest of the workforce',
         severity: 'critical',
         rfiDraft:
           'Please confirm MFA enforcement on all external admin paths and remediate exposed bastions, or provide compensating controls + 30-day plan.',
@@ -109,16 +110,17 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     ],
     appetiteHits: [
       {
-        ruleId: 'APP-PLAT-02',
-        label: 'Marketplace platform + limit ≥ $10M requires Tier ≤ 3 or escalation',
+        ruleId: 'CTRL-MFA-MIN',
+        label: 'MFA coverage below minimum threshold',
         outcome: 'refer',
-        detail: 'Tier 4 with critical MFA gap forces escalation.',
+        detail:
+          'Applicant says MFA applies to all users. Document evidence and external observation show privileged users only.',
       },
       {
-        ruleId: 'CTRL-MFA-01',
-        label: 'MFA floor on external admin',
+        ruleId: 'EXT-RATING-MIN',
+        label: 'Security rating below carrier appetite level',
         outcome: 'refer',
-        detail: 'Critical gap on multi-factor authentication — cannot straight-through process.',
+        detail: 'Limits of $10M or more require a simulated security rating of at least 700.',
       },
     ],
     vendors: [
@@ -141,7 +143,7 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
       25_000_000,
     ),
     dossierSummary:
-      'Large travel marketplace platform with high guest/host PII and payment adjacency. Strong revenue and package completeness, but critical multi-factor authentication signal contradiction and endpoint detection and response deployment gap. Recommend refer with request-for-information pack; Tier 4 pending remediation evidence.',
+      'Large travel marketplace. Applicant says MFA applies to all users, but evidence shows privileged users only. Simulated security rating is below the carrier floor for a $25M limit. Appetite is Refer. AI recommendation is Refer.',
     audit: [
       { at: '2026-07-20T08:14:00Z', actor: 'Intake Agent', action: 'Normalized app + attachments' },
       { at: '2026-07-20T08:16:00Z', actor: 'Signal Mock', action: 'ASM scan complete — field diffs ready' },
@@ -170,7 +172,7 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     signalScore: 81,
     signalStatus: 'ready',
     pasStatus: 'idle',
-    workflowStage: 1,
+    workflowStage: flowStageIndex('triage'),
     riskJudgments: {},
     packageSignOff: signedPackage('CYB-2402', 7, '2026-07-19T17:05:00Z'),
     packageDocs: packageDocsFromNames('CYB-2402', [
@@ -384,7 +386,7 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     signalScore: 71,
     signalStatus: 'ready',
     pasStatus: 'idle',
-    workflowStage: 1,
+    workflowStage: flowStageIndex('triage'),
     riskJudgments: {},
     packageSignOff: signedPackage('CYB-2404', 7, '2026-07-20T10:20:00Z'),
     packageDocs: packageDocsFromNames('CYB-2404', [

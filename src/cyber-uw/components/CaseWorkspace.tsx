@@ -17,6 +17,7 @@ import {
   Percent,
   RefreshCw,
   Scale,
+  ScanSearch,
   ShieldAlert,
   ShieldCheck,
   type LucideIcon,
@@ -54,13 +55,19 @@ import { carrierExposureForCase } from '../data/riskVizDemo'
 import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
-import type { CyberCase, EnrichmentModelId, RiskJudgmentStatus } from '../types'
+import type { CyberCase, CyberDecision, EnrichmentModelId, RiskJudgmentStatus } from '../types'
 import { checklistStatusForCase, missingDocsForCase } from '../utils/missingDocs'
 import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
 import { money } from './CyberPrimitives'
 import { CyberProgressStepper } from './CyberWorkbenchDesk'
 import { FloatingWorkflowBar } from './FloatingWorkflowBar'
+import { CaseContextHeader } from './CaseContextHeader'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
+import { EvidenceVerificationPanel } from './EvidenceVerificationPanel'
+import { ExternalFindingsPanel } from './ExternalFindingsPanel'
+import { SubmissionIntakePanel } from './SubmissionIntakePanel'
+import { UnderwriterDecisionPanel } from './UnderwriterDecisionPanel'
+import { UnderwritingMeasures } from './UnderwritingMeasures'
 import { DocumentsCompleteModal } from './DocumentsCompleteModal'
 import { QuestionMetaGrid } from './QuestionFields'
 import { ExtractedFieldTabs } from './ExtractedFieldTabs'
@@ -725,20 +732,27 @@ function FinancialSignOffPanel({ c }: { c: CyberCase }) {
   )
 }
 
-function QuoteReadyCard({ c }: { c: CyberCase }) {
+function QuoteReadyCard({
+  c,
+  onRequestDecision,
+}: {
+  c: CyberCase
+  onRequestDecision: (decision: Exclude<CyberDecision, 'pending'>) => void
+}) {
   const finOk = isFinancialSignOffComplete(c.financialSignOff)
 
   return (
     <div className="space-y-4">
+      <UnderwriterDecisionPanel c={c} onRequestDecision={onRequestDecision} />
       <FinancialSignOffPanel c={c} />
 
       {finOk ? (
         <p className="text-xs text-emerald-800">
-          Financial authority recorded. Quote / Escalate / Decline are enabled in the bar above.
+          Financial authority recorded. Approve, Refer, Request Information, and Decline are enabled in the bar above.
         </p>
       ) : (
         <p className="text-sm text-slate-600">
-          Record financial sign off, then lock Quote, Escalate, or Decline in the bar above.
+          Record financial sign off, then use Approve, Refer, Request Information, or Decline.
         </p>
       )}
 
@@ -756,8 +770,8 @@ function UwLockedStage({ title }: { title: string }) {
       <div>
         <p className="cuw-type-title">{title} (UW only)</p>
         <p className="cuw-type-caption mt-0.5">
-          Ops owns Policy Documents. Risk Information, Risk Analysis, and Getting Ready to Quote stay with
-          the underwriter.
+          Ops owns Policy Documents. Evidence Verification, Risk Information, Risk Analysis, and Getting Ready
+          to Quote stay with the underwriter.
         </p>
       </div>
     </div>
@@ -799,6 +813,7 @@ function PolicyDocumentsStageBody({
 
   return (
     <div className="space-y-4">
+      <SubmissionIntakePanel c={c} />
       <QuestionMetaGrid
         items={[
           { label: 'Proposed start date', value: formatPolicyDate(period.startIso), icon: CalendarRange },
@@ -1124,17 +1139,15 @@ function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
     .filter(Boolean)
     .join(' ')
 
-  if (consented.length === 0 || !vendorKey) {
-    return (
+  const vendorModels =
+    consented.length === 0 || !vendorKey ? (
       <div className="wb-risk-evidence">
         <p className="wb-instrument__note">
           Third-party enrichment needs your consent. Continue from Risk Information to choose models.
+          Findings above stay available because every provider in this demo is simulated.
         </p>
       </div>
-    )
-  }
-
-  return (
+    ) : (
     <div ref={sceneRef} className={sceneClass}>
       <Tabs
         className="wb-enrich-tabs"
@@ -1165,7 +1178,10 @@ function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
               <Tabs.List aria-label="Vendor models">
                 {consented.map((model) => (
                   <Tabs.Tab key={model} id={model}>
-                    {model === 'bitsight' ? 'Bitsight' : model === 'cyence' ? 'Cyence' : 'Cytora'}
+                    <span className="inline-flex items-center gap-1.5">
+                      {model === 'bitsight' ? 'BitSight' : model === 'cyence' ? 'Cyence' : 'Cytora'}
+                      <span className="cuw-sim-pill">Simulated</span>
+                    </span>
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
@@ -1191,14 +1207,24 @@ function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
         rows={citeRows}
       />
     </div>
+    )
+
+  return (
+    <div className="space-y-4">
+      <UnderwritingMeasures c={c} />
+      <ExternalFindingsPanel c={c} />
+      {vendorModels}
+    </div>
   )
 }
 
 function WorkflowTab({
   c,
   onRequestDocumentsComplete,
+  onRequestDecision,
 }: {
   c: CyberCase
+  onRequestDecision: (decision: Exclude<CyberDecision, 'pending'>) => void
   onRequestDocumentsComplete: () => void
 }) {
   const role = useAuthStore((s) => s.user?.role)
@@ -1250,26 +1276,32 @@ function WorkflowTab({
 
       {isOps ? (
         <>
-          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ClipboardCheck} stageIndex={1} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ScanSearch} stageIndex={1} currentIndex={idx} stayOpen>
+            <UwLockedStage title="Evidence Verification" />
+          </StageSection>
+          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ClipboardCheck} stageIndex={2} currentIndex={idx}>
             <UwLockedStage title="Risk Information" />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ShieldCheck} stageIndex={2} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={ShieldCheck} stageIndex={3} currentIndex={idx}>
             <UwLockedStage title="Risk Analysis" />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={CircleDollarSign} stageIndex={3} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[4].title} icon={CircleDollarSign} stageIndex={4} currentIndex={idx}>
             <UwLockedStage title="Getting Ready to Quote" />
           </StageSection>
         </>
       ) : (
         <>
-          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ClipboardCheck} stageIndex={1} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[1].title} icon={ScanSearch} stageIndex={1} currentIndex={idx} stayOpen>
+            <EvidenceVerificationPanel c={c} />
+          </StageSection>
+          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ClipboardCheck} stageIndex={2} currentIndex={idx}>
             <RiskInformationStageBody c={c} />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[2].title} icon={ShieldCheck} stageIndex={2} currentIndex={idx}>
+          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={ShieldCheck} stageIndex={3} currentIndex={idx}>
             <RiskAnalysisStageBody c={c} />
           </StageSection>
-          <StageSection title={CYBER_FLOW_STAGES[3].title} icon={CircleDollarSign} stageIndex={3} currentIndex={idx}>
-            <QuoteReadyCard c={c} />
+          <StageSection title={CYBER_FLOW_STAGES[4].title} icon={CircleDollarSign} stageIndex={4} currentIndex={idx}>
+            <QuoteReadyCard c={c} onRequestDecision={onRequestDecision} />
           </StageSection>
         </>
       )}
@@ -1377,6 +1409,7 @@ export function CaseWorkspace() {
 
   return (
     <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
+      <CaseContextHeader c={c} />
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className="cuw-case-view-tabs shrink-0 px-3 pt-2 md:px-4"
@@ -1423,7 +1456,11 @@ export function CaseWorkspace() {
               id="cuw-workbench-root"
               className="cuw-workbench-section mt-8 scroll-mt-4 border-t border-slate-200/80 pt-8"
             >
-              <WorkflowTab c={c} onRequestDocumentsComplete={() => setDocsCompleteOpen(true)} />
+              <WorkflowTab
+                c={c}
+                onRequestDocumentsComplete={() => setDocsCompleteOpen(true)}
+                onRequestDecision={(decision) => setPendingDecision(decision)}
+              />
             </div>
           </div>
 
@@ -1451,9 +1488,9 @@ export function CaseWorkspace() {
         caseItem={c}
         pending={pendingDecision}
         onCancel={closeConfirm}
-        onConfirm={() => {
+        onConfirm={(rationale) => {
           if (!pendingDecision) return
-          applyDecision(c.id, pendingDecision, reasonFor(pendingDecision))
+          applyDecision(c.id, pendingDecision, rationale || reasonFor(pendingDecision))
           closeConfirm()
         }}
       />

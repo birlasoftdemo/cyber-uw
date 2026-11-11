@@ -1,8 +1,10 @@
 import { Button, Modal, Typography, useOverlayState } from '@heroui/react'
 import { AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { AiBadge } from '../../shared/workbench/AiBadge'
+import { narrativeForCase } from '../data/caseNarrative'
 import type { CyberCase, CyberDecision } from '../types'
-import { decisionLabel, decisionTitle, TierBadge } from './CyberPrimitives'
+import { decisionTitle, TierBadge } from './CyberPrimitives'
 
 export type PendingDecision = Exclude<CyberDecision, 'pending'>
 
@@ -10,14 +12,26 @@ interface Props {
   caseItem: CyberCase | null
   pending: PendingDecision | null
   onCancel: () => void
-  onConfirm: () => void
+  onConfirm: (rationale: string) => void
 }
 
-/** Same confirm pattern as BindConfirmModal — intentional friction before capital-adjacent actions. */
+/** Confirm step. Overrides and material exceptions cannot submit until a rationale is written. */
 export function DecisionConfirmModal({ caseItem, pending, onCancel, onConfirm }: Props) {
   const isOpen = Boolean(caseItem && pending)
+  const [rationale, setRationale] = useState('')
   const critical = caseItem?.gaps.filter((g) => g.severity === 'critical') ?? []
   const quotingWithCritical = pending === 'quote' && critical.length > 0
+  const story = caseItem ? narrativeForCase(caseItem) : null
+  const isOverride = Boolean(story && pending && pending !== story.ai.action)
+  const materialException = Boolean(
+    pending === 'quote' && story && (story.appetite.result !== 'Within Appetite' || critical.length > 0),
+  )
+  const rationaleRequired = isOverride || materialException
+  const blocked = rationaleRequired && rationale.trim().length === 0
+
+  useEffect(() => {
+    setRationale('')
+  }, [caseItem?.id, pending])
 
   const overlay = useOverlayState({
     isOpen,
@@ -26,25 +40,29 @@ export function DecisionConfirmModal({ caseItem, pending, onCancel, onConfirm }:
     },
   })
 
-  if (!caseItem || !pending) return null
+  if (!caseItem || !pending || !story) return null
 
   const title =
     pending === 'quote'
       ? quotingWithCritical
-        ? 'Quote despite critical gaps?'
-        : 'Confirm quote'
+        ? 'Approve despite critical gaps?'
+        : 'Confirm Approve'
       : pending === 'refer'
-        ? 'Confirm escalation'
-        : 'Confirm decline'
+        ? 'Confirm Refer'
+        : pending === 'request_info'
+          ? 'Confirm Request Information'
+          : 'Confirm Decline'
 
   const body =
     pending === 'decline'
-      ? 'Decline removes this risk from the competitive soft market chase. You can undo before PAS sync if needed.'
+      ? 'Decline removes this risk from the chase. The rationale is stored on the case.'
       : pending === 'refer'
-        ? 'Escalation routes this to specialist review with an auditable rationale.'
-        : quotingWithCritical
-          ? 'Signal shows critical control gaps. Quoting now must be intentional, with the same discipline as bind confirm in the submission workbench.'
-          : 'Confirm human in the loop quote. Tier assist is not a binding premium.'
+        ? 'Refer routes this file to the referral owner with the rationale you enter.'
+        : pending === 'request_info'
+          ? 'Request Information sends the open questions back to the broker and keeps the file off the quote path.'
+          : quotingWithCritical
+            ? 'Critical control gaps are still open. Approving now is a material exception and needs a rationale.'
+            : 'Confirm the human decision. The AI recommendation is not a bind.'
 
   return (
     <Modal state={overlay}>
@@ -70,11 +88,31 @@ export function DecisionConfirmModal({ caseItem, pending, onCancel, onConfirm }:
                 </Typography.Paragraph>
                 <span className="wb-ref-pill">{caseItem.id}</span>
                 <TierBadge tier={caseItem.tier} />
-                <AiBadge label={`AI ${decisionLabel(caseItem.recommendation)}`} />
+                <AiBadge label={`AI ${story.ai.label}`} />
               </div>
               <Typography.Paragraph size="sm" className="text-slate-700">
                 {body}
               </Typography.Paragraph>
+              <ol className="cuw-reasons mt-3">
+                {story.ai.reasons.map((reason) => (
+                  <li key={reason.id}>
+                    <p>{reason.text}</p>
+                    <button
+                      type="button"
+                      className="cuw-why__btn"
+                      onClick={() => {
+                        const href = reason.href
+                        onCancel()
+                        window.setTimeout(() => {
+                          document.querySelector(href)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }, 60)
+                      }}
+                    >
+                      {reason.evidenceLabel}
+                    </button>
+                  </li>
+                ))}
+              </ol>
               {quotingWithCritical ? (
                 <ul className="mt-3 list-disc space-y-1 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-950">
                   {critical.map((g) => (
@@ -84,6 +122,29 @@ export function DecisionConfirmModal({ caseItem, pending, onCancel, onConfirm }:
                   ))}
                 </ul>
               ) : null}
+              <label className="cuw-rationale" htmlFor="decision-rationale">
+                <span>
+                  Decision rationale
+                  {rationaleRequired ? ' (required for this override or material exception)' : ' (optional when you accept the AI recommendation)'}
+                </span>
+                <textarea
+                  id="decision-rationale"
+                  value={rationale}
+                  aria-required={rationaleRequired}
+                  aria-invalid={blocked}
+                  onChange={(event) => setRationale(event.target.value)}
+                  placeholder={
+                    rationaleRequired
+                      ? 'Write why this decision differs from the AI recommendation or why the exception is acceptable.'
+                      : 'Optional note for the file.'
+                  }
+                />
+                {blocked ? (
+                  <p id="decision-rationale-error" className="cuw-rationale__error" role="alert">
+                    A decision rationale is required before this override or material exception can be submitted.
+                  </p>
+                ) : null}
+              </label>
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" onPress={onCancel}>
@@ -91,11 +152,15 @@ export function DecisionConfirmModal({ caseItem, pending, onCancel, onConfirm }:
               </Button>
               <Button
                 variant={pending === 'decline' || quotingWithCritical ? 'danger' : 'primary'}
-                onPress={onConfirm}
+                isDisabled={blocked}
+                aria-label="Confirm decision"
+                onPress={() => {
+                  if (blocked) return
+                  const text = rationale.trim()
+                  onConfirm(text || `Accepted AI recommendation: ${story.ai.label}.`)
+                }}
               >
-                {pending === 'quote' && quotingWithCritical
-                  ? 'Quote anyway'
-                  : `Confirm ${decisionTitle(pending).toLowerCase()}`}
+                {`Confirm ${decisionTitle(pending)}`}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

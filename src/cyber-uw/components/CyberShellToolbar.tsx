@@ -161,8 +161,9 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
                 aria-label="Filter by AI recommendation"
               >
                 <option value="all">All AI</option>
-                <option value="quote">AI Quote</option>
-                <option value="refer">AI Escalate</option>
+                <option value="quote">AI Approve</option>
+                <option value="refer">AI Refer</option>
+                <option value="request_info">AI Request Information</option>
                 <option value="decline">AI Decline</option>
               </select>
             </div>
@@ -178,8 +179,9 @@ export function CyberShellToolbar({ shellView, onShellViewChange }: Props) {
               >
                 <option value="all">All UW</option>
                 <option value="pending">Pending</option>
-                <option value="quote">Quoted</option>
-                <option value="refer">Escalated</option>
+                <option value="quote">Approved</option>
+                <option value="refer">Referred</option>
+                <option value="request_info">Request Information</option>
                 <option value="decline">Declined</option>
               </select>
             </div>

@@ -250,7 +250,7 @@ export function SecurityRatingPanel({
         </div>
 
         <div className="bs-report__card">
-          <p className="bs-report__card-kicker">Bitsight Security Rating</p>
+          <p className="bs-report__card-kicker">BitSight Security Rating · Simulated</p>
           <p className="bs-report__score tabular-nums">{snap.rating}</p>
           <p className="bs-report__band">{snap.band}</p>
           <Spectrum rating={snap.rating} industry={snap.industryAvg} hot={active ? active.score : null} />
@@ -279,7 +279,7 @@ export function SecurityRatingPanel({
             better. It is a hygiene rating, not a dollar loss.
           </p>
         </div>
-        <p className="bs-report__wordmark">Bitsight</p>
+        <p className="bs-report__wordmark">BitSight · Simulated</p>
       </aside>
 
       <div className="bs-report__sheet">
@@ -311,7 +311,7 @@ export function SecurityRatingPanel({
         </section>
 
         <section className="bs-report__block">
-          <h5>Performance over the last 12 months</h5>
+          <h5>Security rating trend — last 12 months</h5>
           <p className="bs-report__lead">
             Green is Advanced, amber is Intermediate, red is Basic. The line is this company. Dashed is the industry.
           </p>

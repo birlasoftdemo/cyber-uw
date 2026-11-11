@@ -12,6 +12,8 @@ import {
   canOpsMarkReadyForUw,
   CYBER_FLOW_STAGES,
   cyberFlowIndex,
+  FLOW_LAST_INDEX,
+  flowStageIndex,
   nextFlowStageTitle,
   unsignedRequiredFindingIds,
 } from '../constants/cyberFlow'
@@ -19,6 +21,7 @@ import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, CyberDecision } from '../types'
 import { decisionLabel } from './CyberPrimitives'
+import { narrativeForCase } from '../data/caseNarrative'
 import { EnrichmentConsentModal } from './EnrichmentConsentModal'
 
 const SCROLL_BOTTOM_PX = 64
@@ -161,7 +164,9 @@ export function FloatingWorkflowBar({
   const pending = c.decision === 'pending'
   const idx = cyberFlowIndex(c)
   const nextTitle = nextFlowStageTitle(idx)
-  const scrollGate = surface === 'workflow' && idx === 1 && pending
+  const triageIndex = flowStageIndex('triage')
+  const appetiteIndex = flowStageIndex('appetite')
+  const scrollGate = surface === 'workflow' && idx === triageIndex && pending
   const nearBottom = useNearBottom(scrollRootRef, scrollGate)
   const unsignedIds = unsignedRequiredFindingIds(c)
   const riClear = canLeaveRiskInformation(c)
@@ -273,7 +278,7 @@ export function FloatingWorkflowBar({
         />
       </>
     )
-  } else if (idx === 1) {
+  } else if (idx === triageIndex) {
     if (!nearBottom) {
       body = (
         <>
@@ -345,12 +350,12 @@ export function FloatingWorkflowBar({
         </>
       )
     }
-  } else if (idx < 3 && nextTitle) {
+  } else if (idx < FLOW_LAST_INDEX && nextTitle) {
     body = (
       <>
         <WorkflowStatus
           title={`Next: ${nextTitle}`}
-          detail={idx === 2 ? 'Review vendor models and the desk model, then continue' : undefined}
+          detail={idx === appetiteIndex ? 'Review vendor models and the desk model, then continue' : undefined}
         />
         <PrimaryWorkflowCTA
           label={`Continue to ${nextTitle} →`}
@@ -361,20 +366,21 @@ export function FloatingWorkflowBar({
     )
   } else {
     const finOk = Boolean(c.financialSignOff?.signedOffAt)
+    const aiLabel = narrativeForCase(c).ai.label
     body = (
       <>
         <WorkflowStatus
           title={
             finOk
-              ? `AI recommends ${c.recommendation.toUpperCase()}`
-              : 'Complete financial sign off before Quote'
+              ? `AI recommends ${aiLabel}`
+              : 'Complete financial sign off before Approve'
           }
           detail={finOk ? 'Ready for policy admin' : 'Getting Ready to Quote'}
           tone={finOk ? 'ok' : 'warn'}
         />
         <div className="cuw-float-bar__decide" onClick={(e) => e.stopPropagation()}>
           <PrimaryWorkflowCTA
-            label="Quote"
+            label="Approve"
             onPress={() => onRequestDecision('quote')}
             disabled={scanning || !finOk}
             ready={finOk}
@@ -385,7 +391,15 @@ export function FloatingWorkflowBar({
             isDisabled={scanning}
             onPress={() => onRequestDecision('refer')}
           >
-            Escalate
+            Refer
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            isDisabled={scanning}
+            onPress={() => onRequestDecision('request_info')}
+          >
+            Request Information
           </Button>
           <Button
             variant="danger"

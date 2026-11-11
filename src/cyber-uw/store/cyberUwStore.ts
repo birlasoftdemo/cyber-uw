@@ -3,6 +3,8 @@ import {
   canLeavePolicyDocuments,
   canLeaveRiskInformation,
   canOpsMarkReadyForUw,
+  FLOW_LAST_INDEX,
+  flowStageIndex,
   isFinancialSignOffComplete,
   isWithinJuniorAuthority,
   needsManagerCosign,
@@ -535,7 +537,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
     const current = get().cases.find((c) => c.id === id)
     if (!current || current.decision === 'pending') {
       set({
-          toastMessage: 'Lock Getting Ready to Quote first (Quote / Escalate / Decline).',
+          toastMessage: 'Lock Getting Ready to Quote first (Approve / Refer / Request Information / Decline).',
         toastTone: 'warn',
       })
       return
@@ -585,19 +587,26 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
               ...c,
               decision,
               decisionReason: reason,
-              pasStatus: 'synced' as const,
+              pasStatus: decision === 'request_info' ? ('idle' as const) : ('synced' as const),
               audit: [
                 ...c.audit,
                 {
                   at: new Date().toISOString(),
                   actor: 'Underwriter',
-                  action: `Decision ${decision.toUpperCase()} — ${reason}`,
+                  action: `Decision ${decision} — ${reason}`,
                 },
               ],
             }
           : c,
       ),
-      toastMessage: `UW decision locked: ${decision.toUpperCase()}.`,
+      toastMessage:
+        decision === 'request_info'
+          ? 'UW decision locked: Request Information.'
+          : decision === 'quote'
+            ? 'UW decision locked: Approve.'
+            : decision === 'refer'
+              ? 'UW decision locked: Refer.'
+              : 'UW decision locked: Decline.',
       toastTone: 'info',
       activeTab: 'workflow',
       listDecisionPrompt: null,
@@ -1005,7 +1014,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
               ...c,
               workflowStage: Math.min(
                 c.workflowStage,
-                ticket.kind === 'ingest' ? 0 : 1,
+                ticket.kind === 'ingest' ? 0 : flowStageIndex('triage'),
               ),
               audit: [
                 ...c.audit,
@@ -1082,7 +1091,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
           ? {
               ...c,
               opsHandoffAt: now,
-              workflowStage: Math.max(c.workflowStage, 1),
+              workflowStage: Math.max(c.workflowStage, flowStageIndex('evidence')),
               audit: [
                 ...c.audit,
                 {
@@ -1347,26 +1356,27 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
       const current = s.cases.find((c) => c.id === id)
       if (!current || current.decision !== 'pending') return s
       const from = Math.max(current.workflowStage ?? 0, 0)
-      const next = Math.min(3, from + 1)
+      const next = Math.min(FLOW_LAST_INDEX, from + 1)
+      const triageIndex = flowStageIndex('triage')
       if (next === from) return s
 
       if (from === 0 && !canLeavePolicyDocuments(current)) {
         return {
           ...s,
           toastMessage: current.completenessPct < 80
-            ? 'Complete Policy Documents (completeness ≥ 80%) before Risk Information.'
+            ? 'Complete Policy Documents (completeness ≥ 80%) before continuing.'
             : 'Mark Documents Complete in Policy Documents before continuing.',
           toastTone: 'warn' as const,
         }
       }
-      if (from === 1 && !canLeaveRiskInformation(current)) {
+      if (from === triageIndex && !canLeaveRiskInformation(current)) {
         return {
           ...s,
           toastMessage: 'Approve, Escalate, or Ignore required triage findings before Risk Analysis.',
           toastTone: 'warn' as const,
         }
       }
-      if (from === 1 && !current.enrichmentConsent?.models.length) {
+      if (from === triageIndex && !current.enrichmentConsent?.models.length) {
         return {
           ...s,
           toastMessage: 'Consent to an enrichment model before Risk Analysis.',
@@ -1398,7 +1408,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
   },
 
   setWorkflowStage: (id, stage) => {
-    const clamped = Math.max(0, Math.min(3, stage))
+    const clamped = Math.max(0, Math.min(FLOW_LAST_INDEX, stage))
     set((s) => ({
       cases: s.cases.map((c) =>
         c.id === id
