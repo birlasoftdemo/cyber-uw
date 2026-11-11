@@ -3334,7 +3334,7 @@
 
 .intake-panel__metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin: 0;
   padding: 14px 16px;
@@ -3380,6 +3380,22 @@
   font-size: 28px;
   font-weight: 700;
   line-height: 1;
+}
+
+.intake-metric__value--ok {
+  color: var(--vg-pill-ok-fg, #0c6b3e);
+  font-size: 22px;
+}
+
+.intake-metric__value--watch {
+  color: var(--vg-status-le, #ff6c54);
+  font-size: 22px;
+}
+
+@media (max-width: 1100px) {
+  .intake-panel__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .hitl-reasons,

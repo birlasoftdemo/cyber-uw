@@ -51,6 +51,8 @@ test.describe('Client feedback demo', () => {
     await expect(page.getByLabel('Intake metrics')).toBeVisible()
     await expect(page.getByText('Submission Completeness', { exact: true })).toBeVisible()
     await expect(page.getByText('Missing Documents', { exact: true })).toBeVisible()
+    await expect(page.getByText('Duplicate Docs Check', { exact: true })).toBeVisible()
+    await expect(page.getByText('Complete', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('Broker Follow-ups', { exact: true })).toBeVisible()
     await expect(page.locator('.spec-grid__total')).toHaveCount(0)
     await page.screenshot({

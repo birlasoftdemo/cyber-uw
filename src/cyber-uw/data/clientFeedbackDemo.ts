@@ -167,6 +167,7 @@ export function intakeDocumentsForCase(c: CyberCase): IntakeDocumentRow[] {
 
 export function intakeMetricsForCase(c: CyberCase) {
   const docs = intakeDocumentsForCase(c)
+  const match = entityMatchForCase(c)
   const missingDocs = docs.filter((d) => d.status === 'Missing').length
   const brokerFollowUps =
     c.gaps.filter((g) => g.disposition === 'open' || g.disposition === 'referred').length +
@@ -175,6 +176,10 @@ export function intakeMetricsForCase(c: CyberCase) {
     completenessPct: c.completenessPct,
     missingDocs,
     brokerFollowUps,
+    duplicateCheckCompleted: match.duplicateCheckCompleted,
+    duplicateCheckLabel: match.duplicateCheckCompleted ? 'Complete' : 'Pending',
+    insuredMatched: match.insuredMatched,
+    brokerIdentified: match.brokerIdentified,
     docs,
   }
 }

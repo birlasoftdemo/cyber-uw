@@ -33,7 +33,7 @@ function MetricIcon() {
   )
 }
 
-/** Cyber document checklist + completeness metrics for Submission intake. */
+/** Cyber document checklist + completeness / duplicate-check metrics for Submission intake. */
 export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
   const metrics = intakeMetricsForCase(c)
 
@@ -41,7 +41,7 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
     <section className="spec-info-panel" aria-label="Submission intake">
       <header className="spec-info-panel__bar">
         <h3>Cyber documents received</h3>
-        <p>Document package status</p>
+        <p>Document package status · duplicate and entity match</p>
       </header>
 
       <div className="intake-panel__metrics" aria-label="Intake metrics">
@@ -54,6 +54,17 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
           <MetricIcon />
           <span className="intake-metric__label">Missing Documents</span>
           <strong className="intake-metric__value">{metrics.missingDocs}</strong>
+        </article>
+        <article className="intake-metric">
+          <MetricIcon />
+          <span className="intake-metric__label">Duplicate Docs Check</span>
+          <strong
+            className={`intake-metric__value${
+              metrics.duplicateCheckCompleted ? ' intake-metric__value--ok' : ' intake-metric__value--watch'
+            }`}
+          >
+            {metrics.duplicateCheckLabel}
+          </strong>
         </article>
         <article className="intake-metric">
           <MetricIcon />
