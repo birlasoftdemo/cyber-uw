@@ -66,11 +66,6 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
             {metrics.duplicateCheckLabel}
           </strong>
         </article>
-        <article className="intake-metric">
-          <MetricIcon />
-          <span className="intake-metric__label">Broker Follow-ups</span>
-          <strong className="intake-metric__value">{metrics.brokerFollowUps}</strong>
-        </article>
       </div>
 
       <div className="spec-grid-wrap">
