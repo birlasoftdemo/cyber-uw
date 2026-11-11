@@ -59,6 +59,16 @@
     --vg-status-l-soft: #eaf6ea;
     --vg-status-wash: #e8f0fe;
 
+    /* Verification status pills (guideline strip) */
+    --vg-pill-ok-bg: #e4f6ec;
+    --vg-pill-ok-fg: #0c6b3e;
+    --vg-pill-mid-bg: #eaeff5;
+    --vg-pill-mid-fg: #2e384a;
+    --vg-pill-bad-bg: #fce3e4;
+    --vg-pill-bad-fg: #af2922;
+    --vg-pill-na-bg: #f2f2f2;
+    --vg-pill-na-fg: #a0a0a0;
+
     --cuw-ink: #1a1a1a;
     --cuw-ink-soft: #1a1a1a;
     --cuw-muted: #63676a;

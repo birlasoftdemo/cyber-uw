@@ -61,6 +61,38 @@ test.describe('Client feedback demo', () => {
     await expect(page.getByText(/InfoSec Questionnaire Q7/i)).toBeVisible()
     await expect(page.getByText('Contradicted').first()).toBeVisible()
     await expect(page.getByRole('columnheader', { name: /applicant declaration/i })).toHaveCount(0)
+    const pillColors = await page.evaluate(() => {
+      const style = (sel: string) => {
+        const el = document.querySelector(sel)
+        if (!el) return null
+        const cs = getComputedStyle(el)
+        return { bg: cs.backgroundColor, fg: cs.color, radius: cs.borderRadius }
+      }
+      return {
+        bad: style('.spec-grid-status--bad'),
+        mid: style('.spec-grid-status--mid'),
+        ok: style('.spec-grid-status--ok'),
+        tokens: {
+          badBg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-bad-bg').trim(),
+          badFg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-bad-fg').trim(),
+          midBg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-mid-bg').trim(),
+          midFg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-mid-fg').trim(),
+          okBg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-ok-bg').trim(),
+          okFg: getComputedStyle(document.documentElement).getPropertyValue('--vg-pill-ok-fg').trim(),
+        },
+      }
+    })
+    expect(pillColors.tokens.badBg.toLowerCase()).toBe('#fce3e4')
+    expect(pillColors.tokens.badFg.toLowerCase()).toBe('#af2922')
+    expect(pillColors.tokens.midBg.toLowerCase()).toBe('#eaeff5')
+    expect(pillColors.tokens.midFg.toLowerCase()).toBe('#2e384a')
+    expect(pillColors.tokens.okBg.toLowerCase()).toBe('#e4f6ec')
+    expect(pillColors.tokens.okFg.toLowerCase()).toBe('#0c6b3e')
+    expect(pillColors.bad?.bg).toBe('rgb(252, 227, 228)')
+    expect(pillColors.bad?.fg).toBe('rgb(175, 41, 34)')
+    expect(pillColors.mid?.bg).toBe('rgb(234, 239, 245)')
+    expect(pillColors.ok?.bg).toBe('rgb(228, 246, 236)')
+    expect(pillColors.bad?.radius).toBe('999px')
     await page.screenshot({
       path: path.join(shotDir, `${testInfo.project.name}-04-evidence.png`),
       fullPage: true,

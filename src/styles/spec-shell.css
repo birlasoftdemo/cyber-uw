@@ -3310,19 +3310,21 @@
 
 .spec-grid-status {
   display: inline-flex;
-  border-radius: 0.55rem;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 700;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
-.spec-grid-status--ok { background: var(--vg-status-l-soft); color: var(--vg-status-l); }
-.spec-grid-status--mid { background: var(--vg-status-c-soft); color: var(--vg-status-c); }
-.spec-grid-status--watch { background: var(--vg-status-cr-soft); color: #1f8f63; }
-.spec-grid-status--miss { background: var(--vg-status-le-soft); color: var(--vg-status-le); }
-.spec-grid-status--bad { background: var(--vg-status-le-soft); color: var(--vg-status-le); }
-.spec-grid-status--na { background: var(--vg-status-e-soft); color: var(--vg-status-e); }
+.spec-grid-status--ok { background: var(--vg-pill-ok-bg); color: var(--vg-pill-ok-fg); }
+.spec-grid-status--mid { background: var(--vg-pill-mid-bg); color: var(--vg-pill-mid-fg); }
+.spec-grid-status--watch { background: var(--vg-pill-mid-bg); color: var(--vg-pill-mid-fg); }
+.spec-grid-status--miss { background: var(--vg-pill-bad-bg); color: var(--vg-pill-bad-fg); }
+.spec-grid-status--bad { background: var(--vg-pill-bad-bg); color: var(--vg-pill-bad-fg); }
+.spec-grid-status--na { background: var(--vg-pill-na-bg); color: var(--vg-pill-na-fg); }
 
 .intake-panel__metrics {
   display: grid;
