@@ -83,9 +83,42 @@ test.describe('Client feedback demo', () => {
     })
 
     await goTracker(page, 'Internal Risk Analysis')
-    const measures = page.getByLabel('Risk and appetite measures')
+    const measures = page.locator('.ra-measures')
     await expect(measures.getByText('Cyber Risk', { exact: true })).toBeVisible()
     await expect(measures.getByText('Appetite Result', { exact: true })).toBeVisible()
+    await expect(page.locator('.uw-brand-badge--cr').first()).toBeVisible()
+    await expect(page.locator('.uw-brand-badge--le').first()).toBeVisible()
+    await expect(page.locator('.uw-brand-badge--e').first()).toBeVisible()
+    await expect(page.locator('.uw-brand-badge--c').first()).toBeVisible()
+    await expect(page.locator('.uw-brand-badge--l').first()).toBeVisible()
+
+    const brandColors = await page.evaluate(() => {
+      const root = getComputedStyle(document.documentElement)
+      const rgb = (sel: string) => getComputedStyle(document.querySelector(sel)!).backgroundColor
+      return {
+        e: root.getPropertyValue('--vg-status-e').trim(),
+        c: root.getPropertyValue('--vg-status-c').trim(),
+        cr: root.getPropertyValue('--vg-status-cr').trim(),
+        le: root.getPropertyValue('--vg-status-le').trim(),
+        l: root.getPropertyValue('--vg-status-l').trim(),
+        badgeCr: rgb('.uw-brand-badge--cr'),
+        badgeLe: rgb('.uw-brand-badge--le'),
+        badgeE: rgb('.uw-brand-badge--e'),
+        badgeC: rgb('.uw-brand-badge--c'),
+        badgeL: rgb('.uw-brand-badge--l'),
+      }
+    })
+    expect(brandColors.e.toLowerCase()).toBe('#a0a0a0')
+    expect(brandColors.c.toLowerCase()).toBe('#1a85ff')
+    expect(brandColors.cr.toLowerCase()).toBe('#32c58b')
+    expect(brandColors.le.toLowerCase()).toBe('#ff6c54')
+    expect(brandColors.l.toLowerCase()).toBe('#3c923c')
+    expect(brandColors.badgeE).toBe('rgb(160, 160, 160)')
+    expect(brandColors.badgeC).toBe('rgb(26, 133, 255)')
+    expect(brandColors.badgeCr).toBe('rgb(50, 197, 139)')
+    expect(brandColors.badgeLe).toBe('rgb(255, 108, 84)')
+    expect(brandColors.badgeL).toBe('rgb(60, 146, 60)')
+
     await page.locator('.ra-measure', { hasText: 'Appetite Result' }).getByRole('button', { name: /why this result/i }).click()
     await expect(page.getByText(/MFA coverage below minimum threshold/i).first()).toBeVisible()
     await page.screenshot({

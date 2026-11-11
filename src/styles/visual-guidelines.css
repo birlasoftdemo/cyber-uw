@@ -24,6 +24,7 @@
    Primary navy #1b1564, hover #271e8f.
    Secondary red #ff1f27, hover #ff3940 (HeroUI danger — destructive and error).
    Tertiary charcoal #63676a. Error #ff565d.
+   Status brand strip (E / C / CR / LE / L): grey, blue, mint, coral, green.
    Buttons stay pill-shaped (the default button sheet). Inputs use an 8px radius. */
 
 @layer theme {
@@ -45,6 +46,19 @@
     --vg-help: #6d7173;
     --vg-border: #c5c6c7;
 
+    /* Status / risk brand palette */
+    --vg-status-e: #a0a0a0;
+    --vg-status-c: #1a85ff;
+    --vg-status-cr: #32c58b;
+    --vg-status-le: #ff6c54;
+    --vg-status-l: #3c923c;
+    --vg-status-e-soft: #f2f2f2;
+    --vg-status-c-soft: #e8f2ff;
+    --vg-status-cr-soft: #e8f8f1;
+    --vg-status-le-soft: #fff1ee;
+    --vg-status-l-soft: #eaf6ea;
+    --vg-status-wash: #e8f0fe;
+
     --cuw-ink: #1a1a1a;
     --cuw-ink-soft: #1a1a1a;
     --cuw-muted: #63676a;
@@ -60,6 +74,38 @@
     --cuw-border-strong: rgba(27, 21, 100, 0.28);
 
     --font-sans: "Mulish", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .uw-brand-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.35rem;
+    border-radius: 0.55rem;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-transform: uppercase;
+    box-shadow: none;
+  }
+
+  .uw-brand-badge--e { background: var(--vg-status-e); }
+  .uw-brand-badge--c { background: var(--vg-status-c); }
+  .uw-brand-badge--cr { background: var(--vg-status-cr); }
+  .uw-brand-badge--le { background: var(--vg-status-le); }
+  .uw-brand-badge--l { background: var(--vg-status-l); }
+
+  .uw-brand-badge--sm {
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.28rem;
+    border-radius: 0.4rem;
+    font-size: 0.625rem;
   }
 }
 

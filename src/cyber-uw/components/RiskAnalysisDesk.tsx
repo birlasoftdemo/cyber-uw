@@ -50,6 +50,36 @@ function tone(score: number): 'high' | 'mid' | 'low' {
   return 'low'
 }
 
+type BrandKey = 'e' | 'c' | 'cr' | 'le' | 'l'
+
+function brandForMeasure(id: string): BrandKey {
+  if (id === 'cyber-risk') return 'cr'
+  if (id === 'control-eff') return 'c'
+  if (id === 'evidence-conf') return 'e'
+  if (id === 'completeness') return 'c'
+  if (id === 'appetite') return 'l'
+  return 'e'
+}
+
+function brandLabel(key: BrandKey) {
+  switch (key) {
+    case 'e':
+      return 'E'
+    case 'c':
+      return 'C'
+    case 'cr':
+      return 'CR'
+    case 'le':
+      return 'LE'
+    case 'l':
+      return 'L'
+    default: {
+      const neverKey: never = key
+      return neverKey
+    }
+  }
+}
+
 export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
   const [whyId, setWhyId] = useState<string | null>(null)
   const measures = riskMeasuresForCase(c)
@@ -72,18 +102,21 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
     {
       score: attachment,
       title: 'Attachment Point',
+      brand: 'l' as BrandKey,
       detail: `${money(c.limitRequestedUsd)} requested`,
       tip: `Higher means more concern. This score rises as the requested limit moves above the ${money(LIMIT_REFER)} referral line.`,
     },
     {
       score: rateScore,
       title: 'Rate on Line',
+      brand: 'c' as BrandKey,
       detail: `${money(rate)} per million`,
       tip: `Higher means more concern. This score rises as the premium per million falls further under the ${money(RATE_FLOOR)} triage floor.`,
     },
     {
       score: exposure,
       title: 'Exposure Scale',
+      brand: 'le' as BrandKey,
       detail: peakVendor ? `${peakVendor.vendor} · book ${peakVendor.bookCount}` : 'No vendor book',
       tip: 'Higher means more concern. This score rises with the number of policies already written on the busiest vendor.',
     },
@@ -92,6 +125,7 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
   const categories = [
     {
       title: 'Economics',
+      brand: 'e' as BrandKey,
       score: economics,
       note:
         rate >= RATE_FLOOR
@@ -101,6 +135,7 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
     },
     {
       title: 'Risk Attributes',
+      brand: 'c' as BrandKey,
       score: attributes,
       note:
         unresolved.length === 0
@@ -113,6 +148,7 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
     },
     {
       title: 'Loss Experience',
+      brand: 'le' as BrandKey,
       score: lossExperience,
       note:
         lossExperience === 100
@@ -151,10 +187,17 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
         <h4>Risk assessment</h4>
       </header>
       <div className="ra-measures" aria-label="Risk and appetite measures">
-        {measures.map((measure) => (
-          <article key={measure.id} className={`ra-measure ra-measure--${measure.tone}`} id={measure.id === 'appetite' ? 'appetite-rule' : undefined}>
+        {measures.map((measure) => {
+          const brand = brandForMeasure(measure.id)
+          return (
+          <article key={measure.id} className={`ra-measure ra-measure--${measure.tone} ra-measure--brand-${brand}`} id={measure.id === 'appetite' ? 'appetite-rule' : undefined}>
             <header>
-              <p>{measure.label}</p>
+              <p>
+                <span className={`uw-brand-badge uw-brand-badge--sm uw-brand-badge--${brand}`} aria-hidden="true">
+                  {brandLabel(brand)}
+                </span>
+                <span>{measure.label}</span>
+              </p>
               <strong>{measure.value}</strong>
             </header>
             <button
@@ -176,7 +219,8 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
               </div>
             ) : null}
           </article>
-        ))}
+          )
+        })}
       </div>
       <div className="ra-scoreline">
         <div className="ra-score">
@@ -205,16 +249,15 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
         </header>
         <div className="uw-risk-cards ra-risks">
           {risks.map((risk) => (
-            <article key={risk.title} className={`uw-risk-card ra-risk ra-risk--${tone(risk.score)}`}>
+            <article
+              key={risk.title}
+              className={`uw-risk-card ra-risk ra-risk--${tone(risk.score)} uw-risk-card--${risk.brand}`}
+            >
               <button type="button" className="uw-risk-card__menu" aria-label={`${risk.title} actions`}>
                 ···
               </button>
-              <div className="uw-risk-card__icon" aria-hidden>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1b1564" strokeWidth="1.6">
-                  <circle cx="12" cy="12" r="7.5" />
-                  <path d="M12 8.5v4.2" />
-                  <circle cx="12" cy="15.4" r="0.8" fill="#1b1564" stroke="none" />
-                </svg>
+              <div className={`uw-risk-card__icon uw-risk-card__icon--badge`} aria-hidden>
+                <span className={`uw-brand-badge uw-brand-badge--${risk.brand}`}>{brandLabel(risk.brand)}</span>
               </div>
               <p className="uw-risk-card__label">
                 Highest Risk Factor
@@ -237,10 +280,13 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
         <h5>Category scores</h5>
         <div className="ra-cats">
           {categories.map((category) => (
-            <article key={category.title}>
+            <article key={category.title} className={`ra-cat ra-cat--${category.brand}`}>
               <header>
                 <p>
-                  {category.title}
+                  <span className={`uw-brand-badge uw-brand-badge--sm uw-brand-badge--${category.brand}`} aria-hidden="true">
+                    {brandLabel(category.brand)}
+                  </span>
+                  <span>{category.title}</span>
                   <InfoTip text={category.tip} />
                 </p>
                 <strong>

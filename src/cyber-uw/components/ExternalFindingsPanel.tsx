@@ -54,16 +54,12 @@ export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
             {conflicts.map((row) => {
               const score = severityScore(row.severity)
               return (
-                <article key={row.id} className="uw-risk-card">
+                <article key={row.id} className="uw-risk-card uw-risk-card--le">
                   <button type="button" className="uw-risk-card__menu" aria-label="Conflict actions">
                     ···
                   </button>
-                  <div className="uw-risk-card__icon" aria-hidden>
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1b1564" strokeWidth="1.6">
-                      <path d="M12 3 3 19h18L12 3Z" />
-                      <path d="M12 10v4" />
-                      <circle cx="12" cy="16.5" r="0.8" fill="#1b1564" stroke="none" />
-                    </svg>
+                  <div className="uw-risk-card__icon uw-risk-card__icon--badge" aria-hidden>
+                    <span className="uw-brand-badge uw-brand-badge--le">LE</span>
                   </div>
                   <p className="uw-risk-card__label">Declaration conflict</p>
                   <strong className="uw-risk-card__score">{score}</strong>
