@@ -28,7 +28,7 @@ const STATUS_LABEL: Record<KpiStatus, string> = {
 
 const SPARK_STROKE: Record<KpiStatus, string> = {
   'on-track': '#059669',
-  watch: '#2563eb',
+  watch: '#1b1564',
   action: '#f87171',
 }
 

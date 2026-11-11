@@ -1,0 +1,118 @@
+import { expect, test, type Page } from '@playwright/test'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const shotDir = path.resolve(here, '../docs/feedback-preview/screenshots')
+
+async function login(page: Page) {
+  await page.goto('/')
+  await page.getByRole('textbox', { name: /email/i }).fill('uw@cyber.internal')
+  await page.getByRole('textbox', { name: /password/i }).fill('uw123')
+  await page.getByRole('button', { name: /^sign in$/i }).click()
+  await expect(page.getByRole('heading', { name: /all in progress submissions/i })).toBeVisible()
+}
+
+async function openNorthline(page: Page) {
+  await page.getByRole('row', { name: /CYB-2401/i }).click()
+  await expect(page.getByRole('group', { name: /case context/i })).toBeVisible()
+}
+
+async function goTracker(page: Page, label: string) {
+  await page.getByRole('button', { name: label, exact: true }).click()
+}
+
+test.describe('Client feedback demo', () => {
+  test('walkthrough covers feedback surfaces without console errors', async ({ page }, testInfo) => {
+    const errors: string[] = []
+    page.on('pageerror', (err) => errors.push(String(err)))
+    page.on('console', (msg) => {
+      if (msg.type() !== 'error') return
+      const text = msg.text()
+      // Ignore benign Vite / React DevTools noise.
+      if (/Download the React DevTools|vite|favicon/i.test(text)) return
+      errors.push(text)
+    })
+
+    await login(page)
+    await page.screenshot({ path: path.join(shotDir, `${testInfo.project.name}-01-home.png`), fullPage: true })
+
+    await openNorthline(page)
+    const header = page.getByRole('group', { name: /case context/i })
+    await expect(header.getByText('Requested Limit', { exact: true })).toBeVisible()
+    await expect(header.getByText('Completeness', { exact: true })).toBeVisible()
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-02-case-header.png`),
+      fullPage: true,
+    })
+
+    await goTracker(page, 'New Submission')
+    await expect(page.getByRole('heading', { name: /cyber documents received/i })).toBeVisible()
+    await expect(page.getByText('Insured matched')).toBeVisible()
+    await expect(page.getByText('Duplicate check completed')).toBeVisible()
+    await expect(page.getByText('Broker identified')).toBeVisible()
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-03-intake.png`),
+      fullPage: true,
+    })
+
+    await goTracker(page, 'Evidence Verification')
+    await expect(page.getByRole('heading', { name: /evidence verification/i })).toBeVisible()
+    await expect(page.getByText('MFA applies to all users')).toBeVisible()
+    await expect(page.getByText('Contradicted').first()).toBeVisible()
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-04-evidence.png`),
+      fullPage: true,
+    })
+
+    await goTracker(page, 'External Risk Enrichment')
+    const continueBtn = page.getByRole('button', { name: /continue to risk analysis/i })
+    if (await continueBtn.isVisible().catch(() => false)) {
+      await page.getByText('Bitsight', { exact: false }).first().click()
+      await page.getByText('Cyence', { exact: false }).first().click()
+      await page.getByText('Cytora', { exact: false }).first().click()
+      await continueBtn.click()
+    }
+    await expect(page.getByRole('heading', { name: /external findings/i })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Simulated').first()).toBeVisible()
+    await expect(page.getByText(/conflict/i).first()).toBeVisible()
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-05-enrichment.png`),
+      fullPage: true,
+    })
+
+    await goTracker(page, 'Internal Risk Analysis')
+    const measures = page.getByLabel('Risk and appetite measures')
+    await expect(measures.getByText('Cyber Risk', { exact: true })).toBeVisible()
+    await expect(measures.getByText('Appetite Result', { exact: true })).toBeVisible()
+    await page.locator('.ra-measure', { hasText: 'Appetite Result' }).getByRole('button', { name: /why this result/i }).click()
+    await expect(page.getByText(/MFA coverage below minimum threshold/i).first()).toBeVisible()
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-06-risk-measures.png`),
+      fullPage: true,
+    })
+
+    await goTracker(page, 'Sync to Policy Center')
+    await expect(page.getByRole('heading', { name: /underwriter decision/i })).toBeVisible()
+    await expect(page.getByText('AI recommendation', { exact: true })).toBeVisible()
+    await expect(page.locator('.hitl-pill', { hasText: 'Refer' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Approve', exact: true }).click()
+    await expect(page.getByText(/required for overrides and material exceptions/i)).toBeVisible()
+    const submit = page.getByRole('button', { name: /submit decision/i })
+    await expect(submit).toBeDisabled()
+
+    await page.getByPlaceholder(/explain why/i).fill(
+      'Material exception accepted for demo after broker remediation plan.',
+    )
+    await expect(submit).toBeEnabled()
+    await submit.click()
+    await expect(page.getByRole('button', { name: /decision locked/i })).toBeVisible({ timeout: 10_000 })
+    await page.screenshot({
+      path: path.join(shotDir, `${testInfo.project.name}-07-hitl.png`),
+      fullPage: true,
+    })
+
+    expect(errors, errors.join('\n')).toEqual([])
+  })
+})

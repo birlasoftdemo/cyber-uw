@@ -13,7 +13,6 @@ import {
   Package,
   RefreshCw,
   Sparkles,
-  Timer,
 } from 'lucide-react'
 import type { CyberCase } from '../types'
 import { missingDocsForCase } from '../utils/missingDocs'
@@ -48,7 +47,6 @@ export function Customer360Panel({ c }: Props) {
       value: `${c.lobName} · ${c.lobCode}`,
     },
     { icon: GitBranch, label: 'Product version', value: c.productVersion },
-    { icon: Timer, label: 'Product tenure', value: c.productTenure },
     {
       icon: RefreshCw,
       label: 'Renewal applicable',

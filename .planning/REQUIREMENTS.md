@@ -19,13 +19,22 @@
 - [ ] **STAGE-04**: Stepper and stage cards are visually polished to a **feel target** matching the insurance/reinsurance submission UW craft — without porting that product’s components verbatim.
 - [ ] **STAGE-05**: Verify / Gap board surfaces attest-vs-signal comparisons with resolve/refer sign-off suitable for live demo.
 
+### Renewal decision
+
+- [ ] **DECIDE-01**: On Decide, James can send the broker one note that stays incomplete until all four parts are present: agent scope (or an explicit "file does not say"), where a named loss pays (this form, crime, another party's policy, or nowhere), each application-versus-attachment clash named as a representation he would be warranting, and the act (he will not sign it, he will sign it if a named fix happens by a date, or someone else must see it). The broker receives that whole note the same day.
+
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
 | Live BitSight / PAS / IdP | Demo uses mocks |
 | Literal component port from submission UW | Feel target only |
-| Continuous monitoring / cat models | Moonshot |
+| Continuous monitoring / cat models | Moonshot. Uploaded proof only on DECIDE-01. |
+| Wording or endorsement library | DECIDE-01 is one note, not a forms product |
+| AI loss pricing | Thin history (G00863912). Structure, not a rate |
+| Captive or retention advice | CIO capital decision (G00842705) |
+| Longer AI questionnaire | Repeats the annual-form failure both Gartner notes describe |
+| Incident-response panel product | Seed only, until a claims-condition check is in scope |
 
 ## Traceability
 
@@ -39,3 +48,4 @@
 | STAGE-03 | Phase 1 | Pending |
 | STAGE-04 | Phase 1 | Pending |
 | STAGE-05 | Phase 1 | Pending |
+| DECIDE-01 | Unscheduled | Pending |

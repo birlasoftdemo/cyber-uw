@@ -17,7 +17,7 @@ export type PlatformCardType =
 export type PlatformSignOff = 'pending' | 'ignore' | 'block' | 'escalate'
 export type PlatformOutcome = 'pending' | 'clear' | 'ignore' | 'escalate' | 'blocks'
 
-export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest' | 'submission'
+export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest' | 'submission' | 'info'
 export type ReferralTarget = 'specialist' | 'broker' | 'senior_uw'
 export type ReferralStatus = 'open' | 'awaiting_broker' | 'resolved' | 'returned'
 
@@ -32,6 +32,8 @@ export interface ReferralTicket {
   note: string
   status: ReferralStatus
   createdAt: string
+  /** Person who sent the referral, shown when the case is opened from Tasks. */
+  referredBy?: string
   resolvedAt?: string
   resolutionNote?: string
 }

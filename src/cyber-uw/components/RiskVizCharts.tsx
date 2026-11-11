@@ -94,7 +94,23 @@ function checkStatusLabel(status: ActuarialCheckStatus): string {
 function formatChance(probability: number): string {
   const pct = probability * 100
   if (pct > 0 && pct < 0.1) return '<0.1%'
+  if (Number.isInteger(pct)) return `${pct}%`
   return `${pct.toFixed(1)}%`
+}
+
+/** Round the chart ceiling up so the top tick is a scale mark, not a result. */
+function chanceAxisMax(probability: number): number {
+  const pct = Math.max(probability, 0.05) * 100
+  const step = pct <= 10 ? 2 : pct <= 40 ? 5 : 10
+  return (Math.ceil(pct / step) * step) / 100
+}
+
+function formatRate(perYear: number): string {
+  if (perYear <= 0) return 'None modeled'
+  if (perYear >= 2) return `${perYear.toFixed(1)} times a year`
+  if (perYear >= 0.85) return 'About once a year'
+  const years = Math.max(2, Math.round(1 / perYear))
+  return `About once every ${years} years`
 }
 
 function EpCurve({
@@ -142,12 +158,12 @@ function EpCurve({
       className="dk-curve"
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label={`Exceedance curve from zero to ${formatExposureUsd(domainUsd)}. Limit marker at ${formatExposureUsd(limitUsd)}.`}
+      aria-label={`Chance the year's loss is at least each amount from zero to ${formatExposureUsd(domainUsd)}. The dashed line is the requested limit of ${formatExposureUsd(limitUsd)}.`}
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.55" />
-          <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.28" />
+          <stop offset="55%" stopColor="#544f8b" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.05" />
         </linearGradient>
       </defs>
@@ -239,7 +255,9 @@ export function RiskVizPanel({
   const biShare = parts.biAleUsd / aleTotal
   const extortionShare = parts.extortionAleUsd / aleTotal
   const coverScale = Math.max(exposure.limitRequestedUsd, exposure.worstCaseTotalUsd, 1)
-  const yMax = Math.max(...actuarial.curve.map((point) => point.exceedance), 0.05) * 1.08
+  const yMax = chanceAxisMax(
+    Math.max(...actuarial.curve.map((point) => point.exceedance), actuarial.probabilityAnyLoss),
+  )
 
   const privacyThreats = points.filter((point) => deskAreaForLabel(point.label) === 'privacy')
   const extortionThreats = points.filter((point) => deskAreaForLabel(point.label) === 'extortion')
@@ -272,7 +290,7 @@ export function RiskVizPanel({
       sle: formatExposureUsd(parts.extortionSleUsd),
       ale: formatExposureUsd(parts.extortionAleUsd),
       share: extortionShare,
-      detail: 'Single loss is the lesser of 15% of the limit and 1.2% of revenue. Frequency is 0.6 × ARO.',
+      detail: 'One extortion loss is the smaller of 15% of the limit and 1.2% of revenue. It is expected less often than the other losses.',
       threats: extortionThreats,
     },
     {
@@ -292,14 +310,11 @@ export function RiskVizPanel({
         <div>
           <p className="dk-kicker">Carrier desk</p>
           <h4>Desk model</h4>
-          <p>
-            Annual loss is loss event frequency times loss magnitude, the Open FAIR identity, recomputed
-            here as a compound Poisson mean.
-          </p>
+          <p>Annual loss is how often a loss happens, times how large each one is.</p>
         </div>
         <div className="dk-banner__side">
           <p className={`dk-seal dk-seal--${actuarial.seal}`}>
-            {actuarial.seal === 'matches' ? 'Mean matches' : 'Withheld'}
+            {actuarial.seal === 'matches' ? 'Figures agree' : 'Withheld'}
           </p>
           {onOpenCites ? (
             <button type="button" className="dk-sources" onClick={onOpenCites}>
@@ -418,35 +433,35 @@ export function RiskVizPanel({
           </div>
         </section>
 
-        <section className="dk-act" aria-label="Open actuarial check">
+        <section className="dk-act" aria-label="How likely is a loss">
           <div className="dk-block__head">
-            <h5>Open actuarial check</h5>
+            <h5>How likely is a loss?</h5>
             <p>
-              Open FAIR sets loss exposure equal to loss event frequency times loss magnitude. The same
-              dollars are the mean of three independent Poisson counts with fixed severity, the ground-up
-              expected loss an open catastrophe framework such as OasisLMF reports. Both figures are
-              recomputed in this workbench from the application inputs.
+              The line is the chance this year’s loss is at least the amount along the bottom. It starts at{' '}
+              {formatChance(actuarial.probabilityAnyLoss)}, the chance of any loss, and falls as the amount
+              gets larger. The number at the top of the chart is only the scale. The dashed line is the
+              requested limit.
             </p>
           </div>
           <div className="dk-stats">
             <article>
-              <p>Frequency λ</p>
-              <strong className="tabular-nums">{parts.aro}</strong>
+              <p>How often</p>
+              <strong>{formatRate(parts.aro)}</strong>
             </article>
             <article>
-              <p>Extortion frequency</p>
-              <strong className="tabular-nums">{parts.extortionFrequency}</strong>
+              <p>Extortion</p>
+              <strong>{formatRate(parts.extortionFrequency)}</strong>
             </article>
             <article>
-              <p>Spread σ</p>
+              <p>Typical swing</p>
               <strong className="tabular-nums">{formatExposureUsd(Math.round(actuarial.stdDevUsd))}</strong>
             </article>
             <article>
-              <p>P(loss &gt; 0)</p>
+              <p>Any loss</p>
               <strong className="tabular-nums">{formatChance(actuarial.probabilityAnyLoss)}</strong>
             </article>
             <article>
-              <p>P(loss &gt; limit)</p>
+              <p>Over the limit</p>
               <strong className="tabular-nums">{formatChance(actuarial.probabilityOverLimit)}</strong>
             </article>
           </div>

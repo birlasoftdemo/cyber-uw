@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: idle
-stopped_at: Completed quick 261014-moy (document extraction and Policy Documents user story)
-last_updated: "2026-10-14T10:58:39.000Z"
-last_activity: 2026-10-14
-last_activity_desc: "Completed quick 261014-moy: user story for document extraction and Policy Documents"
+stopped_at: Exploration captured — James renewal decision note (DECIDE-01). Sketch 003 not drawn.
+last_updated: "2026-10-30T08:50:00.000Z"
+last_activity: 2026-10-30
+last_activity_desc: "Explored James's renewal day. Locked one broker note with four equal parts. Workbook, note, DECIDE-01, and IR-panel seed written. Sketch not started."
 progress:
   total_phases: 1
   completed_phases: 0
@@ -16,7 +16,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-10-14 - Completed quick 261014-moy (document extraction and Policy Documents user story)
+Last activity: 2026-10-30 - James renewal decision. One note to the broker with four equal parts (agent scope, where the loss pays, warranty clashes, the act). Workbook at `.planning/notes/james-renewal-decision-analysis.xlsx`. DECIDE-01 is unscheduled. Incident-response panel is a seed. Sketch 003 is not drawn.
 
 ### Blockers/Concerns
 
@@ -25,6 +25,8 @@ None.
 ### Open design
 
 - Seed: thematic doc/screenshot evidence formats (after sketch 002; still deferred)
+- Seed: incident-response panel status on the file (when a claims-condition check is in scope)
+- Sketch 003 not drawn: layout of the four-line broker note
 
 ### Roadmap Evolution
 
@@ -34,6 +36,7 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 261026-fzj | Package BitSight, Cyence, Cytora as separate vendor API zips | 2026-10-26 | 13ca410 | [261026-fzj-package-bitsight-cyence-and-cytora-as-th](./quick/261026-fzj-package-bitsight-cyence-and-cytora-as-th/) |
 | 261014-moy | Document extraction and Policy Documents user story | 2026-10-14 | 649d0e0 | [261014-moy-write-a-user-story-for-the-document-extr](./quick/261014-moy-write-a-user-story-for-the-document-extr/) |
 | 260918-oa9 | Risk Analysis left-column whitespace redistribute + high-contrast Detailed Ratings / capacity / FinancialSignOff | 2026-09-18 | 49ed42d | [260918-oa9-risk-analysis-left-column-whitespace-red](./quick/260918-oa9-risk-analysis-left-column-whitespace-red/) |
 | 260917-ptj | Policy Documents Proposed start/end date KPI labels + Source Sans 3 / Source Serif 4 type | 2026-09-17 | 6f2791a | [260917-ptj-policy-documents-kpi-labels-to-proposed-](./quick/260917-ptj-policy-documents-kpi-labels-to-proposed-/) |
@@ -60,6 +63,7 @@ None.
 
 ## Decisions
 
+- [2026-10-30]: James's renewal decision is one note the broker receives the same day. Four equal parts: agent scope (or "file does not say"), where the loss pays, warranty clashes, and the act. Gartner figures are context, not rating factors. Panel status, monitoring, wording library, AI rate, captive advice, and a longer AI questionnaire stay off the note.
 - [2026-10-14]: Document extraction user story covers New Submission ingest and Policy Documents only; later stages, quote, and policy-admin sync stay out of scope
 - [Phase ?]: Script-only Apple launch VO; no Remotion edits; HITL owns bind; tier is guidance only
 - [2026-09-17]: Risk Analysis — objective dual proof (market spatial + capacity ledger); shared cite slide-in; no bias/tension framing
@@ -69,6 +73,6 @@ None.
 
 ## Session
 
-**Last session:** 2026-10-14T10:58:39.000Z
-**Stopped at:** Completed quick 261014-moy (document extraction and Policy Documents user story)
-**Resume file:** None
+**Last session:** 2026-10-30T08:50:00.000Z
+**Stopped at:** James renewal decision captured. Sketch 003 not drawn.
+**Resume file:** `.planning/notes/james-renewal-decision.md`
