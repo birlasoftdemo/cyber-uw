@@ -23,68 +23,65 @@ export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
   const conflicts = findings.filter((row) => row.conflictsWithDeclaration)
 
   return (
-    <section className="xf-panel" aria-label="External cyber-risk enrichment findings" id="enrichment-rating">
-      <header className="xf-panel__head">
-        <div>
-          <h3>External findings</h3>
-          <p>
-            Providers without a live API are labelled <strong>Simulated</strong>. Conflicts with
-            applicant declarations are highlighted.
-          </p>
-        </div>
+    <section className="spec-info-panel" aria-label="External cyber-risk enrichment findings" id="enrichment-rating">
+      <header className="spec-info-panel__bar">
+        <h3>External findings</h3>
+        <p>Simulated providers · conflicts with applicant declarations highlighted</p>
       </header>
 
-      <div className="xf-trend" aria-label="Security rating trend">
-        <div className="xf-trend__meta">
-          <span>Security rating trend (Simulated · BitSight)</span>
-          <strong>
-            {rating.rating} · industry {rating.industryAvg}
-          </strong>
+      <div className="spec-info-panel__summary">
+        <div className="xf-trend" aria-label="Security rating trend">
+          <div className="xf-trend__meta">
+            <span>Security rating trend (BitSight · Simulated)</span>
+            <strong>
+              {rating.rating} · industry {rating.industryAvg}
+            </strong>
+          </div>
+          <svg className="xf-trend__chart" viewBox="0 0 320 72" role="img" aria-label="Rating trend">
+            <polyline
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth="1.5"
+              points={rating.trend
+                .map((point, i) => {
+                  const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
+                  const y = 62 - ((point.industryAvg - 250) / 650) * 52
+                  return `${x},${y}`
+                })
+                .join(' ')}
+            />
+            <polyline
+              fill="none"
+              stroke="#1b1564"
+              strokeWidth="2"
+              points={rating.trend
+                .map((point, i) => {
+                  const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
+                  const y = 62 - ((point.rating - 250) / 650) * 52
+                  return `${x},${y}`
+                })
+                .join(' ')}
+            />
+          </svg>
+          <p className="xf-trend__legend">
+            <i className="xf-trend__swatch xf-trend__swatch--co" /> Company
+            <i className="xf-trend__swatch xf-trend__swatch--ind" /> Industry avg
+          </p>
         </div>
-        <svg className="xf-trend__chart" viewBox="0 0 320 72" role="img" aria-label="Rating trend">
-          <polyline
-            fill="none"
-            stroke="#94a3b8"
-            strokeWidth="1.5"
-            points={rating.trend
-              .map((point, i) => {
-                const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
-                const y = 62 - ((point.industryAvg - 250) / 650) * 52
-                return `${x},${y}`
-              })
-              .join(' ')}
-          />
-          <polyline
-            fill="none"
-            stroke="#1b1564"
-            strokeWidth="2"
-            points={rating.trend
-              .map((point, i) => {
-                const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
-                const y = 62 - ((point.rating - 250) / 650) * 52
-                return `${x},${y}`
-              })
-              .join(' ')}
-          />
-        </svg>
-        <p className="xf-trend__legend">
-          <i className="xf-trend__swatch xf-trend__swatch--co" /> Company
-          <i className="xf-trend__swatch xf-trend__swatch--ind" /> Industry avg
-        </p>
-      </div>
 
-      {conflicts.length > 0 ? (
-        <div className="xf-conflicts" role="status">
-          <strong>{conflicts.length} conflict(s) with applicant declarations</strong>
-          <ul>
-            {conflicts.map((row) => (
-              <li key={row.id}>
-                {row.source} (Simulated): {row.conflictsWithDeclaration}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+        {conflicts.length > 0 ? (
+          <div className="xf-conflicts" role="status">
+            <strong>{conflicts.length} conflict(s) with applicant declarations</strong>
+            <ul>
+              {conflicts.map((row) => (
+                <li key={row.id}>
+                  {row.source} (Simulated): {row.conflictsWithDeclaration}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
 
       <div className="xf-cats" role="tablist" aria-label="Finding categories">
         <button
@@ -110,31 +107,41 @@ export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
         ))}
       </div>
 
-      <div className="xf-table-wrap">
-        <table className="xf-table">
+      <div className="spec-grid-wrap">
+        <table className="spec-grid">
           <thead>
-            <tr>
+            <tr className="spec-grid__groups">
+              <th colSpan={2}>Source details</th>
+              <th colSpan={3}>Finding details</th>
+              <th colSpan={2}>Underwriting</th>
+            </tr>
+            <tr className="spec-grid__cols">
               <th>Source</th>
+              <th>Category</th>
               <th>Finding</th>
               <th>Severity</th>
-              <th>Observed Date</th>
-              <th>Freshness</th>
+              <th>Observed / Freshness</th>
               <th>Entity Match</th>
               <th>Underwriting Impact</th>
             </tr>
           </thead>
           <tbody>
             {visible.map((row) => (
-              <tr key={row.id} className={row.conflictsWithDeclaration ? 'xf-table__row--conflict' : undefined}>
+              <tr
+                key={row.id}
+                className={row.conflictsWithDeclaration ? 'spec-grid__row--conflict' : undefined}
+              >
                 <td>
                   {row.source}
-                  {row.simulated ? <span className="xf-sim">Simulated</span> : null}
-                  <div className="xf-cat">{row.category}</div>
+                  {row.simulated ? <span className="spec-grid-flag spec-grid-flag--sim">Simulated</span> : null}
                 </td>
+                <td>{row.category}</td>
                 <td>{row.finding}</td>
                 <td className={`xf-sev xf-sev--${row.severity}`}>{row.severity}</td>
-                <td>{row.observedDate}</td>
-                <td>{row.freshness}</td>
+                <td>
+                  {row.observedDate}
+                  <div className="spec-grid__sub">{row.freshness}</div>
+                </td>
                 <td>{row.entityMatch}</td>
                 <td>
                   {row.underwritingImpact}

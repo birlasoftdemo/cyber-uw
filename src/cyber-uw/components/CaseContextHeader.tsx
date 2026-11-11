@@ -1,27 +1,40 @@
 import { caseHeaderMetrics } from '../data/clientFeedbackDemo'
 import type { CyberCase } from '../types'
 
-/** Persistent case strip: Insured | Industry | Revenue | Limit | Cyber Risk | Appetite | Completeness. */
+/** Persistent case strip — grouped columns with label above value (spec layout). */
 export function CaseContextHeader({ c }: { c: CyberCase }) {
   const m = caseHeaderMetrics(c)
-  const cells: { label: string; value: string }[] = [
-    { label: 'Insured', value: m.insured },
-    { label: 'Industry', value: m.industry },
-    { label: 'Revenue', value: m.revenue },
-    { label: 'Requested Limit', value: m.requestedLimit },
-    { label: 'Cyber Risk', value: m.cyberRisk },
-    { label: 'Appetite', value: m.appetite },
-    { label: 'Completeness', value: m.completeness },
+  const columns: { label: string; value: string }[][] = [
+    [
+      { label: 'Insured', value: m.insured },
+      { label: 'Industry', value: m.industry },
+    ],
+    [
+      { label: 'Revenue', value: m.revenue },
+      { label: 'Requested Limit', value: m.requestedLimit },
+    ],
+    [
+      { label: 'Cyber Risk', value: m.cyberRisk },
+      { label: 'Appetite', value: m.appetite },
+    ],
+    [
+      { label: 'Completeness', value: m.completeness },
+      { label: 'Submission ID', value: c.id },
+    ],
   ]
 
   return (
     <div className="case-ctx-header" role="group" aria-label="Case context">
-      {cells.map((cell) => (
-        <div key={cell.label} className="case-ctx-header__cell">
-          <span className="case-ctx-header__label">{cell.label}</span>
-          <strong className="case-ctx-header__value" title={cell.value}>
-            {cell.value}
-          </strong>
+      {columns.map((pairs, index) => (
+        <div key={pairs[0]?.label ?? index} className="case-ctx-header__col">
+          {pairs.map((cell) => (
+            <div key={cell.label} className="case-ctx-header__pair">
+              <span className="case-ctx-header__label">{cell.label}</span>
+              <span className="case-ctx-header__value" title={cell.value}>
+                {cell.value}
+              </span>
+            </div>
+          ))}
         </div>
       ))}
     </div>

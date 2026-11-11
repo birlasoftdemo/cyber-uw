@@ -48,9 +48,9 @@ test.describe('Client feedback demo', () => {
 
     await goTracker(page, 'New Submission')
     await expect(page.getByRole('heading', { name: /cyber documents received/i })).toBeVisible()
-    await expect(page.getByText('Insured matched')).toBeVisible()
-    await expect(page.getByText('Duplicate check completed')).toBeVisible()
-    await expect(page.getByText('Broker identified')).toBeVisible()
+    await expect(page.getByText(/Insured matched/i)).toBeVisible()
+    await expect(page.getByText(/Duplicate check completed/i)).toBeVisible()
+    await expect(page.getByText(/Broker identified/i)).toBeVisible()
     await page.screenshot({
       path: path.join(shotDir, `${testInfo.project.name}-03-intake.png`),
       fullPage: true,

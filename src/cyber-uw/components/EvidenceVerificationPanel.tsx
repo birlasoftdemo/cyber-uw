@@ -7,15 +7,15 @@ import type { CyberCase } from '../types'
 function resultClass(result: VerificationStatus) {
   switch (result) {
     case 'Verified':
-      return 'ev-result ev-result--ok'
+      return 'spec-grid-status spec-grid-status--ok'
     case 'Partially Verified':
-      return 'ev-result ev-result--mid'
+      return 'spec-grid-status spec-grid-status--mid'
     case 'Contradicted':
-      return 'ev-result ev-result--bad'
+      return 'spec-grid-status spec-grid-status--bad'
     case 'Missing Evidence':
-      return 'ev-result ev-result--miss'
+      return 'spec-grid-status spec-grid-status--miss'
     case 'Not Applicable':
-      return 'ev-result ev-result--na'
+      return 'spec-grid-status spec-grid-status--na'
     default: {
       const neverResult: never = result
       return neverResult
@@ -27,21 +27,21 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
   const rows = evidenceControlsForCase(c)
 
   return (
-    <section className="ev-panel" aria-label="Evidence verification">
-      <header className="ev-panel__head">
-        <div>
-          <h3>Evidence Verification</h3>
-          <p>
-            Key controls: MFA, EDR, backups, privileged access, patching, and incident response.
-            Statuses: Verified · Partially Verified · Contradicted · Missing Evidence · Not Applicable.
-          </p>
-        </div>
+    <section className="spec-info-panel" aria-label="Evidence verification">
+      <header className="spec-info-panel__bar">
+        <h3>Evidence Verification</h3>
+        <p>Applicant declaration vs document evidence vs external observation</p>
       </header>
 
-      <div className="ev-table-wrap">
-        <table className="ev-table">
+      <div className="spec-grid-wrap">
+        <table className="spec-grid">
           <thead>
-            <tr>
+            <tr className="spec-grid__groups">
+              <th colSpan={1}>Control</th>
+              <th colSpan={3}>Evidence</th>
+              <th colSpan={2}>Assessment</th>
+            </tr>
+            <tr className="spec-grid__cols">
               <th>Control</th>
               <th>Applicant Declaration</th>
               <th>Document Evidence</th>
@@ -55,11 +55,11 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
               <tr
                 key={row.id}
                 id={row.control === 'MFA' ? 'evidence-mfa' : undefined}
-                className={row.contradiction ? 'ev-table__row--conflict' : undefined}
+                className={row.contradiction ? 'spec-grid__row--conflict' : undefined}
               >
                 <td>
                   <strong>{row.control}</strong>
-                  {row.contradiction ? <span className="ev-flag">Conflict</span> : null}
+                  {row.contradiction ? <span className="spec-grid-flag">Conflict</span> : null}
                 </td>
                 <td>{row.declaration}</td>
                 <td>{row.documentEvidence}</td>
@@ -67,7 +67,7 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
                 <td>
                   <span className={resultClass(row.result)}>{row.result}</span>
                 </td>
-                <td>{row.confidence}%</td>
+                <td className="spec-grid__num">{row.confidence}%</td>
               </tr>
             ))}
           </tbody>

@@ -225,9 +225,6 @@ export function CyberUwShell() {
                 </div>
               }
               title={pageTitle}
-              subtitle={
-                showCaseDetail && selectedCase ? <CaseContextHeader c={selectedCase} /> : undefined
-              }
               count={shellView === 'referrals' ? activeReferrals : undefined}
               countLabel={
                 shellView === 'referrals'
@@ -262,6 +259,7 @@ export function CyberUwShell() {
               }
             />
           )}
+          {showCaseDetail && selectedCase ? <CaseContextHeader c={selectedCase} /> : null}
 
           {shellView === 'shipping' ? (
             <div className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-hidden p-3 md:p-4">

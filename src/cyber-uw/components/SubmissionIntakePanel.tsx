@@ -8,14 +8,14 @@ import type { CyberCase } from '../types'
 function statusClass(status: IntakeDocStatus) {
   switch (status) {
     case 'Extracted':
-      return 'intake-doc__status intake-doc__status--ok'
+      return 'spec-grid-status spec-grid-status--ok'
     case 'Classified':
     case 'Received':
-      return 'intake-doc__status intake-doc__status--mid'
+      return 'spec-grid-status spec-grid-status--mid'
     case 'Review Required':
-      return 'intake-doc__status intake-doc__status--watch'
+      return 'spec-grid-status spec-grid-status--watch'
     case 'Missing':
-      return 'intake-doc__status intake-doc__status--miss'
+      return 'spec-grid-status spec-grid-status--miss'
     default: {
       const neverStatus: never = status
       return neverStatus
@@ -29,10 +29,10 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
   const match = entityMatchForCase(c)
 
   return (
-    <section className="intake-panel" aria-label="Submission intake">
-      <header className="intake-panel__head">
+    <section className="spec-info-panel" aria-label="Submission intake">
+      <header className="spec-info-panel__bar">
         <h3>Cyber documents received</h3>
-        <p>Statuses: Received · Classified · Extracted · Missing · Review Required</p>
+        <p>Document package status · duplicate and entity match</p>
       </header>
 
       <div className="intake-panel__metrics">
@@ -50,28 +50,45 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
         </div>
       </div>
 
-      <ul className="intake-doc-list">
-        {metrics.docs.map((doc) => (
-          <li key={doc.id}>
-            <span className="intake-doc__name">{doc.name}</span>
-            <span className={statusClass(doc.status)}>{doc.status}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="intake-match" aria-label="Duplicate and entity match">
-        <h4>Duplicate and entity match</h4>
-        <ul>
-          <li className={match.insuredMatched ? 'is-ok' : 'is-bad'}>
-            Insured matched{match.insuredMatched ? ` · ${match.insured}` : ''}
-          </li>
-          <li className={match.duplicateCheckCompleted ? 'is-ok' : 'is-bad'}>
-            Duplicate check completed
-          </li>
-          <li className={match.brokerIdentified ? 'is-ok' : 'is-bad'}>
-            Broker identified{match.brokerIdentified ? ` · ${match.broker}` : ''}
-          </li>
-        </ul>
+      <div className="spec-grid-wrap">
+        <table className="spec-grid">
+          <thead>
+            <tr className="spec-grid__groups">
+              <th colSpan={2}>Document details</th>
+              <th colSpan={2}>General details</th>
+            </tr>
+            <tr className="spec-grid__cols">
+              <th>Document</th>
+              <th>Status</th>
+              <th>Insured</th>
+              <th>Broker</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.docs.map((doc) => (
+              <tr key={doc.id}>
+                <td>
+                  <strong>{doc.name}</strong>
+                </td>
+                <td>
+                  <span className={statusClass(doc.status)}>{doc.status}</span>
+                </td>
+                <td>{c.insured}</td>
+                <td>{c.broker}</td>
+              </tr>
+            ))}
+            <tr className="spec-grid__total">
+              <td colSpan={2}>
+                <strong>Package</strong>
+              </td>
+              <td colSpan={2}>
+                {match.insuredMatched ? 'Insured matched' : 'Insured unmatched'} ·{' '}
+                {match.duplicateCheckCompleted ? 'Duplicate check completed' : 'Duplicate check pending'} ·{' '}
+                {match.brokerIdentified ? `Broker identified (${match.broker})` : 'Broker not identified'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   )
