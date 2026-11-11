@@ -58,8 +58,9 @@ test.describe('Client feedback demo', () => {
 
     await goTracker(page, 'Evidence Verification')
     await expect(page.getByRole('heading', { name: /evidence verification/i })).toBeVisible()
-    await expect(page.getByText('MFA applies to all users')).toBeVisible()
+    await expect(page.getByText(/InfoSec Questionnaire Q7/i)).toBeVisible()
     await expect(page.getByText('Contradicted').first()).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: /applicant declaration/i })).toHaveCount(0)
     await page.screenshot({
       path: path.join(shotDir, `${testInfo.project.name}-04-evidence.png`),
       fullPage: true,

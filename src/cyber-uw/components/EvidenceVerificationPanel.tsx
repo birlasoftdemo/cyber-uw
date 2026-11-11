@@ -30,7 +30,7 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
     <section className="spec-info-panel" aria-label="Evidence verification">
       <header className="spec-info-panel__bar">
         <h3>Evidence Verification</h3>
-        <p>Applicant declaration vs document evidence vs external observation</p>
+        <p>Document evidence vs external observation</p>
       </header>
 
       <div className="spec-grid-wrap">
@@ -38,12 +38,11 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
           <thead>
             <tr className="spec-grid__groups">
               <th colSpan={1}>Control</th>
-              <th colSpan={3}>Evidence</th>
+              <th colSpan={2}>Evidence</th>
               <th colSpan={2}>Assessment</th>
             </tr>
             <tr className="spec-grid__cols">
               <th>Control</th>
-              <th>Applicant Declaration</th>
               <th>Document Evidence</th>
               <th>External Observation</th>
               <th>Verification Result</th>
@@ -61,7 +60,6 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
                   <strong>{row.control}</strong>
                   {row.contradiction ? <span className="spec-grid-flag">Conflict</span> : null}
                 </td>
-                <td>{row.declaration}</td>
                 <td>{row.documentEvidence}</td>
                 <td>{row.externalObservation}</td>
                 <td>

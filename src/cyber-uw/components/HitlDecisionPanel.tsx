@@ -33,6 +33,11 @@ export function HitlDecisionPanel({ c, onDecide, onRequestInfo }: Props) {
     !locked &&
     (!rationaleRequired || rationale.trim().length >= 8)
 
+  const summary = useMemo(() => {
+    const reasonText = bundle.reasons.map((reason) => reason.text).join(' ')
+    return `Recommended decision is ${bundle.aiLabel}. ${reasonText} Referral rule: ${bundle.referralRule}.`
+  }, [bundle])
+
   const submit = () => {
     if (!selected || !canSubmit) return
     const mapped = storeDecisionFromHitl(selected)
@@ -51,25 +56,28 @@ export function HitlDecisionPanel({ c, onDecide, onRequestInfo }: Props) {
       </header>
 
       <div className="hitl-ai">
-        <div className="hitl-ai__rec">
-          <span>AI recommendation</span>
+        <div className="hitl-ai__title-row">
+          <h4>AI recommendation</h4>
           <strong className={`hitl-pill hitl-pill--${bundle.aiLabel.replace(/\s+/g, '-').toLowerCase()}`}>
             {bundle.aiLabel}
           </strong>
         </div>
-        <ol className="hitl-reasons" id="appetite-rule">
-          {bundle.reasons.map((reason, index) => (
-            <li key={reason.id}>
-              <span className="hitl-reasons__n">{index + 1}</span>
-              <div>
-                <p>{reason.text}</p>
-                <a className="hitl-reasons__link" href={`#${reason.evidenceAnchor}`}>
-                  {reason.evidenceLabel}
-                </a>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div className="hitl-ai__card">
+          <p>{summary}</p>
+          <ol className="hitl-reasons" id="appetite-rule">
+            {bundle.reasons.map((reason, index) => (
+              <li key={reason.id}>
+                <span className="hitl-reasons__n">{index + 1}</span>
+                <div>
+                  <p>{reason.text}</p>
+                  <a className="hitl-reasons__link" href={`#${reason.evidenceAnchor}`}>
+                    {reason.evidenceLabel}
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
         <p className="hitl-rule">
           Referral rule: <strong>{bundle.referralRule}</strong>
         </p>

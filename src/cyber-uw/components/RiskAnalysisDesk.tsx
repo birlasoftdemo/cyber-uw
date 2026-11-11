@@ -200,17 +200,33 @@ export function RiskAnalysisDesk({ c }: { c: CyberCase }) {
         </div>
       </div>
       <div className="ra-block">
-        <h5>Top risk</h5>
-        <div className="ra-risks">
+        <header className="ra-block__bar">
+          <h5>Top risk</h5>
+        </header>
+        <div className="uw-risk-cards ra-risks">
           {risks.map((risk) => (
-            <article key={risk.title} className={`ra-risk ra-risk--${tone(risk.score)}`}>
-              <strong>{risk.score}</strong>
-              <p>
-                {risk.title}
+            <article key={risk.title} className={`uw-risk-card ra-risk ra-risk--${tone(risk.score)}`}>
+              <button type="button" className="uw-risk-card__menu" aria-label={`${risk.title} actions`}>
+                ···
+              </button>
+              <div className="uw-risk-card__icon" aria-hidden>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1b1564" strokeWidth="1.6">
+                  <circle cx="12" cy="12" r="7.5" />
+                  <path d="M12 8.5v4.2" />
+                  <circle cx="12" cy="15.4" r="0.8" fill="#1b1564" stroke="none" />
+                </svg>
+              </div>
+              <p className="uw-risk-card__label">
+                Highest Risk Factor
                 <InfoTip text={risk.tip} />
               </p>
-              <span>{risk.detail}</span>
-              <i>
+              <strong className="uw-risk-card__score">{risk.score}</strong>
+              <p className="uw-risk-card__name">{risk.title}</p>
+              <div className="uw-risk-card__foot">
+                <span>{risk.detail}</span>
+                <em>{risk.score}%</em>
+              </div>
+              <i className="uw-risk-card__bar" aria-hidden>
                 <b style={{ width: `${risk.score}%` }} />
               </i>
             </article>

@@ -3,8 +3,7 @@ import {
   externalFindingsForCase,
   type EnrichmentCategory,
 } from '../data/clientFeedbackDemo'
-import { securityRatingForCase } from '../data/securityRatingDemo'
-import type { CyberCase } from '../types'
+import type { CyberCase, GapSeverity } from '../types'
 
 const CATEGORIES: EnrichmentCategory[] = [
   'Attack Surface',
@@ -14,9 +13,25 @@ const CATEGORIES: EnrichmentCategory[] = [
   'Third-party Dependencies',
 ]
 
+function severityScore(severity: GapSeverity) {
+  switch (severity) {
+    case 'critical':
+      return 92
+    case 'high':
+      return 78
+    case 'medium':
+      return 58
+    case 'info':
+      return 42
+    default: {
+      const neverSeverity: never = severity
+      return neverSeverity
+    }
+  }
+}
+
 export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
   const findings = useMemo(() => externalFindingsForCase(c), [c])
-  const rating = securityRatingForCase(c)
   const [category, setCategory] = useState<EnrichmentCategory | 'All'>('All')
   const visible =
     category === 'All' ? findings : findings.filter((row) => row.category === category)
@@ -29,59 +44,44 @@ export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
         <p>Simulated providers · conflicts with applicant declarations highlighted</p>
       </header>
 
-      <div className="spec-info-panel__summary">
-        <div className="xf-trend" aria-label="Security rating trend">
-          <div className="xf-trend__meta">
-            <span>Security rating trend (BitSight · Simulated)</span>
-            <strong>
-              {rating.rating} · industry {rating.industryAvg}
-            </strong>
+      {conflicts.length > 0 ? (
+        <div className="xf-conflict-block" role="status">
+          <header className="xf-conflict-block__bar">
+            <h4>Conflicts</h4>
+            <span>{conflicts.length} with applicant declarations</span>
+          </header>
+          <div className="uw-risk-cards">
+            {conflicts.map((row) => {
+              const score = severityScore(row.severity)
+              return (
+                <article key={row.id} className="uw-risk-card">
+                  <button type="button" className="uw-risk-card__menu" aria-label="Conflict actions">
+                    ···
+                  </button>
+                  <div className="uw-risk-card__icon" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1b1564" strokeWidth="1.6">
+                      <path d="M12 3 3 19h18L12 3Z" />
+                      <path d="M12 10v4" />
+                      <circle cx="12" cy="16.5" r="0.8" fill="#1b1564" stroke="none" />
+                    </svg>
+                  </div>
+                  <p className="uw-risk-card__label">Declaration conflict</p>
+                  <strong className="uw-risk-card__score">{score}</strong>
+                  <p className="uw-risk-card__name">{row.source}</p>
+                  <div className="uw-risk-card__foot">
+                    <span>{row.category}</span>
+                    <em>{score}%</em>
+                  </div>
+                  <i className="uw-risk-card__bar" aria-hidden>
+                    <b style={{ width: `${score}%` }} />
+                  </i>
+                  <p className="uw-risk-card__note">{row.conflictsWithDeclaration}</p>
+                </article>
+              )
+            })}
           </div>
-          <svg className="xf-trend__chart" viewBox="0 0 320 72" role="img" aria-label="Rating trend">
-            <polyline
-              fill="none"
-              stroke="#94a3b8"
-              strokeWidth="1.5"
-              points={rating.trend
-                .map((point, i) => {
-                  const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
-                  const y = 62 - ((point.industryAvg - 250) / 650) * 52
-                  return `${x},${y}`
-                })
-                .join(' ')}
-            />
-            <polyline
-              fill="none"
-              stroke="#1b1564"
-              strokeWidth="2"
-              points={rating.trend
-                .map((point, i) => {
-                  const x = (i / Math.max(1, rating.trend.length - 1)) * 300 + 10
-                  const y = 62 - ((point.rating - 250) / 650) * 52
-                  return `${x},${y}`
-                })
-                .join(' ')}
-            />
-          </svg>
-          <p className="xf-trend__legend">
-            <i className="xf-trend__swatch xf-trend__swatch--co" /> Company
-            <i className="xf-trend__swatch xf-trend__swatch--ind" /> Industry avg
-          </p>
         </div>
-
-        {conflicts.length > 0 ? (
-          <div className="xf-conflicts" role="status">
-            <strong>{conflicts.length} conflict(s) with applicant declarations</strong>
-            <ul>
-              {conflicts.map((row) => (
-                <li key={row.id}>
-                  {row.source} (Simulated): {row.conflictsWithDeclaration}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="xf-cats" role="tablist" aria-label="Finding categories">
         <button
