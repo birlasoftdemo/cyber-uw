@@ -121,7 +121,7 @@ export function CyencePanel({ c, onOpenCites }: { c: CyberCase; onOpenCites?: ()
     <article className="cy-report" aria-label="Cyence economic loss">
       <header className="cy-report__head">
         <div>
-          <p className="cy-report__brand">Cyence</p>
+          <p className="cy-report__brand">Cyence · Simulated</p>
           <h4>Economic loss model</h4>
           <p>Dollars of modeled loss. This is not a 250–900 security rating.</p>
         </div>

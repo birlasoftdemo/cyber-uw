@@ -6,9 +6,11 @@ import {
   canLeavePolicyDocuments,
   canOpsMarkReadyForUw,
   cyberFlowIndex,
+  FLOW_LAST_INDEX,
   flowStageTitle,
   nextFlowStageTitle,
 } from '../constants/cyberFlow'
+import { narrativeForCase } from '../data/caseNarrative'
 import {
   filterCyberCases,
   useCyberUwStore,
@@ -336,7 +338,7 @@ export function CyberStageAdvanceCard({
     )
   }
 
-  if (idx < 3 && nextTitle) {
+  if (idx < FLOW_LAST_INDEX && nextTitle) {
     return wrap(
       'action',
       <>
@@ -365,8 +367,8 @@ export function CyberStageAdvanceCard({
       {!inline ? (
         <p className="wb-action-card__lead !mb-0 min-w-0 flex-1 font-medium text-slate-800">
           {finOk
-            ? `AI recommends ${c.recommendation.toUpperCase()}`
-            : 'Complete financial sign off in Getting Ready to Quote before Quote.'}
+            ? `AI recommends ${narrativeForCase(c).ai.label}`
+            : 'Complete financial sign off in Getting Ready to Quote before Approve.'}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-1.5 shrink-0">
@@ -377,7 +379,7 @@ export function CyberStageAdvanceCard({
           isDisabled={scanning || !finOk}
           onPress={() => onRequestDecision('quote')}
         >
-          Quote
+          Approve
         </Button>
         <Button
           variant="secondary"
@@ -385,7 +387,15 @@ export function CyberStageAdvanceCard({
           isDisabled={scanning}
           onPress={() => onRequestDecision('refer')}
         >
-          Escalate
+          Refer
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          isDisabled={scanning}
+          onPress={() => onRequestDecision('request_info')}
+        >
+          Request Information
         </Button>
         <Button
           variant="danger"

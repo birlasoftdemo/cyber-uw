@@ -39,9 +39,22 @@ import { AGE_BUCKETS, CHART_COLORS, STAGES, type DrillDownSelection } from './ty
 
 type OpenDrill = (sel: DrillDownSelection) => void
 
-/** Chart series / axis labels — keep data keys as `refer`, display as escalate. */
+/** Chart series labels use the same decision words as the case file. */
 function decisionSeriesName(key: string): string {
-  return key === 'refer' ? 'escalate' : key
+  switch (key) {
+    case 'quote':
+      return 'Approve'
+    case 'refer':
+      return 'Refer'
+    case 'decline':
+      return 'Decline'
+    case 'request_info':
+      return 'Request Information'
+    case 'pending':
+      return 'Pending'
+    default:
+      return key
+  }
 }
 
 function pivotAging() {

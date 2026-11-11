@@ -15,13 +15,25 @@ import {
 } from '../../shared/workbench/CaseMetaFields'
 import type { CyberCase, CyberDecision, GapDisposition, GapSeverity } from '../types'
 
-/** User-facing label for decision enums (`refer` → escalate). */
+/** User-facing label for decision enums. */
 export function decisionLabel(value: CyberDecision | string): string {
-  if (value === 'refer') return 'escalate'
-  return value
+  switch (value) {
+    case 'quote':
+      return 'Approve'
+    case 'refer':
+      return 'Refer'
+    case 'decline':
+      return 'Decline'
+    case 'request_info':
+      return 'Request Information'
+    case 'pending':
+      return 'Pending'
+    default:
+      return value
+  }
 }
 
-/** Title-case decision label (`refer` → Escalate). */
+/** Title-case decision label. */
 export function decisionTitle(value: CyberDecision | string): string {
   const label = decisionLabel(value)
   return label.charAt(0).toUpperCase() + label.slice(1)
@@ -64,14 +76,21 @@ export function UwDecisionChip({ value }: { value: CyberDecision | 'pending' }) 
   if (value === 'quote') {
     return (
       <Chip size="sm" variant="soft" color="success">
-        UW Quote
+        UW Approve
       </Chip>
     )
   }
   if (value === 'refer') {
     return (
       <Chip size="sm" variant="soft" color="warning">
-        UW Escalate
+        UW Refer
+      </Chip>
+    )
+  }
+  if (value === 'request_info') {
+    return (
+      <Chip size="sm" variant="soft" color="warning">
+        UW Request Information
       </Chip>
     )
   }
@@ -116,10 +135,10 @@ export function AiDecisionCta({
         onPress()
       }}
       className="ai-badge ai-cta inline-flex cursor-pointer items-center gap-1 border-0 px-2.5 py-1 text-[10px] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-      aria-label={`Act on AI ${recommendation === 'refer' ? 'escalate' : recommendation} recommendation`}
+      aria-label={`Act on AI ${decisionLabel(recommendation)} recommendation`}
     >
       <Sparkles size={10} aria-hidden />
-      AI {recommendation === 'refer' ? 'escalate' : recommendation}
+      AI {decisionLabel(recommendation)}
     </button>
   )
 }
@@ -262,7 +281,7 @@ export function ActionBar({
         </span>
         {!pending ? <UwDecisionChip value={c.decision} /> : null}
         {pending ? (
-          <span className="text-[11px] text-slate-400">Quote · Escalate · Decline</span>
+          <span className="text-[11px] text-slate-400">Approve · Refer · Request Information · Decline</span>
         ) : null}
         <ChevronDown
           size={14}
@@ -290,7 +309,7 @@ export function ActionBar({
             isDisabled={!pending || scanning}
             onPress={() => onRequestDecision('quote')}
           >
-            <CheckCircle2 size={14} aria-hidden /> Quote
+            <CheckCircle2 size={14} aria-hidden /> Approve
           </Button>
           <Button
             size="sm"
@@ -298,7 +317,15 @@ export function ActionBar({
             isDisabled={!pending || scanning}
             onPress={() => onRequestDecision('refer')}
           >
-            Escalate
+            Refer
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            isDisabled={!pending || scanning}
+            onPress={() => onRequestDecision('request_info')}
+          >
+            Request Information
           </Button>
           <Button
             size="sm"
