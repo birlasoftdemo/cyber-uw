@@ -16,7 +16,7 @@ progress:
 
 # Project State
 
-Last activity: 2026-10-30 - James renewal decision. One note to the broker with four equal parts (agent scope, where the loss pays, warranty clashes, the act). Workbook at `.planning/notes/james-renewal-decision-analysis.xlsx`. DECIDE-01 is unscheduled. Incident-response panel is a seed. Sketch 003 is not drawn.
+Last activity: 2026-11-12 - Completed quick task 261112-jyn: Fix home KPI and pie chart layout still broken on dashboard
 
 ### Blockers/Concerns
 
@@ -36,6 +36,7 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 261112-jyn | Fix home KPI and pie chart layout still broken on dashboard | 2026-11-12 | 720918f | [261112-jyn-fix-home-kpi-and-pie-chart-layout-still-](./quick/261112-jyn-fix-home-kpi-and-pie-chart-layout-still-/) |
 | 261026-fzj | Package BitSight, Cyence, Cytora as separate vendor API zips | 2026-10-26 | 13ca410 | [261026-fzj-package-bitsight-cyence-and-cytora-as-th](./quick/261026-fzj-package-bitsight-cyence-and-cytora-as-th/) |
 | 261014-moy | Document extraction and Policy Documents user story | 2026-10-14 | 649d0e0 | [261014-moy-write-a-user-story-for-the-document-extr](./quick/261014-moy-write-a-user-story-for-the-document-extr/) |
 | 260918-oa9 | Risk Analysis left-column whitespace redistribute + high-contrast Detailed Ratings / capacity / FinancialSignOff | 2026-09-18 | 49ed42d | [260918-oa9-risk-analysis-left-column-whitespace-red](./quick/260918-oa9-risk-analysis-left-column-whitespace-red/) |
