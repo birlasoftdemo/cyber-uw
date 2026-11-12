@@ -633,8 +633,14 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
                   at: new Date().toISOString(),
                   actor: 'Underwriter',
                   action: `Decision ${decision.toUpperCase()} — ${reason}`,
+                  evidenceSource: 'Integration · HITL',
+                  ruleModel: 'Human-in-the-loop',
+                  confidence: 95,
+                  humanOverride:
+                    c.recommendation !== 'pending' && c.recommendation !== decision,
                 },
               ],
+              workflowStage: 3,
             }
           : c,
       ),

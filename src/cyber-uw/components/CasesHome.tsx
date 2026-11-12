@@ -12,33 +12,44 @@ import { HeaderUserMenu } from './HeaderUserMenu'
 import { NotificationMenu } from './NotificationMenu'
 import type { CyberCase } from '../types'
 import type { SpecQueue } from './SpecSidebar'
-import { submissionStatus, SUBMISSION_STATUSES, type SubmissionStatus } from '../utils/submissionStatus'
+import {
+  dashboardCounterForCase,
+  isDecisionReady,
+  submissionStatus,
+  SUBMISSION_STATUSES,
+  type SubmissionStatus,
+} from '../utils/submissionStatus'
+import { PRODUCT_NAME } from '../constants/journeyNav'
 
 type Tab = 'all' | 'mine' | 'tasks' | 'renewals'
 
 const PAGE_SIZE = 8
 
 const STATUS_COLORS: Record<SubmissionStatus, string> = {
-  New: '#3cbf7a',
-  'In Progress': '#f5b942',
-  Completed: '#1b1564',
-  Rejected: '#ff1f27',
-  'More Info Required': '#938ec7',
+  New: '#3c923c',
+  Processing: '#1a85ff',
+  'Evidence Gap': '#ff6c54',
+  'Under Review': '#f5b942',
+  Referred: '#ff6c54',
+  Approved: '#3c923c',
+  Declined: '#af2922',
 }
 
-const STAGE_SLICES = ['Review', 'Assessment', 'Synced'] as const
-type SubmissionStage = (typeof STAGE_SLICES)[number]
+const COUNTER_SLICES = [
+  'New Submissions',
+  'In progress',
+  'Referred',
+  'Awaiting Broker',
+  'Decision-ready',
+] as const
+type CounterSlice = (typeof COUNTER_SLICES)[number]
 
-const STAGE_COLORS: Record<SubmissionStage, string> = {
-  Review: '#1b1564',
-  Assessment: '#f5b942',
-  Synced: '#3cbf7a',
-}
-
-function submissionStage(c: CyberCase): SubmissionStage {
-  if (c.pasStatus === 'synced' || (c.workflowStage ?? 0) >= 3) return 'Synced'
-  if ((c.workflowStage ?? 0) <= 1) return 'Review'
-  return 'Assessment'
+const COUNTER_COLORS: Record<CounterSlice, string> = {
+  'New Submissions': '#3c923c',
+  'In progress': '#1a85ff',
+  Referred: '#ff6c54',
+  'Awaiting Broker': '#f5b942',
+  'Decision-ready': '#1b1564',
 }
 
 function inceptionLabel(c: CyberCase) {
@@ -54,15 +65,16 @@ function inceptionLabel(c: CyberCase) {
 function statusPillClass(status: SubmissionStatus) {
   switch (status) {
     case 'New':
+    case 'Approved':
       return 'spec-status spec-status--new'
-    case 'In Progress':
+    case 'Processing':
+    case 'Under Review':
       return 'spec-status spec-status--progress'
-    case 'Completed':
-      return 'spec-status spec-status--completed'
-    case 'Rejected':
-      return 'spec-status spec-status--rejected'
-    case 'More Info Required':
+    case 'Evidence Gap':
+    case 'Referred':
       return 'spec-status spec-status--info'
+    case 'Declined':
+      return 'spec-status spec-status--rejected'
     default: {
       const _exhaustive: never = status
       return _exhaustive
@@ -107,26 +119,38 @@ export function CasesHome({
     return tally
   }, [cases, referrals])
 
-  const stageCounts = useMemo(() => {
-    const tally = Object.fromEntries(STAGE_SLICES.map((stage) => [stage, 0])) as Record<
-      SubmissionStage,
-      number
-    >
-    for (const c of cases) tally[submissionStage(c)] += 1
+  const counterCounts = useMemo(() => {
+    const tally: Record<CounterSlice, number> = {
+      'New Submissions': 0,
+      'In progress': 0,
+      Referred: 0,
+      'Awaiting Broker': 0,
+      'Decision-ready': 0,
+    }
+    for (const c of cases) {
+      if (isDecisionReady(c, referrals)) tally['Decision-ready'] += 1
+      const bucket = dashboardCounterForCase(c, referrals)
+      if (bucket === 'newSubmissions') tally['New Submissions'] += 1
+      if (bucket === 'inProgress') tally['In progress'] += 1
+      if (bucket === 'referred') tally.Referred += 1
+      if (bucket === 'awaitingBroker') tally['Awaiting Broker'] += 1
+    }
     return tally
-  }, [cases])
+  }, [cases, referrals])
 
   const filtered = useMemo(() => {
     return cases.filter((c) => {
       const status = statusOf(c)
-      if (queue === 'new' && status !== 'New') return false
-      if (queue === 'progress' && status !== 'In Progress') return false
-      if (queue === 'moreInfo' && status !== 'More Info Required') return false
-      if (queue === 'completed' && status !== 'Completed') return false
-      if (queue === 'rejected' && status !== 'Rejected') return false
+      const bucket = dashboardCounterForCase(c, referrals)
+      if (queue === 'new' && bucket !== 'newSubmissions') return false
+      if (queue === 'progress' && bucket !== 'inProgress') return false
+      if (queue === 'referred' && bucket !== 'referred') return false
+      if (queue === 'awaitingBroker' && bucket !== 'awaitingBroker') return false
+      if (queue === 'decisionReady' && !isDecisionReady(c, referrals)) return false
       if (tab === 'mine' && c.decision !== 'pending') return false
       if (tab === 'tasks' && c.gaps.every((g) => g.disposition !== 'open')) return false
       if (tab === 'renewals' && c.submissionKind !== 'renewal') return false
+      void status
       return matchesQuery(c, query)
     })
   }, [cases, referrals, queue, tab, query])
@@ -172,23 +196,27 @@ export function CasesHome({
           </div>
         </header>
 
+        <p className="spec-home__product-banner">{PRODUCT_NAME}</p>
         <div className="spec-home__kpis">
-          <Kpi title="All In Progress Submissions" value={counts.New + counts['In Progress'] + counts['More Info Required']} tone="amber" />
-          <Kpi title="New Submissions" value={counts.New} tone="green" />
+          <Kpi title="New Submissions" value={counterCounts['New Submissions']} tone="green" />
+          <Kpi title="In progress" value={counterCounts['In progress']} tone="amber" />
+          <Kpi title="Referred" value={counterCounts.Referred} tone="red" />
+          <Kpi title="Awaiting Broker" value={counterCounts['Awaiting Broker']} tone="amber" />
+          <Kpi title="Decision-ready" value={counterCounts['Decision-ready']} tone="green" />
           <article className="spec-kpi spec-kpi--chart">
-            <h2>Submissions By Stage</h2>
+            <h2>Queue counters</h2>
             <KpiPie
-              label="Submissions by stage"
-              slices={STAGE_SLICES.map((stage) => ({
-                key: stage,
-                label: stage,
-                value: stageCounts[stage],
-                color: STAGE_COLORS[stage],
+              label="Queue counters"
+              slices={COUNTER_SLICES.map((slice) => ({
+                key: slice,
+                label: slice,
+                value: counterCounts[slice],
+                color: COUNTER_COLORS[slice],
               }))}
             />
           </article>
           <article className="spec-kpi spec-kpi--wide">
-            <h2>Submission By Status</h2>
+            <h2>Submission by status</h2>
             <KpiPie
               label="Submissions by status"
               slices={SUBMISSION_STATUSES.map((status) => ({
@@ -474,7 +502,7 @@ function KpiPie({
   )
 }
 
-function Kpi({ title, value, tone }: { title: string; value: number; tone: 'amber' | 'green' }) {
+function Kpi({ title, value, tone }: { title: string; value: number; tone: 'amber' | 'green' | 'red' }) {
   return (
     <article className="spec-kpi spec-kpi--metric">
       <h2>{title}</h2>

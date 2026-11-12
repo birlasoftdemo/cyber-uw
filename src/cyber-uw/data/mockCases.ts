@@ -144,9 +144,33 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     dossierSummary:
       'Large travel marketplace platform with high guest/host PII and payment adjacency. Strong revenue and package completeness, but critical multi-factor authentication signal contradiction and endpoint detection and response deployment gap. Recommend refer with request-for-information pack; Tier 4 pending remediation evidence.',
     audit: [
-      { at: '2026-07-20T08:14:00Z', actor: 'Intake Agent', action: 'Normalized app + attachments' },
-      { at: '2026-07-20T08:16:00Z', actor: 'Signal Mock', action: 'ASM scan complete — field diffs ready' },
-      { at: '2026-07-20T08:17:00Z', actor: 'Appetite Engine', action: 'Recommend REFER — APP-PLAT-02, CTRL-MFA-01' },
+      {
+        at: '2026-07-20T08:14:00Z',
+        actor: 'Intake Agent',
+        action: 'Normalized app + attachments',
+        evidenceSource: 'Cyber Application',
+        ruleModel: 'Intake classifier',
+        confidence: 90,
+        humanOverride: false,
+      },
+      {
+        at: '2026-07-20T08:16:00Z',
+        actor: 'Signal Mock',
+        action: 'ASM scan complete — field diffs ready',
+        evidenceSource: 'BitSight · Simulated',
+        ruleModel: 'ASM scanner',
+        confidence: 82,
+        humanOverride: false,
+      },
+      {
+        at: '2026-07-20T08:17:00Z',
+        actor: 'Appetite Engine',
+        action: 'Recommend REFER — APP-PLAT-02, CTRL-MFA-01',
+        evidenceSource: 'Appetite rules',
+        ruleModel: 'CTRL-MFA-01',
+        confidence: 91,
+        humanOverride: false,
+      },
     ],
   },
   {

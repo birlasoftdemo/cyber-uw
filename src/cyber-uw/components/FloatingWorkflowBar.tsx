@@ -172,10 +172,10 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title="Birlasoft Customer Insights"
-          detail="Review the summary, then continue into Submission Workbench."
+          detail="Review the summary, then continue into Adaptive Cyber Underwriting Intelligence."
         />
         <PrimaryWorkflowCTA
-          label="Continue to Submission Workbench →"
+          label="Continue to Adaptive Cyber Underwriting Intelligence →"
           onPress={() => {
             dismissCustomer360(c.id)
             document.getElementById('cuw-workbench-root')?.scrollIntoView({

@@ -30,7 +30,18 @@ export function CaseContextHeader({ c }: { c: CyberCase }) {
           {pairs.map((cell) => (
             <div key={cell.label} className="case-ctx-header__pair">
               <span className="case-ctx-header__label">{cell.label}</span>
-              <span className="case-ctx-header__value" title={cell.value}>
+              <span
+                className={`case-ctx-header__value${
+                  cell.label === 'Appetite'
+                    ? m.appetite === 'Within Appetite'
+                      ? ' appetite-tone--pass'
+                      : m.appetite === 'Refer'
+                        ? ' appetite-tone--refer'
+                        : ' appetite-tone--decline'
+                    : ''
+                }`}
+                title={cell.value}
+              >
                 {cell.value}
               </span>
             </div>

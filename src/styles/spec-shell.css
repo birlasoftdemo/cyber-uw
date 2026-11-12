@@ -31,7 +31,25 @@
 }
 
 .spec-home__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
   padding: 0.15rem 0.35rem 1rem;
+}
+
+.spec-home__product {
+  margin: 0;
+  color: #1b1564;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.spec-home__product-banner {
+  margin: 0 0 0.75rem;
+  color: #1b1564;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .spec-nav__item,
@@ -463,11 +481,21 @@
 .spec-bars--amber i:nth-child(2) { height: 16px; }
 .spec-bars--amber i:nth-child(3) { height: 20px; }
 .spec-bars--amber i:nth-child(4) { height: 13px; }
-.spec-bars--green i { background: #3cbf7a; }
+.spec-bars--green i { background: var(--vg-status-l, #3c923c); }
 .spec-bars--green i:nth-child(1) { height: 9px; }
 .spec-bars--green i:nth-child(2) { height: 15px; }
 .spec-bars--green i:nth-child(3) { height: 20px; }
 .spec-bars--green i:nth-child(4) { height: 12px; }
+
+.spec-bars--red i { background: var(--vg-pill-bad-fg, #af2922); }
+.spec-bars--red i:nth-child(1) { height: 11px; }
+.spec-bars--red i:nth-child(2) { height: 17px; }
+.spec-bars--red i:nth-child(3) { height: 20px; }
+.spec-bars--red i:nth-child(4) { height: 14px; }
+
+.appetite-tone--pass { color: var(--vg-status-l, #3c923c); }
+.appetite-tone--refer { color: #b54708; }
+.appetite-tone--decline { color: var(--vg-pill-bad-fg, #af2922); }
 
 .spec-kpi__lob {
   display: flex;

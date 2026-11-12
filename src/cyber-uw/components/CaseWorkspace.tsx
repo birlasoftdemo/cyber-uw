@@ -1,10 +1,9 @@
 import { Tabs, Typography } from '@heroui/react'
 import { Lock } from 'lucide-react'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { cyberFlowIndex } from '../constants/cyberFlow'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { type JourneyStepId } from '../constants/journeyNav'
 import { CyencePanel } from './CyencePanel'
 import { LossRunAnalysis } from './LossRunAnalysis'
-import { PolicyAdminSyncPanel } from './PolicyAdminSyncPanel'
 import { CytoraPanel } from './CytoraPanel'
 import { RiskAnalysisDesk } from './RiskAnalysisDesk'
 import {
@@ -19,14 +18,12 @@ import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberCase, EnrichmentModelId } from '../types'
+import { AuditTrailPanel } from './AuditTrailPanel'
 import { EvidenceVerificationPanel } from './EvidenceVerificationPanel'
 import { ExternalFindingsPanel } from './ExternalFindingsPanel'
+import { HitlDecisionPanel } from './HitlDecisionPanel'
+import { IntegrationHandoffPanel } from './IntegrationHandoffPanel'
 import { NewSubmissionStage } from './NewSubmissionStage'
-import {
-  SpecProgressTracker,
-  stageForTrackerStep,
-  trackerStepForCase,
-} from './SpecProgressTracker'
 import { TriageAnalysisPanel } from './TriageAnalysisPanel'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
 
@@ -60,22 +57,6 @@ function RiskInformationStageBody({ c }: { c: CyberCase }) {
   return <TriageAnalysisPanel c={c} />
 }
 
-function PolicyAdminSyncCard({
-  c,
-  onDecide,
-}: {
-  c: CyberCase
-  onDecide: (decision: PendingDecision, rationale: string) => void
-}) {
-  return (
-    <PolicyAdminSyncPanel
-      c={c}
-      onDecide={onDecide}
-      onRequestInfo={() => window.dispatchEvent(new CustomEvent('cuw-open-info-request'))}
-    />
-  )
-}
-
 function UwLockedStage({ title }: { title: string }) {
   return (
     <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3.5 py-3">
@@ -83,8 +64,8 @@ function UwLockedStage({ title }: { title: string }) {
       <div>
         <p className="cuw-type-title">{title} (UW only)</p>
         <p className="cuw-type-caption mt-0.5">
-          Ops owns New Submission. Triage, Evidence Verification, Risk Analysis, and Sync to Policy
-          Center stay with the underwriter.
+          Ops owns Intake. Risk Analysis, Enrichment, Evidence, Decision, Integration, and Audit stay
+          with the underwriter.
         </p>
       </div>
     </div>
@@ -332,34 +313,24 @@ function RiskAnalysisStageBody({
   )
 }
 
-function assessmentSectionForStep(step: number): 'vendor' | 'desk' | 'loss' {
-  if (step === 4) return 'desk'
-  if (step === 5) return 'loss'
-  return 'vendor'
-}
-
 function WorkflowTab({
   c,
-  step,
+  journeyStep,
   onDecide,
 }: {
   c: CyberCase
-  step: number
+  journeyStep: JourneyStepId
   onDecide: (decision: PendingDecision, rationale: string) => void
 }) {
   const role = useAuthStore((s) => s.user?.role)
   const isOps = role === 'ops'
-  const idx = cyberFlowIndex(c)
-  const stage = stageForTrackerStep(step)
   const dossierFocusId = useCyberUwStore((s) => s.dossierFocusId)
   const clearDossierFocus = useCyberUwStore((s) => s.clearDossierFocus)
+  const requestInfo = () => window.dispatchEvent(new CustomEvent('cuw-open-info-request'))
 
   useEffect(() => {
     if (!dossierFocusId) return
-    if (stage !== 0) {
-      window.dispatchEvent(new CustomEvent('cuw-tracker-go', { detail: { step: 0 } }))
-      return
-    }
+    if (journeyStep !== 'intake') return
     const el = document.getElementById(`dossier-anchor-${dossierFocusId}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -371,14 +342,14 @@ function WorkflowTab({
       return () => window.clearTimeout(t)
     }
     clearDossierFocus()
-  }, [dossierFocusId, clearDossierFocus, c.id, stage])
+  }, [dossierFocusId, clearDossierFocus, c.id, journeyStep])
 
   return (
     <div className="space-y-4 pb-8">
       <div>
-        {isOps && stage === 0 ? (
+        {isOps && journeyStep === 'intake' ? (
           <p className="text-xs text-slate-600">
-            Ops view: New Submission only. Use Ready for UW when the package is complete.
+            Ops view: Intake only. Use Ready for UW when the package is complete.
           </p>
         ) : null}
         {c.opsHandoffAt && !isOps ? (
@@ -388,52 +359,75 @@ function WorkflowTab({
         ) : null}
       </div>
 
-      {stage === 0 ? (
-        <StageSection stageIndex={0} currentIndex={idx}>
+      {journeyStep === 'intake' ? (
+        <StageSection stageIndex={0} currentIndex={0}>
           <PolicyDocumentsStageBody c={c} />
         </StageSection>
       ) : null}
 
-      {stage === 1 && step === 1 ? (
-        <StageSection stageIndex={1} currentIndex={idx}>
-          {isOps ? <UwLockedStage title="Triage Analysis" /> : <RiskInformationStageBody c={c} />}
-        </StageSection>
-      ) : null}
-
-      {stage === 1 && step === 2 ? (
-        <StageSection stageIndex={1} currentIndex={idx}>
-          {isOps ? (
-            <UwLockedStage title="Evidence Verification" />
-          ) : (
-            <EvidenceVerificationPanel c={c} />
-          )}
-        </StageSection>
-      ) : null}
-
-      {stage === 2 ? (
-        <StageSection stageIndex={2} currentIndex={idx}>
+      {journeyStep === 'risk' ? (
+        <StageSection stageIndex={1} currentIndex={1}>
           {isOps ? (
             <UwLockedStage title="Risk Analysis" />
           ) : (
-            <RiskAnalysisStageBody c={c} section={assessmentSectionForStep(step)} />
+            <>
+              <RiskInformationStageBody c={c} />
+              <RiskAnalysisDesk c={c} />
+            </>
           )}
         </StageSection>
       ) : null}
 
-      {stage === 3 ? (
-        <StageSection stageIndex={3} currentIndex={idx}>
+      {journeyStep === 'enrichment' ? (
+        <StageSection stageIndex={2} currentIndex={2}>
           {isOps ? (
-            <UwLockedStage title="Sync to Policy Center" />
+            <UwLockedStage title="Enrichment" />
           ) : (
-            <PolicyAdminSyncCard c={c} onDecide={onDecide} />
+            <RiskAnalysisStageBody c={c} section="vendor" />
           )}
+        </StageSection>
+      ) : null}
+
+      {journeyStep === 'evidence' ? (
+        <StageSection stageIndex={1} currentIndex={1}>
+          {isOps ? <UwLockedStage title="Evidence" /> : <EvidenceVerificationPanel c={c} />}
+        </StageSection>
+      ) : null}
+
+      {journeyStep === 'decision' ? (
+        <StageSection stageIndex={3} currentIndex={3}>
+          {isOps ? (
+            <UwLockedStage title="Decision" />
+          ) : (
+            <HitlDecisionPanel c={c} onDecide={onDecide} onRequestInfo={requestInfo} />
+          )}
+        </StageSection>
+      ) : null}
+
+      {journeyStep === 'integration' ? (
+        <StageSection stageIndex={3} currentIndex={3}>
+          {isOps ? (
+            <UwLockedStage title="Integration" />
+          ) : (
+            <IntegrationHandoffPanel c={c} onDecide={onDecide} onRequestInfo={requestInfo} />
+          )}
+        </StageSection>
+      ) : null}
+
+      {journeyStep === 'audit' ? (
+        <StageSection stageIndex={3} currentIndex={3}>
+          <AuditTrailPanel c={c} />
         </StageSection>
       ) : null}
     </div>
   )
 }
 
-export function CaseWorkspace() {
+export function CaseWorkspace({
+  journeyStep,
+}: {
+  journeyStep: JourneyStepId
+}) {
   const {
     cases,
     selectedId,
@@ -445,16 +439,7 @@ export function CaseWorkspace() {
   const c = cases.find((x) => x.id === selectedId)
   const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null)
   const [decisionRationale, setDecisionRationale] = useState('')
-  const [trackerStep, setTrackerStep] = useState(() => (c ? trackerStepForCase(c) : 0))
-  const [trackerCaseId, setTrackerCaseId] = useState(c?.id ?? null)
   const paneRef = useRef<HTMLDivElement>(null)
-  const onTrackerStep = useCallback((step: number) => {
-    setTrackerStep(step)
-  }, [])
-  if (c && trackerCaseId !== c.id) {
-    setTrackerCaseId(c.id)
-    setTrackerStep(trackerStepForCase(c))
-  }
 
   useEffect(() => {
     if (listDecisionPrompt) {
@@ -464,13 +449,13 @@ export function CaseWorkspace() {
 
   useLayoutEffect(() => {
     paneRef.current?.scrollTo({ top: 0 })
-  }, [trackerStep, c?.id])
+  }, [journeyStep, c?.id])
 
   if (!c) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
         <Typography.Paragraph size="sm" color="muted">
-          Select a case from Open cases to open the workflow.
+          Select a case from the dashboard to open Adaptive Cyber Underwriting Intelligence.
         </Typography.Paragraph>
       </div>
     )
@@ -508,15 +493,13 @@ export function CaseWorkspace() {
   return (
     <div className="cuw-case-shell flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col">
-        <SpecProgressTracker c={c} onStepChange={onTrackerStep} />
-
         <div className="cuw-case-workflow-pane min-h-0 flex-1">
           <div
             ref={paneRef}
             className="case-drawer-surface cuw-case-shell__pane min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 md:px-6 md:py-5"
           >
             <div id="cuw-workbench-root" className="cuw-workbench-section">
-              <WorkflowTab c={c} step={trackerStep} onDecide={lockDecision} />
+              <WorkflowTab c={c} journeyStep={journeyStep} onDecide={lockDecision} />
             </div>
           </div>
         </div>

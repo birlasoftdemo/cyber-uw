@@ -5,6 +5,32 @@ export type CyberTier = 1 | 2 | 3 | 4 | 5
 export type GapSeverity = 'critical' | 'high' | 'medium' | 'info'
 export type GapDisposition = 'open' | 'resolved' | 'referred'
 export type PasStatus = 'idle' | 'pushing' | 'synced' | 'error'
+
+export type IntegrationTarget = 'policy_admin' | 'rating_pricing' | 'broker_crm'
+export type IntegrationHandoffStatus =
+  | 'Pending Approval'
+  | 'Validated'
+  | 'Submitted'
+  | 'Success'
+  | 'Failed'
+  | 'Retrying'
+
+export interface IntegrationHandoff {
+  target: IntegrationTarget
+  label: string
+  status: IntegrationHandoffStatus
+  updatedAt?: string
+}
+
+export interface AuditTrailEntry {
+  at: string
+  actor: string
+  action: string
+  evidenceSource?: string
+  ruleModel?: string
+  confidence?: number
+  humanOverride?: boolean
+}
 export type SignalStatus = 'idle' | 'scanning' | 'ready'
 
 export type RiskJudgmentStatus = 'pending' | 'accepted' | 'escalated' | 'noted'
@@ -201,5 +227,7 @@ export interface CyberCase {
   answerOverrides?: Record<string, string>
   /** When true, skip Customer Insights and open workflow stages. */
   customer360Dismissed?: boolean
-  audit: { at: string; actor: string; action: string }[]
+  /** Controlled handoffs on the Integration journey step. */
+  integrationHandoffs?: IntegrationHandoff[]
+  audit: AuditTrailEntry[]
 }

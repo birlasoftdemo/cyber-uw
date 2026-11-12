@@ -6,6 +6,11 @@ import { HeaderUserMenu } from './components/HeaderUserMenu'
 import { CasesHome } from './components/CasesHome'
 import { CyberNewSubmissionModal } from './components/CyberNewSubmissionModal'
 import type { CyberShellView } from './components/CyberShellToolbar'
+import {
+  journeyStepForCase,
+  workflowStageForJourney,
+  type JourneyStepId,
+} from './constants/journeyNav'
 import { SpecSidebar, type SpecQueue } from './components/SpecSidebar'
 import {
   FormShippingCenter,
@@ -13,6 +18,7 @@ import {
 } from './components/FormShippingCenter'
 import { CaseContextHeader } from './components/CaseContextHeader'
 import { CaseWorkspace } from './components/CaseWorkspace'
+import { EnrichmentConsentModal } from './components/EnrichmentConsentModal'
 import {
   DiscussionReferModal,
   type DiscussionReferDraft,
@@ -75,11 +81,16 @@ export function CyberUwShell() {
   const activeReferrals = referrals.filter((r) => r.status !== 'resolved').length
   const [shellView, setShellView] = useState<CyberShellView>(() => defaultViewForRole(role))
   const [queue, setQueue] = useState<SpecQueue>('all')
+  const [journeyStep, setJourneyStep] = useState<JourneyStepId>('intake')
   const [submissionPrefill, setSubmissionPrefill] = useState<ReturnedOuttakePrefill | null>(null)
   const [referDraft, setReferDraft] = useState<DiscussionReferDraft | null>(null)
   const [infoDraft, setInfoDraft] = useState<InfoRequestDraft | null>(null)
   const [caseOrigin, setCaseOrigin] = useState<'tasks' | null>(null)
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({})
+  const [enrichmentConsentOpen, setEnrichmentConsentOpen] = useState(false)
+  const [pendingJourney, setPendingJourney] = useState<JourneyStepId | null>(null)
+  const setWorkflowStage = useCyberUwStore((s) => s.setWorkflowStage)
+  const recordEnrichmentConsent = useCyberUwStore((s) => s.recordEnrichmentConsent)
 
   useEffect(() => {
     setShellView(defaultViewForRole(role))
@@ -101,6 +112,8 @@ export function CyberUwShell() {
     selectCase(caseId)
     setTab('workflow')
     setShellView('workbench')
+    const opened = cases.find((row) => row.id === caseId)
+    if (opened) setJourneyStep(journeyStepForCase(opened))
   }
 
   const proceedToClosure = (prefill: ReturnedOuttakePrefill) => {
@@ -135,9 +148,9 @@ export function CyberUwShell() {
           ? role === 'ops'
             ? 'Escalation Inbox'
             : 'Escalations'
-          : selectedCase
+            : selectedCase
             ? selectedCase.insured
-            : 'Open cases'
+            : 'Adaptive Cyber Underwriting Intelligence'
 
   const showCaseDetail = shellView === 'workbench' && Boolean(selectedId)
   const showCasesHome = shellView === 'workbench' && !selectedId
@@ -193,7 +206,27 @@ export function CyberUwShell() {
         shellView={shellView}
         queue={queue}
         caseOpen={showCaseDetail}
+        journeyStep={journeyStep}
         onQueue={chooseQueue}
+        onDashboard={() => {
+          setCaseOrigin(null)
+          clearCaseSelection()
+          setShellView('workbench')
+          setQueue('all')
+        }}
+        onJourney={(step) => {
+          if (
+            step === 'enrichment' &&
+            selectedCase &&
+            !(selectedCase.enrichmentConsent?.models.length)
+          ) {
+            setPendingJourney(step)
+            setEnrichmentConsentOpen(true)
+            return
+          }
+          setJourneyStep(step)
+          if (selectedId) setWorkflowStage(selectedId, workflowStageForJourney(step))
+        }}
         onNavigate={(view) => {
           if (view !== 'workbench') {
             setCaseOrigin(null)
@@ -218,7 +251,7 @@ export function CyberUwShell() {
                       clearCaseSelection()
                     }}>
                       <span aria-hidden>‹</span>
-                      Back to Submissions
+                      Back to Dashboard
                     </button>
                   ) : null}
                   <BirlasoftLogo />
@@ -281,7 +314,7 @@ export function CyberUwShell() {
                 id="cyber-main"
                 className="wb-panel min-h-0 min-w-0 overflow-hidden rounded-none border-0"
               >
-                <CaseWorkspace />
+                <CaseWorkspace journeyStep={journeyStep} />
               </div>
             </div>
           ) : (
@@ -326,6 +359,27 @@ export function CyberUwShell() {
             referredBy: user?.name ?? 'Underwriter',
           })
           setInfoDraft(null)
+        }}
+      />
+
+      <EnrichmentConsentModal
+        caseItem={selectedCase ?? null}
+        open={enrichmentConsentOpen}
+        onCancel={() => {
+          setEnrichmentConsentOpen(false)
+          setPendingJourney(null)
+        }}
+        onConfirm={(models) => {
+          if (!selectedCase || !user) return
+          recordEnrichmentConsent(selectedCase.id, models, {
+            userId: user.email,
+            userName: user.name,
+          })
+          const next = pendingJourney ?? 'enrichment'
+          setJourneyStep(next)
+          setWorkflowStage(selectedCase.id, workflowStageForJourney(next))
+          setEnrichmentConsentOpen(false)
+          setPendingJourney(null)
         }}
       />
 
