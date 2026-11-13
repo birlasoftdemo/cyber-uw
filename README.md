@@ -1,3 +1,3 @@
-# Cyber UW
+# Cyber UW demo
 
-Live demo: https://birlasoftdemo.github.io/cyber-uw/
+Live: https://birlasoftdemo.github.io/cyber-uw/
