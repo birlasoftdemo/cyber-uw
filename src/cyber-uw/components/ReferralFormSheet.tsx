@@ -80,7 +80,7 @@ export function ReferralFormSheet({
   const uid = useId()
   const fileRef = useRef<HTMLInputElement>(null)
   const taskTypes = mode === 'info' ? TASK_TYPES_INFO : TASK_TYPES_REFERRAL
-  const heading = mode === 'info' ? 'More Info Required' : 'Referral Details'
+  const heading = mode === 'info' ? 'Broker Follow-up' : 'Referral Details'
 
   const onBrowse = () => fileRef.current?.click()
   const onFiles = (_event: ChangeEvent<HTMLInputElement>) => {

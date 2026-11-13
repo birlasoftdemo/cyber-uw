@@ -3,17 +3,14 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileBarChart,
-  FileSearch,
-  GitBranch,
   LayoutDashboard,
   ListChecks,
   Scale,
-  ScrollText,
   ShieldAlert,
-  Sparkles,
+  XCircle,
 } from 'lucide-react'
 import { BirlasoftLogo } from './BirlasoftLogo'
-import { JOURNEY_STEPS, PRODUCT_NAME, type JourneyStepId } from '../constants/journeyNav'
+import { type JourneyStepId } from '../constants/journeyNav'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import type { CyberShellView } from './CyberShellToolbar'
 import {
@@ -21,6 +18,7 @@ import {
   isDecisionReady,
   submissionStatus,
 } from '../utils/submissionStatus'
+import { StageJourneyStepper } from './StageJourneyStepper'
 
 export type SpecQueue =
   | 'all'
@@ -29,16 +27,7 @@ export type SpecQueue =
   | 'referred'
   | 'awaitingBroker'
   | 'decisionReady'
-
-const JOURNEY_ICONS: Record<JourneyStepId, typeof LayoutDashboard> = {
-  intake: ClipboardList,
-  risk: Scale,
-  enrichment: Sparkles,
-  evidence: FileSearch,
-  decision: ListChecks,
-  integration: GitBranch,
-  audit: ScrollText,
-}
+  | 'declined'
 
 export function SpecSidebar({
   shellView,
@@ -47,7 +36,6 @@ export function SpecSidebar({
   journeyStep,
   onQueue,
   onNavigate,
-  onDashboard,
   onJourney,
 }: {
   shellView: CyberShellView
@@ -56,7 +44,6 @@ export function SpecSidebar({
   journeyStep: JourneyStepId
   onQueue: (queue: SpecQueue) => void
   onNavigate: (view: CyberShellView) => void
-  onDashboard: () => void
   onJourney: (step: JourneyStepId) => void
 }) {
   const cases = useCyberUwStore((s) => s.cases)
@@ -68,8 +55,10 @@ export function SpecSidebar({
   let referred = 0
   let awaitingBroker = 0
   let decisionReady = 0
+  let declined = 0
   for (const c of cases) {
     if (isDecisionReady(c, referrals)) decisionReady += 1
+    if (submissionStatus(c, referrals) === 'Declined') declined += 1
     const bucket = dashboardCounterForCase(c, referrals)
     switch (bucket) {
       case 'newSubmissions':
@@ -97,35 +86,13 @@ export function SpecSidebar({
 
   if (caseOpen) {
     return (
-      <aside className="spec-sidebar">
+      <aside className="spec-sidebar spec-sidebar--journey">
         <div className="spec-home__brand">
           <BirlasoftLogo />
-          <p className="spec-home__product">{PRODUCT_NAME}</p>
         </div>
-        <nav aria-label="Case journey">
-          <button
-            type="button"
-            className="spec-nav__item"
-            onClick={onDashboard}
-          >
-            <LayoutDashboard size={16} />
-            Dashboard
-          </button>
-          {JOURNEY_STEPS.map((step) => {
-            const Icon = JOURNEY_ICONS[step.id]
-            const active = journeyStep === step.id
-            return (
-              <button
-                key={step.id}
-                type="button"
-                className={`spec-nav__sub${active ? ' spec-nav__sub--active' : ''}`}
-                onClick={() => onJourney(step.id)}
-              >
-                <Icon size={14} />
-                <span>{step.label}</span>
-              </button>
-            )
-          })}
+        <nav aria-label="Case journey" className="spec-sidebar__journey-nav">
+          <p className="stage-journey__heading">Progress Tracker</p>
+          <StageJourneyStepper journeyStep={journeyStep} onJourney={onJourney} />
         </nav>
       </aside>
     )
@@ -133,11 +100,10 @@ export function SpecSidebar({
 
   return (
     <aside className="spec-sidebar">
-      <div className="spec-home__brand">
-        <BirlasoftLogo />
-        <p className="spec-home__product">{PRODUCT_NAME}</p>
-      </div>
-      <nav aria-label="Dashboard">
+        <div className="spec-home__brand">
+          <BirlasoftLogo />
+        </div>
+        <nav aria-label="Dashboard">
         <button
           type="button"
           className={`spec-nav__item${onList && queue === 'all' ? ' spec-nav__item--parent' : ''}`}
@@ -179,7 +145,7 @@ export function SpecSidebar({
           onClick={() => onQueue('awaitingBroker')}
         >
           <ClipboardCheck size={14} />
-          <span>Awaiting Broker</span>
+          <span>Broker Follow-up</span>
           <em>{awaitingBroker}</em>
         </button>
         <button
@@ -190,6 +156,15 @@ export function SpecSidebar({
           <Scale size={14} />
           <span>Decision-ready</span>
           <em>{decisionReady}</em>
+        </button>
+        <button
+          type="button"
+          className={`spec-nav__sub${onList && queue === 'declined' ? ' spec-nav__sub--active' : ''}`}
+          onClick={() => onQueue('declined')}
+        >
+          <XCircle size={14} />
+          <span>Declined</span>
+          <em>{declined}</em>
         </button>
         <button
           type="button"

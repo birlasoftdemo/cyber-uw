@@ -54,12 +54,12 @@ export function DecisionConfirmModal({
 
   const body =
     pending === 'decline'
-      ? 'Decline removes this risk from the competitive soft market chase. You can undo before PAS sync if needed.'
+      ? 'Decline removes this risk from the competitive soft market chase. Check integration status in the table below after you confirm.'
       : pending === 'refer'
-        ? 'Refer routes this to specialist review with an auditable rationale.'
+        ? 'Refer routes this to specialist review with an auditable rationale. Check integration status in the table below after you confirm.'
         : quotingWithCritical
-          ? 'Signal shows critical control gaps. Approving now is a material exception and requires rationale.'
-          : 'Confirm human-in-the-loop approve. Tier assist is not a binding premium.'
+          ? 'Signal shows critical control gaps. Approving now is a material exception and requires rationale. Check integration status in the table below after you confirm.'
+          : 'Confirm human-in-the-loop approve. Tier assist is not a binding premium. Check integration status in the table below after you confirm.'
 
   return (
     <Modal state={overlay}>

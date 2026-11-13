@@ -1,13 +1,15 @@
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { auditTrailForCase } from '../data/auditTrailDemo'
 import type { CyberCase } from '../types'
+import { SpecStatusPill } from './SpecStatusPill'
 
 export function AuditTrailPanel({ c }: { c: CyberCase }) {
   const rows = auditTrailForCase(c)
 
   return (
-    <section className="spec-info-panel" aria-label="Audit trail">
+    <section className="spec-info-panel" aria-label="Audit">
       <header className="spec-info-panel__bar">
-        <h3>Audit Trail</h3>
+        <h3>Audit</h3>
         <p>Timestamp · user/agent · action · evidence · rule/model · confidence · override</p>
       </header>
 
@@ -41,9 +43,13 @@ export function AuditTrailPanel({ c }: { c: CyberCase }) {
                 </td>
                 <td>
                   {row.humanOverride ? (
-                    <span className="spec-grid-status spec-grid-status--watch">Yes</span>
+                    <SpecStatusPill tone="watch" icon={AlertCircle}>
+                      Yes
+                    </SpecStatusPill>
                   ) : (
-                    <span className="spec-grid-status spec-grid-status--ok">No</span>
+                    <SpecStatusPill tone="ok" icon={CheckCircle2}>
+                      No
+                    </SpecStatusPill>
                   )}
                 </td>
               </tr>

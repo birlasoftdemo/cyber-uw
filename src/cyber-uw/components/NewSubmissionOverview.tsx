@@ -36,17 +36,14 @@ export function NewSubmissionOverview({ c }: { c: CyberCase }) {
   const underwriter = useAuthStore((s) => s.user?.name) ?? 'Underwriter'
   const period = policyPeriodForCase(c)
   const premium = premiumFor(c)
-  const businessType = c.submissionKind === 'renewal' ? 'Renewal' : 'Primary'
   const contact = brokerContact(c.broker)
 
   const points: [string, string][] = [
-    ['Insured Parties', c.insured],
     ['Coverage Period', `${formatPolicyDate(period.startIso)} to ${formatPolicyDate(period.endIso)}`],
     ['Coverage Territory', c.insuredAddress],
     ['Currency', 'USD'],
     ['Coverage Details', `${money(c.limitRequestedUsd)} aggregate · ${c.productName}`],
     ['Sum Insured', money(c.limitRequestedUsd)],
-    ['Additional Benefits', c.dossierSummary || c.companyDescription || c.sector],
   ]
 
   return (
@@ -58,9 +55,7 @@ export function NewSubmissionOverview({ c }: { c: CyberCase }) {
         <div>
           <p className="ns-overview__name">{c.insured}</p>
           <p className="ns-overview__meta">
-            <span>Line of Business: {c.lobName}</span>
             <span>Location: {c.insuredAddress}</span>
-            <span>Business Type: {businessType}</span>
           </p>
         </div>
         <div>

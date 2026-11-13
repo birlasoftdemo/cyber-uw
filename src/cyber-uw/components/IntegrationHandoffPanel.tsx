@@ -1,80 +1,80 @@
-import { integrationHandoffsForCase } from '../data/integrationHandoffs'
-import type { CyberCase, CyberDecision, IntegrationHandoffStatus } from '../types'
-import { HitlDecisionPanel } from './HitlDecisionPanel'
+import { Button } from '@heroui/react'
+import { useAuthStore } from '../store/authStore'
+import { useCyberUwStore } from '../store/cyberUwStore'
+import type { CyberCase } from '../types'
 
-function statusClass(status: IntegrationHandoffStatus) {
-  switch (status) {
-    case 'Success':
-    case 'Validated':
-      return 'spec-grid-status spec-grid-status--ok'
-    case 'Submitted':
-    case 'Pending Approval':
-      return 'spec-grid-status spec-grid-status--mid'
-    case 'Retrying':
-      return 'spec-grid-status spec-grid-status--watch'
-    case 'Failed':
-      return 'spec-grid-status spec-grid-status--bad'
-    default: {
-      const neverStatus: never = status
-      return neverStatus
-    }
-  }
+function money(n: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(n)
 }
 
-export function IntegrationHandoffPanel({
-  c,
-  onDecide,
-  onRequestInfo,
-}: {
-  c: CyberCase
-  onDecide: (decision: Exclude<CyberDecision, 'pending'>, rationale: string) => void
-  onRequestInfo: () => void
-}) {
-  const handoffs = integrationHandoffsForCase(c)
+function compactLimit(n: number) {
+  if (n >= 1_000_000_000) return `$ ${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)}B`
+  if (n >= 1_000_000) return `$ ${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+  return money(n)
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="integration-fields__item">
+      <span className="integration-fields__label">{label}</span>
+      <span className="integration-fields__value">{value}</span>
+    </div>
+  )
+}
+
+/** Limits / aggregation + PAS push. Status table lives on Decision after sign-off. */
+export function IntegrationHandoffPanel({ c }: { c: CyberCase }) {
+  const pushToPas = useCyberUwStore((s) => s.pushToPas)
+  const underwriter = useAuthStore((s) => s.user?.name) ?? 'Underwriter'
+  const synced = c.pasStatus === 'synced'
+  const aggregateLimit = compactLimit(c.limitRequestedUsd)
+  const excess =
+    c.financialSignOff?.sirUsd != null ? compactLimit(c.financialSignOff.sirUsd) : 'None'
+  const approvalUw = c.financialSignOff?.signedOffBy?.trim() || underwriter
+  const approvalLimit =
+    c.financialSignOff?.limitUsd != null
+      ? compactLimit(c.financialSignOff.limitUsd)
+      : compactLimit(c.limitRequestedUsd)
 
   return (
     <div className="integration-panel">
-      <HitlDecisionPanel c={c} onDecide={onDecide} onRequestInfo={onRequestInfo} />
-
-      <section className="spec-info-panel" aria-label="Controlled handoff">
+      <section className="spec-info-panel" aria-label="Integration">
         <header className="spec-info-panel__bar">
-          <h3>Controlled handoff</h3>
-          <p>Policy Administration · Rating/Pricing · Broker CRM</p>
+          <h3>Integration</h3>
+          <p>Submission request limits and policy-center handoff</p>
         </header>
+      </section>
 
-        <div className="spec-grid-wrap">
-          <table className="spec-grid">
-            <thead>
-              <tr className="spec-grid__groups">
-                <th colSpan={2}>Target</th>
-                <th colSpan={2}>Status</th>
-              </tr>
-              <tr className="spec-grid__cols">
-                <th>System</th>
-                <th>Channel</th>
-                <th>Integration status</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {handoffs.map((row) => (
-                <tr key={row.target}>
-                  <td>
-                    <strong>{row.label}</strong>
-                  </td>
-                  <td>{row.target.replace(/_/g, ' ')}</td>
-                  <td>
-                    <span className={statusClass(row.status)}>{row.status}</span>
-                  </td>
-                  <td className="spec-grid__num">
-                    {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="spec-info-panel" aria-label="Submission Request Limits & Aggregation">
+        <header className="spec-info-panel__bar">
+          <h3>Submission Request Limits & Aggregation</h3>
+        </header>
+        <div className="integration-fields integration-fields--4">
+          <Field label="Aggregate Whole Limit Amount" value={aggregateLimit} />
+          <Field label="Currency" value="USD" />
+          <Field label="Aggregate Whole Excess Amount" value={excess} />
+          <Field label="Currency" value="USD" />
+          <Field label="Approval Underwriter" value={approvalUw} />
+          <Field label="Approval Limit" value={approvalLimit} />
+          <Field label="Underwriter" value={underwriter} />
+          <Field label="Limit" value={aggregateLimit} />
         </div>
       </section>
+
+      <div className="integration-panel__actions">
+        <Button
+          variant="secondary"
+          className="integration-panel__cta"
+          isDisabled={synced}
+          onPress={() => pushToPas(c.id)}
+        >
+          {synced ? 'Policy Center Updated' : 'Update Policy Center'}
+        </Button>
+      </div>
     </div>
   )
 }

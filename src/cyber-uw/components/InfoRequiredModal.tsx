@@ -54,7 +54,7 @@ export function InfoRequiredModal({ draft, onCancel, onConfirm }: Props) {
     <Modal state={overlay}>
       <Modal.Backdrop isDismissable>
         <Modal.Container size="lg" scroll="inside" className="refer-sheet-modal">
-          <Modal.Dialog aria-label="More Info Required" className="refer-sheet-dialog">
+          <Modal.Dialog aria-label="Broker Follow-up" className="refer-sheet-dialog">
             <ReferralFormSheet
               mode="info"
               values={values}
@@ -64,7 +64,6 @@ export function InfoRequiredModal({ draft, onCancel, onConfirm }: Props) {
               onSave={() => onConfirm(composeReferralNote(values))}
               saveDisabled={!canSave}
               saveLabel="Save"
-              footerNote={`Dispatch to ${draft.broker}. Moves ${draft.insured} to More Info Required.`}
             />
           </Modal.Dialog>
         </Modal.Container>

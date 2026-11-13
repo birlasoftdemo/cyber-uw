@@ -3,9 +3,8 @@ export const JOURNEY_STEPS = [
   { id: 'intake', label: 'Intake' },
   { id: 'risk', label: 'Risk Analysis' },
   { id: 'enrichment', label: 'Enrichment' },
-  { id: 'evidence', label: 'Evidence' },
+  { id: 'evidence', label: 'Evidence Validation' },
   { id: 'decision', label: 'Decision' },
-  { id: 'integration', label: 'Integration' },
   { id: 'audit', label: 'Audit' },
 ] as const
 
@@ -24,7 +23,6 @@ export function workflowStageForJourney(step: JourneyStepId): number {
     case 'enrichment':
       return 2
     case 'decision':
-    case 'integration':
     case 'audit':
       return 3
     default: {
@@ -39,10 +37,10 @@ export function journeyStepForCase(input: {
   pasStatus: string
   workflowStage?: number
 }): JourneyStepId {
-  if (input.pasStatus === 'synced' || input.decision !== 'pending') return 'integration'
+  if (input.pasStatus === 'synced' || input.decision !== 'pending') return 'decision'
   const stage = input.workflowStage ?? 0
   if (stage <= 0) return 'intake'
   if (stage === 1) return 'evidence'
-  if (stage === 2) return 'enrichment'
+  if (stage === 2) return 'risk'
   return 'decision'
 }

@@ -3,7 +3,7 @@ import type { CyberCase, ReferralStatus, ReferralTicket } from '../types'
 export const SUBMISSION_STATUSES = [
   'New',
   'Processing',
-  'Evidence Gap',
+  'Broker Follow-up',
   'Under Review',
   'Referred',
   'Approved',
@@ -28,7 +28,7 @@ export function submissionStatus(
   const missing = (c.missingDocs?.length ?? 0) > 0 || c.completenessPct < 80
   const stage = c.workflowStage ?? 0
 
-  if (awaitingBroker || (stage >= 1 && missing && stage < 3)) return 'Evidence Gap'
+  if (awaitingBroker || (stage >= 1 && missing && stage < 3)) return 'Broker Follow-up'
   if (stage <= 0) return 'New'
   if (stage === 1) return 'Processing'
   return 'Under Review'
@@ -54,7 +54,7 @@ export function dashboardCounterForCase(
       return 'inProgress'
     case 'Referred':
       return 'referred'
-    case 'Evidence Gap':
+    case 'Broker Follow-up':
       return 'awaitingBroker'
     case 'Approved':
     case 'Declined':

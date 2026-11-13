@@ -1,4 +1,6 @@
-/* Mulish — visual guidelines. One family for headings, body, and buttons. */
+/* Mulish — visual guidelines. One family for headings, body, and buttons.
+   Body: Large 20/28 · Medium 18/24 · Small 16/22 · Extra Small 12/18
+   Button: 14/16 SemiBold */
 
 @layer theme {
   :root {
@@ -7,6 +9,21 @@
     --font-serif: "Mulish", ui-sans-serif, system-ui, sans-serif;
     --font-sans: "Mulish", ui-sans-serif, system-ui, sans-serif;
     --dashboard-muted-warm: #63676a;
+
+    --type-body-lg: 20px;
+    --type-body-lg-lh: 28px;
+    --type-body-md: 18px;
+    --type-body-md-lh: 24px;
+    --type-body-sm: 16px;
+    --type-body-sm-lh: 22px;
+    --type-body-xs: 12px;
+    --type-body-xs-lh: 18px;
+    --type-btn: 14px;
+    --type-btn-lh: 16px;
+    --type-weight-regular: 400;
+    --type-weight-medium: 500;
+    --type-weight-semibold: 600;
+    --type-weight-bold: 700;
 
     --cuw-ink: #1a1a1a;
     --cuw-ink-secondary: #1a1a1a;
@@ -34,9 +51,9 @@
   .cuw-type-kicker {
     margin: 0;
     font-family: var(--font-ui);
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 18px;
+    font-size: var(--type-body-xs);
+    font-weight: var(--type-weight-semibold);
+    line-height: var(--type-body-xs-lh);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--cuw-ink-tertiary);
@@ -45,36 +62,45 @@
   .cuw-type-title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
+    font-size: var(--type-body-lg);
+    font-weight: var(--type-weight-bold);
     letter-spacing: -0.02em;
-    line-height: 28px;
+    line-height: var(--type-body-lg-lh);
     color: var(--cuw-ink);
   }
 
   .cuw-type-body {
     margin: 0;
     font-family: var(--font-ui);
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 22px;
+    font-size: var(--type-body-sm);
+    font-weight: var(--type-weight-regular);
+    line-height: var(--type-body-sm-lh);
+    color: var(--cuw-ink);
+  }
+
+  .cuw-type-body-md {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: var(--type-body-md);
+    font-weight: var(--type-weight-regular);
+    line-height: var(--type-body-md-lh);
     color: var(--cuw-ink);
   }
 
   .cuw-type-label {
     margin: 0;
     font-family: var(--font-ui);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--type-body-xs);
+    font-weight: var(--type-weight-semibold);
     letter-spacing: 0;
-    line-height: 18px;
+    line-height: var(--type-body-xs-lh);
     color: #1b1564;
   }
 
   .cuw-type-metric {
     margin: 0;
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: var(--type-weight-bold);
     letter-spacing: -0.045em;
     line-height: 0.95;
     color: var(--cuw-ink);
@@ -84,10 +110,17 @@
   .cuw-type-caption {
     margin: 0;
     font-family: var(--font-ui);
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 18px;
+    font-size: var(--type-body-xs);
+    font-weight: var(--type-weight-regular);
+    line-height: var(--type-body-xs-lh);
     color: var(--cuw-ink);
+  }
+
+  .cuw-type-button {
+    font-family: var(--font-ui);
+    font-size: var(--type-btn);
+    font-weight: var(--type-weight-semibold);
+    line-height: var(--type-btn-lh);
   }
 
   .cuw-panel {

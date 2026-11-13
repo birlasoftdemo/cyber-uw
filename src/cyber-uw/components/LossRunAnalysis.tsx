@@ -1,5 +1,6 @@
 import { CircleDollarSign, FileStack, TriangleAlert } from 'lucide-react'
 import { lossRunForCase, type LossClaimStatus } from '../data/lossRunDemo'
+import { carrierExposureForCase, formatExposureUsd } from '../data/riskVizDemo'
 import type { CyberCase } from '../types'
 import { InfoTip } from './InfoTip'
 
@@ -29,25 +30,26 @@ function YearChart({
 }: {
   years: { year: number; incurred: number; claims: number }[]
 }) {
-  const width = 720
-  const height = 210
-  const padL = 52
-  const padR = 28
+  const width = 920
+  const height = 220
+  const padL = 56
+  const padR = 32
   const padT = 16
-  const padB = 28
+  const padB = 30
   const innerW = width - padL - padR
   const innerH = height - padT - padB
   const maxMoney = Math.max(...years.map((year) => year.incurred), 1)
   const maxClaims = Math.max(...years.map((year) => year.claims), 1)
   const slot = years.length ? innerW / years.length : innerW
-  const barW = Math.min(64, slot * 0.46)
+  const barW = Math.min(36, Math.max(8, slot * 0.55))
   const ticks = [0, 0.5, 1]
+  const labelEvery = years.length > 12 ? 2 : 1
 
   const points = years.map((year, index) => {
     const x = padL + slot * index + slot / 2
     const barH = (year.incurred / maxMoney) * innerH
     const y = padT + innerH - (year.claims / maxClaims) * innerH
-    return { ...year, x, barH, y }
+    return { ...year, x, barH, y, index }
   })
   const line = points.map((point) => `${point.x},${point.y}`).join(' ')
 
@@ -74,31 +76,42 @@ function YearChart({
           y={padT + innerH - point.barH}
           width={barW}
           height={point.barH}
-          rx={3}
+          rx={2}
         />
       ))}
       <polyline points={line} />
       {points.map((point) => (
         <g key={`dot-${point.year}`}>
-          <circle cx={point.x} cy={point.y} r={4} />
-          <text x={point.x} y={height - 8} textAnchor="middle">
-            {point.year}
-          </text>
+          <circle cx={point.x} cy={point.y} r={3.5} />
+          {point.index % labelEvery === 0 ? (
+            <text x={point.x} y={height - 8} textAnchor="middle">
+              {String(point.year).slice(2)}
+            </text>
+          ) : null}
         </g>
       ))}
     </svg>
   )
 }
 
+function MetricIcon() {
+  return (
+    <span className="intake-metric__icon" aria-hidden="true">
+      <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+        <rect x="5.5" y="3.5" width="9" height="12" rx="1.4" stroke="#fff" strokeWidth="1.4" />
+        <rect x="3.5" y="5.5" width="9" height="12" rx="1.4" fill="#1b1564" stroke="#fff" strokeWidth="1.4" />
+      </svg>
+    </span>
+  )
+}
+
 export function LossRunAnalysis({ c }: { c: CyberCase }) {
   const reading = lossRunForCase(c)
+  const exposure = carrierExposureForCase(c)
   const lagMax = Math.max(...reading.claims.map((claim) => claim.lagDays ?? 0), 1)
 
   return (
     <section className="lr-sheet" aria-label="Loss Run Analysis">
-      <header className="lr-sheet__head">
-        <h4>Loss Run Analysis</h4>
-      </header>
       <div className="lr-block">
         <h5>Loss run history</h5>
         <div className="lr-kpis">
@@ -183,34 +196,59 @@ export function LossRunAnalysis({ c }: { c: CyberCase }) {
       </div>
       <div className="lr-block">
         <h5>Claims</h5>
-        <table className="ra-table">
-          <thead>
-            <tr>
-              <th>Claim</th>
-              <th>Loss date</th>
-              <th>Lag</th>
-              <th>Status</th>
-              <th>Cause</th>
-              <th>Paid</th>
-              <th>Incurred</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reading.claims.map((claim) => (
-              <tr key={claim.id}>
-                <td>{claim.id}</td>
-                <td>{claim.lossDate}</td>
-                <td>{claim.lagDays ?? '—'}</td>
-                <td className={claim.status === 'OPEN' ? 'lr-status--open' : 'lr-status--closed'}>
-                  {statusLabel(claim.status)}
-                </td>
-                <td>{claim.cause}</td>
-                <td>{money(claim.paid)}</td>
-                <td>{money(claim.incurred)}</td>
+        <div className="intake-panel__metrics intake-panel__metrics--three lr-claims-kpis" aria-label="Coverage KPIs">
+          <article className="intake-metric">
+            <MetricIcon />
+            <span className="intake-metric__label">Est. ALE</span>
+            <strong className="intake-metric__value">{formatExposureUsd(exposure.aleUsd)}</strong>
+          </article>
+          <article className="intake-metric">
+            <MetricIcon />
+            <span className="intake-metric__label">Worst-case stack</span>
+            <strong className="intake-metric__value">{formatExposureUsd(exposure.worstCaseTotalUsd)}</strong>
+          </article>
+          <article className="intake-metric">
+            <MetricIcon />
+            <span className="intake-metric__label">Requested limit</span>
+            <strong className="intake-metric__value">{formatExposureUsd(exposure.limitRequestedUsd)}</strong>
+          </article>
+        </div>
+        <div className="spec-grid-wrap spec-grid-wrap--nested">
+          <table className="spec-grid spec-grid--claims">
+            <thead>
+              <tr className="spec-grid__groups">
+                <th colSpan={5}>Claim</th>
+                <th colSpan={2}>Amounts</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+              <tr className="spec-grid__cols">
+                <th>Claim</th>
+                <th>Loss date</th>
+                <th>Lag</th>
+                <th>Status</th>
+                <th>Cause</th>
+                <th>Paid</th>
+                <th>Incurred</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reading.claims.map((claim) => (
+                <tr key={claim.id}>
+                  <td>
+                    <strong>{claim.id}</strong>
+                  </td>
+                  <td className="spec-grid__num">{claim.lossDate}</td>
+                  <td className="spec-grid__num">{claim.lagDays ?? '—'}</td>
+                  <td className={claim.status === 'OPEN' ? 'lr-status--open' : 'lr-status--closed'}>
+                    {statusLabel(claim.status)}
+                  </td>
+                  <td>{claim.cause}</td>
+                  <td className="spec-grid__num">{money(claim.paid)}</td>
+                  <td className="spec-grid__num">{money(claim.incurred)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   )

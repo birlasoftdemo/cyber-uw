@@ -1,23 +1,46 @@
+import { ChevronDown } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   intakeMetricsForCase,
+  type BrokerFollowUp,
   type IntakeDocStatus,
 } from '../data/clientFeedbackDemo'
 import type { CyberCase } from '../types'
+import { DocSheetExtractedFields } from './SubmissionDocumentsPanel'
+import { ScoreExplainModal, type ScoreExplainKind } from './ScoreExplainModal'
+import {
+  SpecStatusPill,
+  followUpIcon,
+  intakeStatusIcon,
+  type SpecStatusTone,
+} from './SpecStatusPill'
 
-function statusClass(status: IntakeDocStatus) {
+function statusTone(status: IntakeDocStatus): SpecStatusTone {
   switch (status) {
     case 'Extracted':
-      return 'spec-grid-status spec-grid-status--ok'
+      return 'ok'
     case 'Classified':
     case 'Received':
-      return 'spec-grid-status spec-grid-status--mid'
+      return 'mid'
     case 'Review Required':
-      return 'spec-grid-status spec-grid-status--watch'
     case 'Missing':
-      return 'spec-grid-status spec-grid-status--miss'
+      return 'miss'
     default: {
       const neverStatus: never = status
       return neverStatus
+    }
+  }
+}
+
+function followUpTone(value: BrokerFollowUp): SpecStatusTone {
+  switch (value) {
+    case 'Required':
+      return 'miss'
+    case 'Not Required':
+      return 'ok'
+    default: {
+      const neverValue: never = value
+      return neverValue
     }
   }
 }
@@ -33,23 +56,65 @@ function MetricIcon() {
   )
 }
 
-/** Cyber document checklist + completeness / duplicate-check metrics for Submission intake. */
+function HeaderHelp({
+  label,
+  tip,
+  onOpen,
+}: {
+  label: string
+  tip: string
+  onOpen: () => void
+}) {
+  return (
+    <span className="spec-grid__th-help">
+      <span>{label}</span>
+      <button
+        type="button"
+        className="spec-grid__th-tip"
+        title={tip}
+        aria-label={`Explain ${label}`}
+        onClick={(event) => {
+          event.stopPropagation()
+          onOpen()
+        }}
+      >
+        i
+      </button>
+      <span className="spec-grid__th-tip-bubble" role="tooltip">
+        {tip}
+      </span>
+    </span>
+  )
+}
+
+/** Cyber document checklist + missing-docs / duplicate-check metrics for Submission intake. */
 export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
   const metrics = intakeMetricsForCase(c)
+  const firstAttentionId = useMemo(
+    () =>
+      metrics.docs.find((doc) => doc.status === 'Missing' || doc.status === 'Review Required')?.id ??
+      null,
+    [metrics.docs],
+  )
+  const [expandedId, setExpandedId] = useState<string | null>(firstAttentionId)
+  const [scoreExplain, setScoreExplain] = useState<ScoreExplainKind | null>(null)
+
+  useEffect(() => {
+    setExpandedId(firstAttentionId)
+  }, [c.id, firstAttentionId])
+
+  const toggleDoc = (docId: string) => {
+    setExpandedId((current) => (current === docId ? null : docId))
+  }
 
   return (
-    <section className="spec-info-panel" aria-label="Submission intake">
+    <section className="spec-info-panel" aria-label="Intake">
       <header className="spec-info-panel__bar">
-        <h3>Cyber documents received</h3>
-        <p>Document package status · duplicate and entity match</p>
+        <h3>Intake</h3>
+        
       </header>
 
-      <div className="intake-panel__metrics" aria-label="Intake metrics">
-        <article className="intake-metric">
-          <MetricIcon />
-          <span className="intake-metric__label">Submission Completeness</span>
-          <strong className="intake-metric__value">{metrics.completenessPct}%</strong>
-        </article>
+      <div className="intake-panel__metrics intake-panel__metrics--two" aria-label="Intake metrics">
         <article className="intake-metric">
           <MetricIcon />
           <span className="intake-metric__label">Missing Documents</span>
@@ -58,18 +123,9 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
         <article className="intake-metric">
           <MetricIcon />
           <span className="intake-metric__label">Duplicate Docs Check</span>
-          <strong
-            className={`intake-metric__value${
-              metrics.duplicateCheckCompleted ? ' intake-metric__value--ok' : ' intake-metric__value--watch'
-            }`}
-          >
+          <strong className="intake-metric__value intake-metric__value--complete">
             {metrics.duplicateCheckLabel}
           </strong>
-        </article>
-        <article className="intake-metric">
-          <MetricIcon />
-          <span className="intake-metric__label">Broker Follow-ups</span>
-          <strong className="intake-metric__value">{metrics.brokerFollowUps}</strong>
         </article>
       </div>
 
@@ -77,32 +133,114 @@ export function SubmissionIntakePanel({ c }: { c: CyberCase }) {
         <table className="spec-grid">
           <thead>
             <tr className="spec-grid__groups">
-              <th colSpan={2}>Document details</th>
-              <th colSpan={2}>General details</th>
+              <th colSpan={3}>Document details</th>
+              <th colSpan={2}>Quality checks</th>
             </tr>
             <tr className="spec-grid__cols">
               <th>Document</th>
               <th>Status</th>
-              <th>Insured</th>
-              <th>Broker</th>
+              <th>Broker Follow-up</th>
+              <th>
+                <HeaderHelp
+                  label="Confidence"
+                  tip="How much we can trust the extracted value. Click for scoring detail."
+                  onOpen={() => setScoreExplain('confidence')}
+                />
+              </th>
+              <th>
+                <HeaderHelp
+                  label="Completeness"
+                  tip="How full this document is for intake. Click for scoring detail."
+                  onOpen={() => setScoreExplain('completeness')}
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
-            {metrics.docs.map((doc) => (
-              <tr key={doc.id}>
-                <td>
-                  <strong>{doc.name}</strong>
-                </td>
-                <td>
-                  <span className={statusClass(doc.status)}>{doc.status}</span>
-                </td>
-                <td>{c.insured}</td>
-                <td>{c.broker}</td>
-              </tr>
-            ))}
+            {metrics.docs.map((doc) => {
+              const expanded = expandedId === doc.id
+              return (
+                <Fragment key={doc.id}>
+                  <tr
+                    className={`spec-grid__row--toggle${expanded ? ' spec-grid__row--open' : ''}`}
+                    aria-expanded={expanded}
+                    tabIndex={0}
+                    onClick={() => toggleDoc(doc.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        toggleDoc(doc.id)
+                      }
+                    }}
+                  >
+                    <td>
+                      <span className="spec-grid__doc-cell">
+                        <button
+                          type="button"
+                          className="spec-grid__doc-toggle"
+                          aria-label={expanded ? `Hide ${doc.name} details` : `Show ${doc.name} details`}
+                          aria-expanded={expanded}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            toggleDoc(doc.id)
+                          }}
+                        >
+                          <ChevronDown
+                            size={16}
+                            className={expanded ? 'is-open' : ''}
+                            aria-hidden
+                          />
+                        </button>
+                        <a
+                          className="spec-grid__doc-link"
+                          href={`#ref-doc/${encodeURIComponent(doc.name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open reference document (demo link)"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            event.preventDefault()
+                          }}
+                        >
+                          {doc.name}
+                        </a>
+                      </span>
+                    </td>
+                    <td>
+                      <SpecStatusPill tone={statusTone(doc.status)} icon={intakeStatusIcon[doc.status]}>
+                        {doc.status}
+                      </SpecStatusPill>
+                    </td>
+                    <td>
+                      <SpecStatusPill
+                        tone={followUpTone(doc.brokerFollowUp)}
+                        icon={followUpIcon[doc.brokerFollowUp]}
+                      >
+                        {doc.brokerFollowUp}
+                      </SpecStatusPill>
+                    </td>
+                    <td className="spec-grid__num">{doc.confidence}%</td>
+                    <td className="spec-grid__num">{doc.completenessPct}%</td>
+                  </tr>
+                  {expanded ? (
+                    <tr className="spec-grid__expand">
+                      <td colSpan={5}>
+                        <DocSheetExtractedFields c={c} docId={doc.id} docStatus={doc.status} />
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>
+
+      <ScoreExplainModal
+        kind={scoreExplain}
+        open={scoreExplain != null}
+        onClose={() => setScoreExplain(null)}
+      />
     </section>
   )
 }

@@ -1,21 +1,24 @@
+import { useState } from 'react'
 import {
   evidenceControlsForCase,
   type VerificationStatus,
 } from '../data/clientFeedbackDemo'
 import type { CyberCase } from '../types'
+import { ScoreExplainModal } from './ScoreExplainModal'
+import { SpecStatusPill, verificationIcon, type SpecStatusTone } from './SpecStatusPill'
 
-function resultClass(result: VerificationStatus) {
+function resultTone(result: VerificationStatus): SpecStatusTone {
   switch (result) {
     case 'Verified':
-      return 'spec-grid-status spec-grid-status--ok'
+      return 'ok'
     case 'Partially Verified':
-      return 'spec-grid-status spec-grid-status--mid'
+      return 'mid'
     case 'Contradicted':
-      return 'spec-grid-status spec-grid-status--bad'
+      return 'bad'
     case 'Missing Evidence':
-      return 'spec-grid-status spec-grid-status--miss'
+      return 'miss'
     case 'Not Applicable':
-      return 'spec-grid-status spec-grid-status--na'
+      return 'na'
     default: {
       const neverResult: never = result
       return neverResult
@@ -23,14 +26,46 @@ function resultClass(result: VerificationStatus) {
   }
 }
 
+function HeaderHelp({
+  label,
+  tip,
+  onOpen,
+}: {
+  label: string
+  tip: string
+  onOpen: () => void
+}) {
+  return (
+    <span className="spec-grid__th-help">
+      <span>{label}</span>
+      <button
+        type="button"
+        className="spec-grid__th-tip"
+        title={tip}
+        aria-label={`Explain ${label}`}
+        onClick={(event) => {
+          event.stopPropagation()
+          onOpen()
+        }}
+      >
+        i
+      </button>
+      <span className="spec-grid__th-tip-bubble" role="tooltip">
+        {tip}
+      </span>
+    </span>
+  )
+}
+
 export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
   const rows = evidenceControlsForCase(c)
+  const [explainOpen, setExplainOpen] = useState(false)
 
   return (
-    <section className="spec-info-panel" aria-label="Evidence verification">
+    <section className="spec-info-panel" aria-label="Evidence">
       <header className="spec-info-panel__bar">
-        <h3>Evidence Verification</h3>
-        <p>Document evidence vs external observation</p>
+        <h3>Evidence</h3>
+        
       </header>
 
       <div className="spec-grid-wrap">
@@ -46,7 +81,13 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
               <th>Document Evidence</th>
               <th>External Observation</th>
               <th>Verification Result</th>
-              <th>Confidence</th>
+              <th>
+                <HeaderHelp
+                  label="Confidence"
+                  tip="How much we can trust this field’s value from document and external sources. Click for scoring detail."
+                  onOpen={() => setExplainOpen(true)}
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -63,7 +104,9 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
                 <td>{row.documentEvidence}</td>
                 <td>{row.externalObservation}</td>
                 <td>
-                  <span className={resultClass(row.result)}>{row.result}</span>
+                  <SpecStatusPill tone={resultTone(row.result)} icon={verificationIcon[row.result]}>
+                    {row.result}
+                  </SpecStatusPill>
                 </td>
                 <td className="spec-grid__num">{row.confidence}%</td>
               </tr>
@@ -71,6 +114,12 @@ export function EvidenceVerificationPanel({ c }: { c: CyberCase }) {
           </tbody>
         </table>
       </div>
+
+      <ScoreExplainModal
+        kind="evidenceConfidence"
+        open={explainOpen}
+        onClose={() => setExplainOpen(false)}
+      />
     </section>
   )
 }

@@ -70,7 +70,7 @@ export function CaseActionsMenu({
           )}
           <button type="button" role="menuitem" onClick={() => run(onInfo)}>
             <MessageSquarePlus size={15} aria-hidden />
-            More info required
+            Broker Follow-up
           </button>
           <button type="button" role="menuitem" onClick={() => run(onCopy)}>
             <Copy size={15} aria-hidden />

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCyberUwStore } from '../store/cyberUwStore'
 import { HeaderUserMenu } from './HeaderUserMenu'
 import { NotificationMenu } from './NotificationMenu'
+import { SubmissionStatusPill } from './SpecStatusPill'
 import type { CyberCase } from '../types'
 import type { SpecQueue } from './SpecSidebar'
 import {
@@ -19,37 +20,19 @@ import {
   SUBMISSION_STATUSES,
   type SubmissionStatus,
 } from '../utils/submissionStatus'
-import { PRODUCT_NAME } from '../constants/journeyNav'
-
 type Tab = 'all' | 'mine' | 'tasks' | 'renewals'
 
 const PAGE_SIZE = 8
 
+/** Unique status hues — pie wedges and table pills share these. */
 const STATUS_COLORS: Record<SubmissionStatus, string> = {
-  New: '#3c923c',
-  Processing: '#1a85ff',
-  'Evidence Gap': '#ff6c54',
-  'Under Review': '#f5b942',
+  New: '#1a85ff',
+  Processing: '#32c58b',
+  'Broker Follow-up': '#f5b942',
+  'Under Review': '#7c6bf0',
   Referred: '#ff6c54',
   Approved: '#3c923c',
   Declined: '#af2922',
-}
-
-const COUNTER_SLICES = [
-  'New Submissions',
-  'In progress',
-  'Referred',
-  'Awaiting Broker',
-  'Decision-ready',
-] as const
-type CounterSlice = (typeof COUNTER_SLICES)[number]
-
-const COUNTER_COLORS: Record<CounterSlice, string> = {
-  'New Submissions': '#3c923c',
-  'In progress': '#1a85ff',
-  Referred: '#ff6c54',
-  'Awaiting Broker': '#f5b942',
-  'Decision-ready': '#1b1564',
 }
 
 function inceptionLabel(c: CyberCase) {
@@ -60,26 +43,6 @@ function inceptionLabel(c: CyberCase) {
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
   const yy = String(date.getUTCFullYear()).slice(2)
   return `${dd}/${mm}/${yy}`
-}
-
-function statusPillClass(status: SubmissionStatus) {
-  switch (status) {
-    case 'New':
-    case 'Approved':
-      return 'spec-status spec-status--new'
-    case 'Processing':
-    case 'Under Review':
-      return 'spec-status spec-status--progress'
-    case 'Evidence Gap':
-    case 'Referred':
-      return 'spec-status spec-status--info'
-    case 'Declined':
-      return 'spec-status spec-status--rejected'
-    default: {
-      const _exhaustive: never = status
-      return _exhaustive
-    }
-  }
 }
 
 function matchesQuery(c: CyberCase, query: string) {
@@ -119,39 +82,24 @@ export function CasesHome({
     return tally
   }, [cases, referrals])
 
-  const counterCounts = useMemo(() => {
-    const tally: Record<CounterSlice, number> = {
-      'New Submissions': 0,
-      'In progress': 0,
-      Referred: 0,
-      'Awaiting Broker': 0,
-      'Decision-ready': 0,
-    }
-    for (const c of cases) {
-      if (isDecisionReady(c, referrals)) tally['Decision-ready'] += 1
-      const bucket = dashboardCounterForCase(c, referrals)
-      if (bucket === 'newSubmissions') tally['New Submissions'] += 1
-      if (bucket === 'inProgress') tally['In progress'] += 1
-      if (bucket === 'referred') tally.Referred += 1
-      if (bucket === 'awaitingBroker') tally['Awaiting Broker'] += 1
-    }
-    return tally
-  }, [cases, referrals])
-
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
-      const status = statusOf(c)
+    const rows = cases.filter((c) => {
       const bucket = dashboardCounterForCase(c, referrals)
       if (queue === 'new' && bucket !== 'newSubmissions') return false
       if (queue === 'progress' && bucket !== 'inProgress') return false
       if (queue === 'referred' && bucket !== 'referred') return false
       if (queue === 'awaitingBroker' && bucket !== 'awaitingBroker') return false
       if (queue === 'decisionReady' && !isDecisionReady(c, referrals)) return false
+      if (queue === 'declined' && submissionStatus(c, referrals) !== 'Declined') return false
       if (tab === 'mine' && c.decision !== 'pending') return false
       if (tab === 'tasks' && c.gaps.every((g) => g.disposition !== 'open')) return false
       if (tab === 'renewals' && c.submissionKind !== 'renewal') return false
-      void status
       return matchesQuery(c, query)
+    })
+    return [...rows].sort((a, b) => {
+      const aNew = statusOf(a) === 'New' ? 0 : 1
+      const bNew = statusOf(b) === 'New' ? 0 : 1
+      return aNew - bNew
     })
   }, [cases, referrals, queue, tab, query])
 
@@ -196,38 +144,23 @@ export function CasesHome({
           </div>
         </header>
 
-        <p className="spec-home__product-banner">{PRODUCT_NAME}</p>
-        <div className="spec-home__kpis">
-          <Kpi title="New Submissions" value={counterCounts['New Submissions']} tone="green" />
-          <Kpi title="In progress" value={counterCounts['In progress']} tone="amber" />
-          <Kpi title="Referred" value={counterCounts.Referred} tone="red" />
-          <Kpi title="Awaiting Broker" value={counterCounts['Awaiting Broker']} tone="amber" />
-          <Kpi title="Decision-ready" value={counterCounts['Decision-ready']} tone="green" />
-          <article className="spec-kpi spec-kpi--chart">
-            <h2>Queue counters</h2>
-            <KpiPie
-              label="Queue counters"
-              slices={COUNTER_SLICES.map((slice) => ({
-                key: slice,
-                label: slice,
-                value: counterCounts[slice],
-                color: COUNTER_COLORS[slice],
-              }))}
-            />
-          </article>
-          <article className="spec-kpi spec-kpi--wide">
-            <h2>Submission by status</h2>
-            <KpiPie
-              label="Submissions by status"
-              slices={SUBMISSION_STATUSES.map((status) => ({
-                key: status,
-                label: status,
-                value: counts[status],
-                color: STATUS_COLORS[status],
-              }))}
-            />
-          </article>
-        </div>
+        <section className="spec-home__banner" aria-label="Detailed Status">
+          <div className="spec-home__kpi-charts spec-home__kpi-charts--focus">
+            <article className="spec-kpi spec-kpi--focus">
+              <h2>Detailed Status</h2>
+              <KpiPie
+                label="Detailed Status"
+                size={120}
+                slices={SUBMISSION_STATUSES.map((status) => ({
+                  key: status,
+                  label: status,
+                  value: counts[status],
+                  color: STATUS_COLORS[status],
+                }))}
+              />
+            </article>
+          </div>
+        </section>
 
         <section className="spec-board">
           <div className="spec-board__tools">
@@ -334,21 +267,22 @@ export function CasesHome({
                     <th>Submission ID</th>
                     <th>Insured</th>
                     <th>UMR</th>
-                    <th>Complete %</th>
                     <th>Sub-Class</th>
                     <th>Inception Date</th>
-                    <th>Status</th>
+                    <th>Detailed Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visible.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="spec-table__empty">
+                      <td colSpan={7} className="spec-table__empty">
                         No submissions match the current filters.
                       </td>
                     </tr>
                   ) : (
-                    visible.map((c) => (
+                    visible.map((c) => {
+                      const detailedStatus = statusOf(c)
+                      return (
                       <tr key={c.id} onClick={() => onSelect(c.id, tab === 'tasks' ? 'tasks' : undefined)}>
                         <td onClick={(e) => e.stopPropagation()}>
                           <input
@@ -363,14 +297,14 @@ export function CasesHome({
                         <td className="spec-table__id">{c.id}</td>
                         <td>{c.insured}</td>
                         <td>{c.productCode}</td>
-                        <td className="spec-table__num">{c.completenessPct}%</td>
                         <td>{c.sector}</td>
                         <td>{inceptionLabel(c)}</td>
                         <td>
-                          <span className={statusPillClass(statusOf(c))}>{statusOf(c)}</span>
+                          <SubmissionStatusPill status={detailedStatus} />
                         </td>
                       </tr>
-                    ))
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -382,7 +316,7 @@ export function CasesHome({
                   <button type="button" onClick={() => onSelect(c.id, tab === 'tasks' ? 'tasks' : undefined)}>
                     <strong>{c.insured}</strong>
                     <span>{c.id}</span>
-                    <span className={statusPillClass(statusOf(c))}>{statusOf(c)}</span>
+                    <SubmissionStatusPill status={statusOf(c)} />
                   </button>
                 </li>
               ))}
@@ -451,13 +385,14 @@ function pieSlicePath(cx: number, cy: number, r: number, start: number, end: num
 function KpiPie({
   label,
   slices,
+  size = 72,
 }: {
   label: string
   slices: { key: string; label: string; value: number; color: string }[]
+  size?: number
 }) {
   const total = slices.reduce((sum, slice) => sum + slice.value, 0)
-  const size = 88
-  const radius = 40
+  const radius = Math.round(size * 0.44)
   const center = size / 2
   let cursor = 0
   const wedges = slices.flatMap((slice) => {
@@ -499,25 +434,5 @@ function KpiPie({
         ))}
       </ul>
     </div>
-  )
-}
-
-function Kpi({ title, value, tone }: { title: string; value: number; tone: 'amber' | 'green' | 'red' }) {
-  return (
-    <article className="spec-kpi spec-kpi--metric">
-      <h2>{title}</h2>
-      <div className="spec-kpi__metric">
-        <span className={`spec-bars spec-bars--${tone}`} aria-hidden>
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-        <div className="spec-kpi__metric-copy">
-          <span className="spec-kpi__metric-label">No. of Submissions</span>
-          <strong className="spec-kpi__metric-value">{value}</strong>
-        </div>
-      </div>
-    </article>
   )
 }

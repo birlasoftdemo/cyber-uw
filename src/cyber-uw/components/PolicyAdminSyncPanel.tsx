@@ -2,10 +2,9 @@ import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
-import type { CyberCase, CyberDecision } from '../types'
+import type { CyberCase } from '../types'
 import { formatPolicyDate, policyPeriodForCase } from '../utils/policyPeriod'
 import { splitAddress } from '../utils/postalAddress'
-import { HitlDecisionPanel } from './HitlDecisionPanel'
 
 function money(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -47,15 +46,7 @@ function layerStatus(c: CyberCase) {
   }
 }
 
-export function PolicyAdminSyncPanel({
-  c,
-  onDecide,
-  onRequestInfo,
-}: {
-  c: CyberCase
-  onDecide: (decision: Exclude<CyberDecision, 'pending'>, rationale: string) => void
-  onRequestInfo: () => void
-}) {
+export function PolicyAdminSyncPanel({ c }: { c: CyberCase }) {
   const pushToPas = useCyberUwStore((s) => s.pushToPas)
   const underwriter = useAuthStore((s) => s.user?.name) ?? 'Underwriter'
   const [open, setOpen] = useState(true)
@@ -83,7 +74,6 @@ export function PolicyAdminSyncPanel({
 
   return (
     <div className="pas-sheet">
-      <HitlDecisionPanel c={c} onDecide={onDecide} onRequestInfo={onRequestInfo} />
       <div className="pas-sheet__bar">
         <span className="pas-sheet__layer">Layer {c.id}</span>
         <span className="pas-sheet__status">{status}</span>

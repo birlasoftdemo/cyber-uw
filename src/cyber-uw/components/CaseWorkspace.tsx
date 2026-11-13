@@ -3,7 +3,6 @@ import { Lock } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { type JourneyStepId } from '../constants/journeyNav'
 import { CyencePanel } from './CyencePanel'
-import { LossRunAnalysis } from './LossRunAnalysis'
 import { CytoraPanel } from './CytoraPanel'
 import { RiskAnalysisDesk } from './RiskAnalysisDesk'
 import {
@@ -13,7 +12,6 @@ import {
 } from './RiskEvidenceCitePanel'
 import { SecurityRatingPanel } from './SecurityRatingPanel'
 import { cyenceReadingForCase, cytoraReadingForCase } from '../data/enrichmentDemo'
-import { carrierExposureForCase } from '../data/riskVizDemo'
 import { securityRatingForCase } from '../data/securityRatingDemo'
 import { useAuthStore } from '../store/authStore'
 import { useCyberUwStore } from '../store/cyberUwStore'
@@ -22,9 +20,7 @@ import { AuditTrailPanel } from './AuditTrailPanel'
 import { EvidenceVerificationPanel } from './EvidenceVerificationPanel'
 import { ExternalFindingsPanel } from './ExternalFindingsPanel'
 import { HitlDecisionPanel } from './HitlDecisionPanel'
-import { IntegrationHandoffPanel } from './IntegrationHandoffPanel'
 import { NewSubmissionStage } from './NewSubmissionStage'
-import { TriageAnalysisPanel } from './TriageAnalysisPanel'
 import { DecisionConfirmModal, type PendingDecision } from './DecisionConfirmModal'
 
 function StageSection({
@@ -53,10 +49,6 @@ function StageSection({
 
 
 
-function RiskInformationStageBody({ c }: { c: CyberCase }) {
-  return <TriageAnalysisPanel c={c} />
-}
-
 function UwLockedStage({ title }: { title: string }) {
   return (
     <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3.5 py-3">
@@ -64,8 +56,8 @@ function UwLockedStage({ title }: { title: string }) {
       <div>
         <p className="cuw-type-title">{title} (UW only)</p>
         <p className="cuw-type-caption mt-0.5">
-          Ops owns Intake. Risk Analysis, Enrichment, Evidence, Decision, Integration, and Audit stay
-          with the underwriter.
+          Ops owns Intake. Risk Analysis, Enrichment, Evidence, Decision, and Audit stay with the
+          underwriter.
         </p>
       </div>
     </div>
@@ -74,20 +66,6 @@ function UwLockedStage({ title }: { title: string }) {
 
 function PolicyDocumentsStageBody({ c }: { c: CyberCase }) {
   return <NewSubmissionStage c={c} />
-}
-
-function useNarrowRail() {
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 960px)').matches,
-  )
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 960px)')
-    const sync = () => setNarrow(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
-  return narrow
 }
 
 function VendorReading({
@@ -113,37 +91,15 @@ function VendorReading({
   }
 }
 
-function RiskAnalysisStageBody({
-  c,
-  section: sectionProp,
-}: {
-  c: CyberCase
-  section: 'vendor' | 'desk' | 'loss'
-}) {
+function RiskAnalysisStageBody({ c }: { c: CyberCase }) {
   const sceneRef = useRef<HTMLDivElement>(null)
   const [armed, setArmed] = useState(false)
   const [read, setRead] = useState(false)
   const [citeOpen, setCiteOpen] = useState(false)
   const [citeSource, setCiteSource] = useState<RiskEvidenceCiteSource>('bitsight')
-  const [section, setSection] = useState<'vendor' | 'desk' | 'loss'>(sectionProp)
   const [vendor, setVendor] = useState<EnrichmentModelId>('bitsight')
-  const narrow = useNarrowRail()
   const consented = c.enrichmentConsent?.models ?? []
   const vendorKey = consented.includes(vendor) ? vendor : consented[0]
-
-  useEffect(() => {
-    setSection(sectionProp)
-  }, [sectionProp])
-
-  useEffect(() => {
-    const onSection = (ev: Event) => {
-      const next = (ev as CustomEvent<{ section?: string }>).detail?.section
-      if (next === 'vendor' || next === 'desk' || next === 'loss') setSection(next)
-    }
-    window.addEventListener('cuw-assessment-section', onSection)
-    window.dispatchEvent(new CustomEvent('cuw-assessment-query'))
-    return () => window.removeEventListener('cuw-assessment-section', onSection)
-  }, [])
 
   useLayoutEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -167,7 +123,7 @@ function RiskAnalysisStageBody({
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [c.id, section, vendorKey])
+  }, [c.id, vendorKey])
 
   const bitsightRows: RiskEvidenceCiteRow[] = securityRatingForCase(c).citeBacks.map((row) => ({
     id: row.id,
@@ -200,28 +156,13 @@ function RiskAnalysisStageBody({
       finding: row.line,
     })),
   ]
-  const exposure = carrierExposureForCase(c)
-  const deskRows: RiskEvidenceCiteRow[] = [
-    ...exposure.ingestInputs.map((row, i) => ({
-      id: `ingest-${i}-${row.label}`,
-      label: `${row.source} · ${row.label}`,
-      finding: row.value,
-    })),
-    ...exposure.scoreCriteria.map((row) => ({
-      id: `score-${row.id}`,
-      label: row.title,
-      finding: `${row.applied} · ${row.formula}`,
-    })),
-  ]
 
   const citeRows =
     citeSource === 'bitsight'
       ? bitsightRows
       : citeSource === 'cyence'
         ? cyenceRows
-        : citeSource === 'cytora'
-          ? cytoraRows
-          : deskRows
+        : cytoraRows
 
   const openCites = (source: RiskEvidenceCiteSource) => {
     setCiteSource(source)
@@ -236,38 +177,14 @@ function RiskAnalysisStageBody({
     .filter(Boolean)
     .join(' ')
 
-  if (consented.length === 0 || !vendorKey) {
-    return (
-      <div className="wb-risk-evidence">
-        <p className="wb-instrument__note">
-          Third-party enrichment needs your consent. Continue from Triage Analysis to choose models.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div ref={sceneRef} className={sceneClass}>
-      <Tabs
-        className="wb-enrich-tabs"
-        orientation={narrow ? 'horizontal' : 'vertical'}
-        selectedKey={section}
-        onSelectionChange={(key) => {
-          const next = String(key)
-          if (next !== 'vendor' && next !== 'desk' && next !== 'loss') return
-          setSection(next)
-          const step = next === 'vendor' ? 3 : next === 'desk' ? 4 : 5
-          window.dispatchEvent(new CustomEvent('cuw-tracker-go', { detail: { step } }))
-        }}
-      >
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="Assessment">
-            <Tabs.Tab id="vendor">External Risk Enrichment</Tabs.Tab>
-            <Tabs.Tab id="desk">Internal Risk Analysis</Tabs.Tab>
-            <Tabs.Tab id="loss">Loss Run Analysis</Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
-        <Tabs.Panel id="vendor">
+      {consented.length === 0 || !vendorKey ? (
+        <p className="wb-instrument__note">
+          Third-party enrichment needs your consent. Choose models to unlock external findings.
+        </p>
+      ) : (
+        <>
           <ExternalFindingsPanel c={c} />
           <Tabs
             className="wb-vendor-tabs"
@@ -295,14 +212,8 @@ function RiskAnalysisStageBody({
               <VendorReading model={vendorKey} c={c} onOpenCites={() => openCites(vendorKey)} />
             </Tabs.Panel>
           </Tabs>
-        </Tabs.Panel>
-        <Tabs.Panel id="desk">
-          <RiskAnalysisDesk c={c} />
-        </Tabs.Panel>
-        <Tabs.Panel id="loss">
-          <LossRunAnalysis c={c} />
-        </Tabs.Panel>
-      </Tabs>
+        </>
+      )}
       <RiskEvidenceCitePanel
         open={citeOpen}
         onClose={() => setCiteOpen(false)}
@@ -326,7 +237,6 @@ function WorkflowTab({
   const isOps = role === 'ops'
   const dossierFocusId = useCyberUwStore((s) => s.dossierFocusId)
   const clearDossierFocus = useCyberUwStore((s) => s.clearDossierFocus)
-  const requestInfo = () => window.dispatchEvent(new CustomEvent('cuw-open-info-request'))
 
   useEffect(() => {
     if (!dossierFocusId) return
@@ -367,14 +277,7 @@ function WorkflowTab({
 
       {journeyStep === 'risk' ? (
         <StageSection stageIndex={1} currentIndex={1}>
-          {isOps ? (
-            <UwLockedStage title="Risk Analysis" />
-          ) : (
-            <>
-              <RiskInformationStageBody c={c} />
-              <RiskAnalysisDesk c={c} />
-            </>
-          )}
+          {isOps ? <UwLockedStage title="Risk Analysis" /> : <RiskAnalysisDesk c={c} />}
         </StageSection>
       ) : null}
 
@@ -383,7 +286,7 @@ function WorkflowTab({
           {isOps ? (
             <UwLockedStage title="Enrichment" />
           ) : (
-            <RiskAnalysisStageBody c={c} section="vendor" />
+            <RiskAnalysisStageBody c={c} />
           )}
         </StageSection>
       ) : null}
@@ -399,17 +302,7 @@ function WorkflowTab({
           {isOps ? (
             <UwLockedStage title="Decision" />
           ) : (
-            <HitlDecisionPanel c={c} onDecide={onDecide} onRequestInfo={requestInfo} />
-          )}
-        </StageSection>
-      ) : null}
-
-      {journeyStep === 'integration' ? (
-        <StageSection stageIndex={3} currentIndex={3}>
-          {isOps ? (
-            <UwLockedStage title="Integration" />
-          ) : (
-            <IntegrationHandoffPanel c={c} onDecide={onDecide} onRequestInfo={requestInfo} />
+            <HitlDecisionPanel c={c} onDecide={onDecide} />
           )}
         </StageSection>
       ) : null}
@@ -423,11 +316,7 @@ function WorkflowTab({
   )
 }
 
-export function CaseWorkspace({
-  journeyStep,
-}: {
-  journeyStep: JourneyStepId
-}) {
+export function CaseWorkspace({ journeyStep }: { journeyStep: JourneyStepId }) {
   const {
     cases,
     selectedId,

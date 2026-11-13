@@ -204,6 +204,11 @@ export interface CyberCase {
   riskJudgments: Record<string, RiskJudgment>
   /** Docs still needed before package is decision ready */
   missingDocs?: string[]
+  /**
+   * UW acknowledged an incomplete package and may leave Intake.
+   * Risk metrics stay suppressed while docs are still missing.
+   */
+  intakeOverride?: { at: string; by: string; reason: string }
   packageDocs: PackageDoc[]
   formSignals: FormSignal[]
   dossierSummary: string

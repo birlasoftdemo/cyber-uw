@@ -59,15 +59,15 @@
     --vg-status-l-soft: #eaf6ea;
     --vg-status-wash: #e8f0fe;
 
-    /* Verification status pills (guideline strip) */
-    --vg-pill-ok-bg: #e4f6ec;
-    --vg-pill-ok-fg: #0c6b3e;
-    --vg-pill-mid-bg: #eaeff5;
-    --vg-pill-mid-fg: #2e384a;
-    --vg-pill-bad-bg: #fce3e4;
-    --vg-pill-bad-fg: #af2922;
-    --vg-pill-na-bg: #f2f2f2;
-    --vg-pill-na-fg: #a0a0a0;
+    /* Status pills — solid fills from dashboard pie (Approved / New / Declined). */
+    --vg-pill-ok-bg: #3c923c;
+    --vg-pill-ok-fg: #ffffff;
+    --vg-pill-mid-bg: #1a85ff;
+    --vg-pill-mid-fg: #ffffff;
+    --vg-pill-bad-bg: #af2922;
+    --vg-pill-bad-fg: #ffffff;
+    --vg-pill-na-bg: #1a85ff;
+    --vg-pill-na-fg: #ffffff;
 
     --cuw-ink: #1a1a1a;
     --cuw-ink-soft: #1a1a1a;

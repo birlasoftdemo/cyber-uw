@@ -3,6 +3,10 @@ import {
   needsManagerCosign,
 } from '../constants/cyberFlow'
 import type { AppetiteHit, CyberCase, CyberDecision, GapSeverity } from '../types'
+import {
+  sectionReportsForCase,
+  triageFindingsForCase,
+} from './cyberTriageRules'
 import { securityRatingForCase, type SecurityRatingLetter } from './securityRatingDemo'
 
 function letterFromRating(rating: number): SecurityRatingLetter {
@@ -15,7 +19,7 @@ function letterFromRating(rating: number): SecurityRatingLetter {
 }
 
 /** Client-facing AI / HITL labels (store still uses quote | refer | decline). */
-export type HitlDecisionLabel = 'Approve' | 'Refer' | 'Request Information' | 'Decline'
+export type HitlDecisionLabel = 'Approve' | 'Refer' | 'Decline'
 
 export type IntakeDocStatus =
   | 'Received'
@@ -23,6 +27,8 @@ export type IntakeDocStatus =
   | 'Extracted'
   | 'Missing'
   | 'Review Required'
+
+export type BrokerFollowUp = 'Required' | 'Not Required'
 
 export type VerificationStatus =
   | 'Verified'
@@ -32,10 +38,8 @@ export type VerificationStatus =
   | 'Not Applicable'
 
 export type EnrichmentCategory =
-  | 'Attack Surface'
   | 'Vulnerabilities/CVEs'
   | 'Security Rating'
-  | 'Exposed Services'
   | 'Third-party Dependencies'
 
 export type AppetiteResultLabel = 'Within Appetite' | 'Refer' | 'Decline'
@@ -44,6 +48,10 @@ export interface IntakeDocumentRow {
   id: string
   name: string
   status: IntakeDocStatus
+  brokerFollowUp: BrokerFollowUp
+  confidence: number
+  /** Row-level document completeness 0–100. */
+  completenessPct: number
 }
 
 export interface EvidenceControlRow {
@@ -75,8 +83,13 @@ export interface ExternalFindingRow {
 export interface RiskMeasure {
   id: string
   label: string
+  /** Display value, e.g. `34/100`. */
   value: string
+  /** Numeric score 0–100 for bars and gauges. */
+  score: number
   tone: 'ok' | 'watch' | 'action'
+  /** Short status label kept for appetite / summary copy. */
+  statusLabel?: string
   why: { evidence: string; rules: string[] }
 }
 
@@ -153,7 +166,7 @@ export function intakeDocumentsForCase(c: CyberCase): IntakeDocumentRow[] {
         void neverId
       }
     }
-    // CYB-2401 demo consistency: all five present with IRP classified and broker review.
+    // CYB-2401 walkthrough: package present with broker correspondence still in review.
     if (c.id === 'CYB-2401') {
       if (doc.id === 'cyber-app') status = 'Extracted'
       if (doc.id === 'infosec') status = 'Extracted'
@@ -161,21 +174,82 @@ export function intakeDocumentsForCase(c: CyberCase): IntakeDocumentRow[] {
       if (doc.id === 'loss-runs') status = 'Received'
       if (doc.id === 'broker-corr') status = 'Review Required'
     }
-    return { ...doc, status }
+    // CYB-2405 Northwind — negative path: multiple missing docs + review required.
+    if (c.id === 'CYB-2405') {
+      if (doc.id === 'cyber-app') status = 'Extracted'
+      if (doc.id === 'infosec') status = 'Missing'
+      if (doc.id === 'irp') status = 'Missing'
+      if (doc.id === 'loss-runs') status = 'Missing'
+      if (doc.id === 'broker-corr') status = 'Review Required'
+    }
+    // CYB-2408 Vanta Grid — positive path: clean package ready for analysis.
+    if (c.id === 'CYB-2408') {
+      if (doc.id === 'cyber-app') status = 'Extracted'
+      if (doc.id === 'infosec') status = 'Extracted'
+      if (doc.id === 'irp') status = 'Extracted'
+      if (doc.id === 'loss-runs') status = 'Classified'
+      if (doc.id === 'broker-corr') status = 'Received'
+    }
+    const brokerFollowUp: BrokerFollowUp =
+      status === 'Missing' || status === 'Review Required' ? 'Required' : 'Not Required'
+    const confidence = confidenceForIntakeStatus(status)
+    const completenessPct = completenessForIntakeStatus(status)
+    return { ...doc, status, brokerFollowUp, confidence, completenessPct }
   })
+}
+
+function confidenceForIntakeStatus(status: IntakeDocStatus): number {
+  switch (status) {
+    case 'Extracted':
+      return 96
+    case 'Classified':
+      return 88
+    case 'Received':
+      return 74
+    case 'Review Required':
+      return 52
+    case 'Missing':
+      return 0
+    default: {
+      const neverStatus: never = status
+      return neverStatus
+    }
+  }
+}
+
+function completenessForIntakeStatus(status: IntakeDocStatus): number {
+  switch (status) {
+    case 'Extracted':
+      return 100
+    case 'Classified':
+      return 90
+    case 'Received':
+      return 70
+    case 'Review Required':
+      return 40
+    case 'Missing':
+      return 0
+    default: {
+      const neverStatus: never = status
+      return neverStatus
+    }
+  }
+}
+
+/** True when the package still has missing intake docs or low completeness. */
+export function packageIncompleteForCase(c: CyberCase): boolean {
+  const docs = intakeDocumentsForCase(c)
+  const missing = docs.filter((d) => d.status === 'Missing').length
+  return missing > 0 || c.completenessPct < 80 || (c.missingDocs?.length ?? 0) > 0
 }
 
 export function intakeMetricsForCase(c: CyberCase) {
   const docs = intakeDocumentsForCase(c)
   const match = entityMatchForCase(c)
   const missingDocs = docs.filter((d) => d.status === 'Missing').length
-  const brokerFollowUps =
-    c.gaps.filter((g) => g.disposition === 'open' || g.disposition === 'referred').length +
-    docs.filter((d) => d.status === 'Review Required' || d.status === 'Missing').length
   return {
     completenessPct: c.completenessPct,
     missingDocs,
-    brokerFollowUps,
     duplicateCheckCompleted: match.duplicateCheckCompleted,
     duplicateCheckLabel: match.duplicateCheckCompleted ? 'Complete' : 'Pending',
     insuredMatched: match.insuredMatched,
@@ -187,6 +261,7 @@ export function intakeMetricsForCase(c: CyberCase) {
 export function entityMatchForCase(c: CyberCase) {
   return {
     insuredMatched: true,
+    // Demo KPI stays Complete (rendered black); package gaps are tracked separately.
     duplicateCheckCompleted: true,
     brokerIdentified: Boolean(c.broker?.trim()),
     insured: c.insured,
@@ -275,25 +350,13 @@ export function evidenceControlsForCase(c: CyberCase): EvidenceControlRow[] {
 }
 
 export function externalFindingsForCase(c: CyberCase): ExternalFindingRow[] {
+  if (c.id === 'CYB-2408') return positivePathEnrichment(c)
+  if (c.id === 'CYB-2405') return negativePathEnrichment(c)
+
   const rating = securityRatingForCase(c)
   const mfaGap = c.gaps.find((g) => /mfa/i.test(g.control))
   const edrGap = c.gaps.find((g) => /edr|endpoint/i.test(g.control))
   return [
-    {
-      id: `${c.id}-xf-as1`,
-      category: 'Attack Surface',
-      source: 'BitSight',
-      simulated: true,
-      finding: 'Internet-facing admin bastions discovered without MFA challenge path.',
-      severity: 'critical',
-      observedDate: '2026-07-18',
-      freshness: '8 days',
-      entityMatch: `Matched ${c.insured}`,
-      underwritingImpact: 'Supports MFA control floor referral.',
-      conflictsWithDeclaration: mfaGap
-        ? `Conflicts with declaration: "${mfaGap.attested}"`
-        : 'Conflicts with declaration that MFA covers all users.',
-    },
     {
       id: `${c.id}-xf-cve1`,
       category: 'Vulnerabilities/CVEs',
@@ -303,8 +366,11 @@ export function externalFindingsForCase(c: CyberCase): ExternalFindingRow[] {
       severity: 'high',
       observedDate: '2026-07-12',
       freshness: '14 days',
-      entityMatch: `Matched ${c.insured}`,
-      underwritingImpact: 'Raises Control Effectiveness concern.',
+      entityMatch: 'Y',
+      underwritingImpact: 'Unpatched perimeter hosts weaken control effectiveness and may need a referral.',
+      conflictsWithDeclaration: mfaGap
+        ? `Conflicts with declaration: "${mfaGap.attested}"`
+        : undefined,
     },
     {
       id: `${c.id}-xf-sr1`,
@@ -315,24 +381,11 @@ export function externalFindingsForCase(c: CyberCase): ExternalFindingRow[] {
       severity: rating.rating < 700 ? 'high' : 'medium',
       observedDate: '2026-07-20',
       freshness: 'Current',
-      entityMatch: `Matched ${c.insured}`,
+      entityMatch: 'Y',
       underwritingImpact:
         rating.rating < 700
-          ? 'Security rating below carrier appetite level.'
-          : 'Rating within peer band; monitor trend.',
-    },
-    {
-      id: `${c.id}-xf-exp1`,
-      category: 'Exposed Services',
-      source: 'BitSight',
-      simulated: true,
-      finding: 'Remote admin services exposed on two hosts.',
-      severity: 'high',
-      observedDate: '2026-07-18',
-      freshness: '8 days',
-      entityMatch: `Matched ${c.insured}`,
-      underwritingImpact: 'Corroborates privileged access contradiction.',
-      conflictsWithDeclaration: 'Conflicts with full-workforce MFA attestation.',
+          ? 'Security rating sits below appetite, so treat this as a referral before quoting.'
+          : 'Rating is in line with peers and does not change the quote path.',
     },
     {
       id: `${c.id}-xf-tp1`,
@@ -345,10 +398,10 @@ export function externalFindingsForCase(c: CyberCase): ExternalFindingRow[] {
       severity: edrGap ? 'high' : 'info',
       observedDate: '2026-07-15',
       freshness: '11 days',
-      entityMatch: `Matched ${c.insured}`,
+      entityMatch: 'Y',
       underwritingImpact: edrGap
-        ? 'EDR deployment gap — refer for evidence.'
-        : 'No third-party concentration exception.',
+        ? 'EDR looks incomplete versus the application, so request evidence before binding.'
+        : 'Third-party concentration is normal and does not change terms.',
       conflictsWithDeclaration: edrGap
         ? `Conflicts with declaration: "${edrGap.attested}"`
         : undefined,
@@ -356,7 +409,178 @@ export function externalFindingsForCase(c: CyberCase): ExternalFindingRow[] {
   ]
 }
 
+/** Vanta Grid — positive path: analyst-grade enrichment for Gartner-facing review. */
+function positivePathEnrichment(c: CyberCase): ExternalFindingRow[] {
+  const rating = securityRatingForCase(c)
+  return [
+    {
+      id: `${c.id}-xf-sr1`,
+      category: 'Security Rating',
+      source: 'BitSight',
+      simulated: true,
+      finding: `Security rating ${Math.max(rating.rating, 790)} (Advanced tier). 12-month trend stable (±15 pts). Strongest factors: Patching Cadence, Application Security, Botnet Infections (none observed). No Compromised Systems events in the last 12 months.`,
+      severity: 'info',
+      observedDate: '2026-11-12',
+      freshness: '1 day',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Strong rating supports the attested controls and does not call for referral or loading.',
+    },
+    {
+      id: `${c.id}-xf-sr2`,
+      category: 'Security Rating',
+      source: 'Cyence',
+      simulated: true,
+      finding:
+        'Modeled cyber-risk tier: Low-Moderate. Peer percentile 76th within B2B SaaS, revenue $50–250M. Modeled BI exposure driven mainly by single-cloud-provider reliance, not by security posture.',
+      severity: 'info',
+      observedDate: '2026-11-05',
+      freshness: '8 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Peer position is favorable and can support pricing without driving the decision.',
+    },
+    {
+      id: `${c.id}-xf-cve1`,
+      category: 'Vulnerabilities/CVEs',
+      source: 'BitSight',
+      simulated: true,
+      finding:
+        'No CISA KEV-listed vulnerabilities on attributed external assets. One legacy status subdomain still negotiates TLS 1.0/1.1 alongside TLS 1.2. No sensitive data path identified on this host.',
+      severity: 'medium',
+      observedDate: '2026-11-09',
+      freshness: '4 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Legacy TLS on a non-critical host is a watch item only and should not block the quote.',
+    },
+    {
+      id: `${c.id}-xf-cve2`,
+      category: 'Vulnerabilities/CVEs',
+      source: 'Cytora',
+      simulated: true,
+      finding:
+        'Open-source dependency advisory on the public marketing site: outdated front-end library with a published medium-severity advisory (CVSS ~5–6). No evidence of exploitation. Not on the KEV list. Vendor patch available.',
+      severity: 'info',
+      observedDate: '2026-10-21',
+      freshness: '23 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Marketing-site library advisory is low materiality and fits a normal patch cycle.',
+    },
+    {
+      id: `${c.id}-xf-tp1`,
+      category: 'Third-party Dependencies',
+      source: 'Cyence',
+      simulated: true,
+      finding:
+        'Primary workloads on one hyperscaler, multi-AZ. Identity via a major SSO provider. Payments via a PCI-listed processor. No public security incident at any identified critical vendor in the last 12 months.',
+      severity: 'medium',
+      observedDate: '2026-10-30',
+      freshness: '14 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Cloud and vendor setup is typical for SaaS and is not a binding blocker.',
+    },
+  ]
+}
+
+/** Northwind Payments — negative path: realistic adverse enrichment for analyst review. */
+function negativePathEnrichment(c: CyberCase): ExternalFindingRow[] {
+  return [
+    {
+      id: `${c.id}-xf-sr1`,
+      category: 'Security Rating',
+      source: 'BitSight',
+      simulated: true,
+      finding:
+        'Security rating 560 (Basic tier). Down 70 pts over 90 days. Weakest factors: Patching Cadence (F), Application Security (D), Open Ports (D). Two Potentially Exploited events in the last 90 days.',
+      severity: 'high',
+      observedDate: '2026-11-10',
+      freshness: '3 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Rating is below appetite with a worsening trend, so refer before quoting.',
+    },
+    {
+      id: `${c.id}-xf-sr2`,
+      category: 'Security Rating',
+      source: 'Cyence',
+      simulated: true,
+      finding:
+        'Modeled cyber-risk tier: Elevated. Peer percentile 17th within payments/fintech. Modeled ransomware and data-exfiltration frequency above peer median, driven by internet-facing exposure and reported control gaps.',
+      severity: 'high',
+      observedDate: '2026-11-05',
+      freshness: '8 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Independent model also shows elevated risk, so expect higher price and tighter limits if written.',
+    },
+    {
+      id: `${c.id}-xf-cve1`,
+      category: 'Vulnerabilities/CVEs',
+      source: 'BitSight',
+      simulated: true,
+      finding:
+        'Internet-facing SSL-VPN gateway running a build affected by a pre-authentication remote-code-execution advisory (CVE-2024-class, CISA KEV-listed). Vendor fix available 60+ days. Gateway still responds with the vulnerable version banner.',
+      severity: 'critical',
+      observedDate: '2026-10-29',
+      freshness: '15 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'A known critical flaw on remote access must be patched or isolated before bind.',
+      conflictsWithDeclaration:
+        'Declared critical patches applied within 30 days. Observed KEV-listed vulnerability on a perimeter gateway unpatched >60 days after fix availability.',
+    },
+    {
+      id: `${c.id}-xf-cve2`,
+      category: 'Vulnerabilities/CVEs',
+      source: 'Cytora',
+      simulated: true,
+      finding:
+        'Customer-facing legacy portal subdomain running an end-of-life PHP runtime (7.4, unsupported since Nov 2022). Multiple unpatched advisories applicable. Login form exposed to the internet.',
+      severity: 'high',
+      observedDate: '2026-10-14',
+      freshness: '30 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Unsupported software on a public login page needs an upgrade plan or warranty discussion.',
+      conflictsWithDeclaration:
+        'Declared all internet-facing systems run vendor-supported software. Observed an end-of-life runtime on a public portal.',
+    },
+    {
+      id: `${c.id}-xf-tp1`,
+      category: 'Third-party Dependencies',
+      source: 'Cyence',
+      simulated: true,
+      finding:
+        'Core transaction hosting and monitoring depend on a single managed service provider. That MSP disclosed a security incident affecting some customers in Q3 2026. No evidence Northwind data was affected. Concentration on one MSP with privileged access.',
+      severity: 'medium',
+      observedDate: '2026-09-18',
+      freshness: '56 days',
+      entityMatch: 'Y',
+      underwritingImpact:
+        'Single MSP concentration raises contingent-BI concern until vendor evidence is on file.',
+    },
+    {
+      id: `${c.id}-xf-tp2`,
+      category: 'Third-party Dependencies',
+      source: 'Cytora',
+      simulated: true,
+      finding:
+        "News signal: 'Northwind Payment Solutions' (different legal name and jurisdiction, no shared domain) reported unauthorized access to a payments database. Name similarity only. No domain, registration number, or LEI match to the insured.",
+      severity: 'medium',
+      observedDate: '2026-08-27',
+      freshness: '78 days',
+      entityMatch: 'N',
+      underwritingImpact:
+        'Name-similar news does not match this insured and should be ignored for scoring.',
+    },
+  ]
+}
+
 export function appetiteResultForCase(c: CyberCase): AppetiteResultLabel {
+  if (packageIncompleteForCase(c)) return 'Decline'
   if (c.recommendation === 'decline' || c.decision === 'decline') return 'Decline'
   if (c.recommendation === 'refer' || c.decision === 'refer') return 'Refer'
   if (c.appetiteHits.some((h) => h.outcome === 'decline')) return 'Decline'
@@ -367,91 +591,250 @@ export function appetiteResultForCase(c: CyberCase): AppetiteResultLabel {
 export function referralRuleForCase(c: CyberCase): string {
   const mfaHit = c.appetiteHits.find((h) => /mfa/i.test(h.label) || /mfa/i.test(h.ruleId))
   if (mfaHit) return mfaHit.detail || 'MFA coverage below minimum threshold'
-  const rating = securityRatingForCase(c)
-  if (rating.rating < 700) return 'Security rating below carrier appetite level'
   const firstRefer = c.appetiteHits.find((h) => h.outcome === 'refer' || h.outcome === 'decline')
   if (firstRefer) return firstRefer.detail || firstRefer.label
   if (c.gaps.some((g) => /mfa/i.test(g.control) && g.disposition !== 'resolved')) {
     return 'MFA coverage below minimum threshold'
   }
+  const cyber = documentCyberRiskScore(c)
+  if (cyber.score >= 70) return 'Document risk load above carrier appetite band'
   return 'No referral rule triggered'
 }
 
+export interface SectionHeatChip {
+  id: string
+  label: string
+  failCount: number
+  findingCount: number
+  tone: 'ok' | 'watch' | 'action'
+}
+
+/** Application-section heat for Risk Analysis — fail counts from ingested fields. */
+export function sectionHeatForCase(c: CyberCase): SectionHeatChip[] {
+  return sectionReportsForCase(c).map((report) => {
+    const failCount = report.fields.filter((field) => field.failsTriage).length
+    const findingCount = report.findings.filter(
+      (finding) => finding.required || finding.severity !== 'low',
+    ).length
+    const load = failCount + findingCount
+    const tone: SectionHeatChip['tone'] =
+      load >= 2 || failCount >= 1 ? 'action' : findingCount > 0 ? 'watch' : 'ok'
+    return {
+      id: report.section.id,
+      label: report.section.tabLabel,
+      failCount,
+      findingCount,
+      tone,
+    }
+  })
+}
+
+function clampScore(n: number) {
+  return Math.max(0, Math.min(100, Math.round(n)))
+}
+
+/** Document-native cyber risk load 0–100 (higher = more adverse). */
+export function documentCyberRiskScore(c: CyberCase): {
+  score: number
+  failFields: number
+  highFindings: number
+  openGaps: number
+  pendingRequired: number
+} {
+  const reports = sectionReportsForCase(c)
+  const failFields = reports.reduce(
+    (sum, report) => sum + report.fields.filter((field) => field.failsTriage).length,
+    0,
+  )
+  const highFindings = triageFindingsForCase(c).filter(
+    (finding) => finding.severity === 'high' || (finding.required && finding.severity !== 'low'),
+  ).length
+  const openGaps = c.gaps.filter((gap) => gap.disposition === 'open').length
+  const pendingRequired = triageFindingsForCase(c)
+    .filter((finding) => finding.required)
+    .filter((finding) => {
+      const judgment = c.riskJudgments?.[finding.id]
+      return !judgment || judgment.status === 'pending'
+    }).length
+  const score = clampScore(
+    18 + failFields * 11 + highFindings * 9 + openGaps * 8 + pendingRequired * 6,
+  )
+  return { score, failFields, highFindings, openGaps, pendingRequired }
+}
+
+/** Document-native control effectiveness 0–100 (higher = stronger). */
+export function documentControlEffectivenessScore(c: CyberCase): {
+  score: number
+  openGaps: number
+  contradicted: number
+  failFields: number
+  signedAccepted: number
+} {
+  const openGaps = c.gaps.filter((gap) => gap.disposition !== 'resolved').length
+  const contradicted = evidenceControlsForCase(c).filter((row) => row.result === 'Contradicted')
+    .length
+  const failFields = sectionReportsForCase(c).reduce(
+    (sum, report) => sum + report.fields.filter((field) => field.failsTriage).length,
+    0,
+  )
+  const signedAccepted = Object.values(c.riskJudgments ?? {}).filter(
+    (judgment) => judgment.status === 'accepted' || judgment.status === 'noted',
+  ).length
+  const score = clampScore(
+    100 - openGaps * 12 - contradicted * 16 - failFields * 6 + signedAccepted * 3,
+  )
+  return { score, openGaps, contradicted, failFields, signedAccepted }
+}
+
 export function riskMeasuresForCase(c: CyberCase): RiskMeasure[] {
-  const rating = securityRatingForCase(c)
-  const openGaps = c.gaps.filter((g) => g.disposition !== 'resolved')
-  const contradicted = evidenceControlsForCase(c).filter((r) => r.result === 'Contradicted').length
-  const cyberRisk = Math.max(0, Math.min(100, Math.round(100 - (rating.rating - 250) / 6.5)))
-  const controlEff = Math.max(
-    0,
-    Math.min(100, Math.round(100 - openGaps.length * 12 - contradicted * 18)),
-  )
-  const evidenceConf = Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(
-        evidenceControlsForCase(c).reduce((sum, row) => sum + row.confidence, 0) /
-          Math.max(1, evidenceControlsForCase(c).length),
-      ),
-    ),
-  )
-  const completeness = c.completenessPct
+  // Incomplete packages must not show positive risk metrics (Northwind negative path).
+  if (packageIncompleteForCase(c)) {
+    const missing = intakeDocumentsForCase(c)
+      .filter((d) => d.status === 'Missing')
+      .map((d) => d.name)
+    const missingList =
+      missing.length > 0
+        ? missing.join('; ')
+        : (c.missingDocs ?? []).join('; ') || 'Required package documents'
+    return [
+      {
+        id: 'cyber-risk',
+        label: 'Cyber Risk',
+        value: '88/100',
+        score: 88,
+        tone: 'action',
+        why: {
+          evidence: `Risk elevated because the package is incomplete (${missingList}). Positive scoring is withheld until docs arrive or a manual override is recorded for navigation only.`,
+          rules: [
+            'Start from ingested application + questionnaire fields only (no external rating on this stage).',
+            'Missing required docs floor Cyber Risk in the adverse band (≥80).',
+            'Manual intake override unlocks navigation only — it does not restore affirmative scoring.',
+          ],
+        },
+      },
+      {
+        id: 'control-eff',
+        label: 'Control Effectiveness',
+        value: '22/100',
+        score: 22,
+        tone: 'action',
+        why: {
+          evidence:
+            'Control effectiveness cannot be affirmed without InfoSec / IRP / loss-run evidence in the package.',
+          rules: [
+            'Score starts at 100 and falls for open gaps, contradicted attestations, and failed triage fields.',
+            'Missing InfoSec / IRP / loss-run evidence floors the score in the adverse band.',
+            'Broker follow-up is required before affirmative control measures.',
+          ],
+        },
+      },
+      {
+        id: 'appetite',
+        label: 'Appetite Result',
+        value: '20/100',
+        score: 20,
+        tone: 'action',
+        statusLabel: 'Decline',
+        why: {
+          evidence: 'Appetite held at Decline while required documents are missing.',
+          rules: [
+            'Incomplete package → Decline (20/100) until remediated.',
+            'Within Appetite = 100 · Refer = 55 · Decline = 20.',
+            'Triggered by missing package docs, not by enrichment models.',
+          ],
+        },
+      },
+    ]
+  }
+
+  const cyber = documentCyberRiskScore(c)
+  const control = documentControlEffectivenessScore(c)
   const appetite = appetiteResultForCase(c)
   const rule = referralRuleForCase(c)
+  const appetiteScore = appetiteScoreForLabel(appetite)
+  const appetiteTone: RiskMeasure['tone'] =
+    appetite === 'Decline' ? 'action' : appetite === 'Refer' ? 'watch' : 'ok'
+  const topFails = sectionReportsForCase(c)
+    .flatMap((report) =>
+      report.fields
+        .filter((field) => field.failsTriage)
+        .map((field) => `${report.section.tabLabel}: ${field.label}`),
+    )
+    .slice(0, 3)
 
   return [
     {
       id: 'cyber-risk',
       label: 'Cyber Risk',
-      value: `${cyberRisk}`,
-      tone: cyberRisk >= 70 ? 'action' : cyberRisk >= 45 ? 'watch' : 'ok',
+      value: `${cyber.score}/100`,
+      score: cyber.score,
+      tone: cyber.score >= 70 ? 'action' : cyber.score >= 45 ? 'watch' : 'ok',
       why: {
-        evidence: `Simulated BitSight rating ${rating.rating} (${letterFromRating(rating.rating)}); attack-surface and exposed-service findings.`,
-        rules: ['Security rating band vs carrier floor', 'Exposed admin services weight'],
+        evidence:
+          topFails.length > 0
+            ? `Document risk load from application triage. Top fails — ${topFails.join('; ')}.`
+            : `Document risk load from application triage with ${cyber.highFindings} elevated finding(s) and ${cyber.openGaps} open gap(s).`,
+        rules: [
+          `Base 18 + ${cyber.failFields} failed field(s)×11 + ${cyber.highFindings} elevated finding(s)×9 + ${cyber.openGaps} open gap(s)×8 + ${cyber.pendingRequired} unsigned required finding(s)×6.`,
+          'Inputs are extracted application answers, InfoSec/IRP presence, and UW gap dispositions — not BitSight/Cyence.',
+          'Higher score = more adverse. ≥70 action · 45–69 watch · <45 within band.',
+        ],
       },
     },
     {
       id: 'control-eff',
       label: 'Control Effectiveness',
-      value: `${controlEff}`,
-      tone: controlEff < 55 ? 'action' : controlEff < 75 ? 'watch' : 'ok',
+      value: `${control.score}/100`,
+      score: control.score,
+      tone: control.score < 55 ? 'action' : control.score < 75 ? 'watch' : 'ok',
       why: {
-        evidence: `${openGaps.length} open control gap(s); ${contradicted} contradicted verification row(s) including MFA.`,
-        rules: ['MFA coverage below minimum threshold', 'EDR deployment gap check'],
-      },
-    },
-    {
-      id: 'evidence-conf',
-      label: 'Evidence Confidence',
-      value: `${evidenceConf}`,
-      tone: evidenceConf < 60 ? 'action' : evidenceConf < 75 ? 'watch' : 'ok',
-      why: {
-        evidence: 'Average confidence across MFA, EDR, backups, privileged access, patching, IR.',
-        rules: ['Contradiction lowers confidence', 'Missing evidence caps confidence'],
-      },
-    },
-    {
-      id: 'completeness',
-      label: 'Submission Completeness',
-      value: `${completeness}%`,
-      tone: completeness < 80 ? 'action' : completeness < 90 ? 'watch' : 'ok',
-      why: {
-        evidence: `Package completeness ${completeness}%; intake missing/review docs ${intakeMetricsForCase(c).missingDocs}.`,
-        rules: ['Package completeness floor 80%', 'Required cyber document set'],
+        evidence: `${control.openGaps} open/referred control gap(s); ${control.contradicted} contradicted verification row(s); ${control.failFields} failed application field(s).`,
+        rules: [
+          `Start at 100 − ${control.openGaps} open gap(s)×12 − ${control.contradicted} contradiction(s)×16 − ${control.failFields} failed field(s)×6 + ${control.signedAccepted} signed finding(s)×3.`,
+          'MFA / EDR / backup floors from the application drive gap weight; HITL Approve/Ignore on findings recovers a small credit.',
+          'Higher score = stronger controls. <55 action · 55–74 watch · ≥75 within band.',
+        ],
       },
     },
     {
       id: 'appetite',
       label: 'Appetite Result',
-      value: appetite,
-      tone: appetite === 'Decline' ? 'action' : appetite === 'Refer' ? 'watch' : 'ok',
+      value: `${appetiteScore}/100`,
+      score: appetiteScore,
+      tone: appetiteTone,
+      statusLabel: appetite,
       why: {
-        evidence: `Triggered rule: ${rule}`,
-        rules: c.appetiteHits.map((h: AppetiteHit) => `${h.ruleId}: ${h.label} → ${h.outcome}`),
+        evidence: `${appetite} · triggered rule: ${rule}`,
+        rules:
+          c.appetiteHits.length > 0
+            ? [
+                ...c.appetiteHits.map(
+                  (h: AppetiteHit) => `${h.ruleId}: ${h.label} → ${h.outcome}`,
+                ),
+                'Mapped score: Within Appetite = 100 · Refer = 55 · Decline = 20.',
+              ]
+            : [
+                `Rule: ${rule}`,
+                'Mapped score: Within Appetite = 100 · Refer = 55 · Decline = 20.',
+              ],
       },
     },
   ]
+}
+
+function appetiteScoreForLabel(label: AppetiteResultLabel): number {
+  switch (label) {
+    case 'Within Appetite':
+      return 100
+    case 'Refer':
+      return 55
+    case 'Decline':
+      return 20
+    default: {
+      const neverLabel: never = label
+      return neverLabel
+    }
+  }
 }
 
 export function hitlLabelFromDecision(d: CyberDecision): HitlDecisionLabel {
@@ -473,7 +856,7 @@ export function hitlLabelFromDecision(d: CyberDecision): HitlDecisionLabel {
 
 export function storeDecisionFromHitl(
   label: HitlDecisionLabel,
-): Exclude<CyberDecision, 'pending'> | 'request_info' {
+): Exclude<CyberDecision, 'pending'> {
   switch (label) {
     case 'Approve':
       return 'quote'
@@ -481,8 +864,6 @@ export function storeDecisionFromHitl(
       return 'refer'
     case 'Decline':
       return 'decline'
-    case 'Request Information':
-      return 'request_info'
     default: {
       const neverLabel: never = label
       return neverLabel
@@ -541,12 +922,15 @@ export function hitlBundleForCase(c: CyberCase): HitlBundle {
 
 export function caseHeaderMetrics(c: CyberCase) {
   const rating = securityRatingForCase(c)
+  const incomplete = packageIncompleteForCase(c)
   return {
     insured: c.insured,
     industry: c.sector,
     revenue: money(c.revenueUsd),
     requestedLimit: money(c.limitRequestedUsd),
-    cyberRisk: `${letterFromRating(rating.rating)} · ${rating.rating}`,
+    cyberRisk: incomplete
+      ? 'D · Incomplete package'
+      : `${letterFromRating(rating.rating)} · ${rating.rating}`,
     appetite: appetiteResultForCase(c),
     completeness: `${c.completenessPct}%`,
   }

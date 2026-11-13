@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import {
   canLeavePolicyDocuments,
-  canLeaveRiskInformation,
   canOpsMarkReadyForUw,
   isFinancialSignOffComplete,
   isWithinJuniorAuthority,
@@ -185,8 +184,10 @@ interface CyberUwState {
   advanceWorkflowStage: (id: string) => void
   /** Jump to a stage. */
   setWorkflowStage: (id: string, stage: number) => void
-  /** Persist corrections from the New Submission Basic Information tab. */
+  /** Persist corrections to submission / extracted intake fields. */
   saveSubmissionInfo: (id: string, input: SubmissionInfoInput) => void
+  /** Allow navigation past Intake while package docs are still missing. */
+  acknowledgeIntakeOverride: (id: string, reason: string) => void
 }
 
 function cloneCases(): CyberCase[] {
@@ -210,6 +211,8 @@ function cloneCases(): CyberCase[] {
     enrichmentConsent: c.enrichmentConsent
       ? { ...c.enrichmentConsent, models: [...c.enrichmentConsent.models] }
       : undefined,
+    intakeOverride: c.intakeOverride ? { ...c.intakeOverride } : undefined,
+    missingDocs: c.missingDocs ? [...c.missingDocs] : undefined,
     riskJudgments: { ...c.riskJudgments },
     appetiteHits: [...c.appetiteHits],
     audit: [...c.audit],
@@ -957,7 +960,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
       ),
       toastMessage: blocked
         ? `Information request sent to ${current.broker}.`
-        : `Information request sent to ${current.broker}. Moved to More Info Required.`,
+        : `Information request sent to ${current.broker}. Moved to Broker Follow-up.`,
       toastTone: 'info' as const,
     }))
   },
@@ -1451,13 +1454,6 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
           toastTone: 'warn' as const,
         }
       }
-      if (from === 1 && !canLeaveRiskInformation(current)) {
-        return {
-          ...s,
-          toastMessage: 'Approve, Escalate, or Ignore required triage findings before Risk Analysis.',
-          toastTone: 'warn' as const,
-        }
-      }
       if (from === 1 && !current.enrichmentConsent?.models.length) {
         return {
           ...s,
@@ -1522,6 +1518,44 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
           : c,
       ),
       toastMessage: 'Submission information saved',
+      toastTone: 'info' as const,
+    }))
+  },
+
+  acknowledgeIntakeOverride: (id, reason) => {
+    const current = get().cases.find((c) => c.id === id)
+    if (!current) return
+    if (current.intakeOverride) {
+      set({
+        toastMessage: 'Manual override already recorded for this package.',
+        toastTone: 'info',
+      })
+      return
+    }
+    const at = new Date().toISOString()
+    set((s) => ({
+      cases: s.cases.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              intakeOverride: {
+                at,
+                by: 'Underwriter',
+                reason: reason.trim() || 'Manual override to leave Intake with missing documents.',
+              },
+              audit: [
+                ...c.audit,
+                {
+                  at,
+                  actor: 'Underwriter',
+                  action: 'Recorded manual intake override (missing documents)',
+                },
+              ],
+            }
+          : c,
+      ),
+      toastMessage:
+        'Manual override recorded. You may leave Intake; risk metrics stay adverse until docs arrive.',
       toastTone: 'info' as const,
     }))
   },

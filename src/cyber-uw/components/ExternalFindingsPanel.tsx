@@ -1,3 +1,4 @@
+import { ShieldAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   externalFindingsForCase,
@@ -6,12 +7,27 @@ import {
 import type { CyberCase, GapSeverity } from '../types'
 
 const CATEGORIES: EnrichmentCategory[] = [
-  'Attack Surface',
   'Vulnerabilities/CVEs',
   'Security Rating',
-  'Exposed Services',
   'Third-party Dependencies',
 ]
+
+function titleCaseSeverity(severity: GapSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return 'Critical'
+    case 'high':
+      return 'High'
+    case 'medium':
+      return 'Medium'
+    case 'info':
+      return 'Info'
+    default: {
+      const neverSeverity: never = severity
+      return neverSeverity
+    }
+  }
+}
 
 function severityScore(severity: GapSeverity) {
   switch (severity) {
@@ -33,45 +49,61 @@ function severityScore(severity: GapSeverity) {
 export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
   const findings = useMemo(() => externalFindingsForCase(c), [c])
   const [category, setCategory] = useState<EnrichmentCategory | 'All'>('All')
+  const [whyId, setWhyId] = useState<string | null>(null)
   const visible =
     category === 'All' ? findings : findings.filter((row) => row.category === category)
   const conflicts = findings.filter((row) => row.conflictsWithDeclaration)
 
   return (
-    <section className="spec-info-panel" aria-label="External cyber-risk enrichment findings" id="enrichment-rating">
+    <section className="spec-info-panel" aria-label="Enrichment" id="enrichment-rating">
       <header className="spec-info-panel__bar">
-        <h3>External findings</h3>
-        <p>Simulated providers · conflicts with applicant declarations highlighted</p>
+        <h3>Enrichment</h3>
+        
       </header>
 
       {conflicts.length > 0 ? (
         <div className="xf-conflict-block" role="status">
           <header className="xf-conflict-block__bar">
             <h4>Conflicts</h4>
-            <span>{conflicts.length} with applicant declarations</span>
+            
           </header>
           <div className="uw-risk-cards">
             {conflicts.map((row) => {
               const score = severityScore(row.severity)
+              const open = whyId === row.id
               return (
                 <article key={row.id} className="uw-risk-card uw-risk-card--le">
-                  <button type="button" className="uw-risk-card__menu" aria-label="Conflict actions">
-                    ···
+                  <button
+                    type="button"
+                    className="uw-risk-card__glyph"
+                    aria-label={`About ${row.category} conflict`}
+                    aria-expanded={open}
+                    onClick={() => setWhyId((cur) => (cur === row.id ? null : row.id))}
+                  >
+                    <ShieldAlert size={15} strokeWidth={2.25} aria-hidden />
                   </button>
                   <div className="uw-risk-card__icon uw-risk-card__icon--badge" aria-hidden>
                     <span className="uw-brand-badge uw-brand-badge--le">LE</span>
                   </div>
-                  <p className="uw-risk-card__label">Declaration conflict</p>
                   <strong className="uw-risk-card__score">{score}</strong>
-                  <p className="uw-risk-card__name">{row.source}</p>
+                  <p className="uw-risk-card__name">{row.category}</p>
                   <div className="uw-risk-card__foot">
-                    <span>{row.category}</span>
+                    <button
+                      type="button"
+                      className="uw-risk-card__why"
+                      aria-expanded={open}
+                      onClick={() => setWhyId((cur) => (cur === row.id ? null : row.id))}
+                    >
+                      Why this result?
+                    </button>
                     <em>{score}%</em>
                   </div>
                   <i className="uw-risk-card__bar" aria-hidden>
                     <b style={{ width: `${score}%` }} />
                   </i>
-                  <p className="uw-risk-card__note">{row.conflictsWithDeclaration}</p>
+                  {open && row.conflictsWithDeclaration ? (
+                    <p className="uw-risk-card__note">{row.conflictsWithDeclaration}</p>
+                  ) : null}
                 </article>
               )
             })}
@@ -123,24 +155,15 @@ export function ExternalFindingsPanel({ c }: { c: CyberCase }) {
           </thead>
           <tbody>
             {visible.map((row) => (
-              <tr
-                key={row.id}
-                className={row.conflictsWithDeclaration ? 'spec-grid__row--conflict' : undefined}
-              >
-                <td>
-                  {row.source}
-                  {row.simulated ? <span className="spec-grid-flag spec-grid-flag--sim">Simulated</span> : null}
-                </td>
+              <tr key={row.id}>
+                <td>{row.source}</td>
                 <td>{row.category}</td>
                 <td>{row.finding}</td>
-                <td className={`xf-sev xf-sev--${row.severity}`}>{row.severity}</td>
-                <td>
-                  {row.observedDate}
-                  <div className="spec-grid__sub">{row.freshness}</div>
-                </td>
+                <td className={`xf-sev xf-sev--${row.severity}`}>{titleCaseSeverity(row.severity)}</td>
+                <td>{row.observedDate}</td>
                 <td>{row.entityMatch}</td>
                 <td>
-                  {row.underwritingImpact}
+                  <strong className="xf-impact">{row.underwritingImpact}</strong>
                   {row.conflictsWithDeclaration ? (
                     <div className="xf-conflict-note">{row.conflictsWithDeclaration}</div>
                   ) : null}
