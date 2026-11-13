@@ -1,14 +1,14 @@
-/* Dashboard surface — warm forward-tech analytics; Birlasoft blue accent preserved */
+/* Dashboard surface — guideline canvas with a navy wash */
 
 @layer components {
   .dashboard-page {
     position: relative;
     isolation: isolate;
-    background-color: #f8fafc;
+    background-color: #f2f4f7;
     background-image:
-      radial-gradient(ellipse 70% 60% at 20% 10%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 90% 90%, rgba(29, 78, 216, 0.1) 0%, transparent 50%),
-      linear-gradient(to bottom right, #eff6ff 0%, #f8fafc 48%, #e0e7ff 100%);
+      radial-gradient(ellipse 70% 60% at 20% 10%, rgba(27, 21, 100, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 90% 90%, rgba(21, 18, 77, 0.1) 0%, transparent 50%),
+      linear-gradient(to bottom right, #f4f3fb 0%, #f8fafc 48%, #e0e7ff 100%);
   }
 
   .dashboard-page > * {
@@ -89,10 +89,10 @@
   }
 
   .kpi-tile--watch {
-    border-color: rgba(96, 165, 250, 0.55);
+    border-color: rgba(84, 79, 139, 0.55);
     box-shadow:
-      0 1px 2px rgba(37, 99, 235, 0.06),
-      0 4px 14px rgba(37, 99, 235, 0.05);
+      0 1px 2px rgba(27, 21, 100, 0.06),
+      0 4px 14px rgba(27, 21, 100, 0.05);
   }
 
   .kpi-tile--action {
@@ -186,12 +186,12 @@
   }
 
   .kpi-tile--action .metric-toggle--on {
-    border-color: rgba(96, 165, 250, 0.65);
+    border-color: rgba(84, 79, 139, 0.65);
     background: rgba(30, 58, 138, 0.55);
   }
 
   .kpi-tile--action .metric-toggle--on .metric-toggle__label {
-    color: #dbeafe !important;
+    color: #e4e2f4 !important;
   }
 
   /* Filled status pills — green / blue / red severity language */
@@ -217,8 +217,8 @@
 
   .kpi-status--watch {
     color: #ffffff;
-    border-color: rgba(29, 78, 216, 0.4);
-    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    border-color: rgba(21, 18, 77, 0.4);
+    background: linear-gradient(180deg, #271e8f 0%, #1b1564 100%);
   }
 
   .kpi-status--action {
@@ -258,8 +258,8 @@
   }
 
   .metric-toggle--on {
-    border-color: #93c5fd;
-    background: #eff6ff;
+    border-color: #938ec7;
+    background: #f4f3fb;
   }
 
   .metric-toggle__label {
@@ -272,7 +272,7 @@
   }
 
   .metric-toggle--on .metric-toggle__label {
-    color: #1d4ed8 !important;
+    color: #15124d !important;
   }
 
   .metric-toggle__track {
@@ -287,7 +287,7 @@
   }
 
   .metric-toggle--on .metric-toggle__track {
-    background: #3b82f6;
+    background: #271e8f;
   }
 
   .metric-toggle__thumb {
@@ -381,17 +381,17 @@
 
   .filter-pill:hover {
     color: #334155;
-    border-color: rgba(191, 219, 254, 0.95);
-    background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+    border-color: rgba(198, 196, 216, 0.95);
+    background: linear-gradient(180deg, #f8fafc 0%, #f4f3fb 100%);
   }
 
   .filter-pill--active {
     color: #ffffff;
-    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-    border-color: rgba(37, 99, 235, 0.45);
+    background: linear-gradient(180deg, #1b1564 0%, #15124d 100%);
+    border-color: rgba(27, 21, 100, 0.45);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 2px 6px rgba(37, 99, 235, 0.28);
+      0 2px 6px rgba(27, 21, 100, 0.28);
   }
 
   .trend-pill {

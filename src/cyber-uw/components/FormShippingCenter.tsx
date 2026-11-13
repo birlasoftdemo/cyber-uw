@@ -193,7 +193,7 @@ const INITIAL_OUTTAKES: Outtake[] = [
   },
   {
     id: 'out-0928',
-    insured: 'Airbnb',
+    insured: 'Northline Stays',
     broker: 'Marsh Specialty',
     packageId: 'pkg-cyber-core',
     packageLabel: 'Cyber Core Adaptive · v1.4',

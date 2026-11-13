@@ -31,11 +31,24 @@ function statusChip(status: ReferralStatus, persona: 'ops' | 'uw') {
 }
 
 function kindLabel(kind: ReferralTicket['kind']) {
-  if (kind === 'gap') return 'Control gap'
-  if (kind === 'risk') return 'Risk item'
-  if (kind === 'ingest') return 'Missing package / ingest'
-  if (kind === 'submission') return 'Submission transfer'
-  return 'Platform finding'
+  switch (kind) {
+    case 'gap':
+      return 'Control gap'
+    case 'risk':
+      return 'Risk item'
+    case 'ingest':
+      return 'Missing package / ingest'
+    case 'submission':
+      return 'Submission transfer'
+    case 'info':
+      return 'Information request'
+    case 'platform':
+      return 'Platform finding'
+    default: {
+      const _exhaustive: never = kind
+      return _exhaustive
+    }
+  }
 }
 
 function ageLabel(iso: string) {

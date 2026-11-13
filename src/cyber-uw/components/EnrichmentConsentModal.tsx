@@ -51,7 +51,7 @@ export function EnrichmentConsentModal({ caseItem, open, onCancel, onConfirm }: 
             <Modal.Body>
               <Typography.Paragraph size="sm" className="text-slate-700">
                 Risk Analysis for {caseItem.insured} can read Bitsight, Cyence, and Cytora. Choose
-                the models this desk may run. Decline leaves the case on Risk Information.
+                the models this desk may run. Decline leaves the case on Triage Analysis.
               </Typography.Paragraph>
               <div className="mt-3 flex flex-col gap-3" role="group" aria-label="Enrichment models">
                 {DESK_ENRICHMENT_MODELS.map((model) => (

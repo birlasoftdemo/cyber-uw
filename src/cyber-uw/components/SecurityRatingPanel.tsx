@@ -238,7 +238,7 @@ export function SecurityRatingPanel({
   }
 
   return (
-    <article className="bs-report" aria-label="Bitsight security rating">
+    <article className="bs-report" aria-label="Bitsight security rating (simulated)">
       <aside className="bs-report__rail">
         <div className="bs-report__company">
           <span className="bs-report__avatar">{initials(c.insured)}</span>
@@ -246,11 +246,12 @@ export function SecurityRatingPanel({
             <p className="bs-report__company-name">{c.insured}</p>
             <p>{c.sector}</p>
             <p>{c.broker}</p>
+            <p className="bs-report__sim">BitSight · Simulated (no live API)</p>
           </div>
         </div>
 
         <div className="bs-report__card">
-          <p className="bs-report__card-kicker">Bitsight Security Rating</p>
+          <p className="bs-report__card-kicker">Bitsight Security Rating · Simulated</p>
           <p className="bs-report__score tabular-nums">{snap.rating}</p>
           <p className="bs-report__band">{snap.band}</p>
           <Spectrum rating={snap.rating} industry={snap.industryAvg} hot={active ? active.score : null} />

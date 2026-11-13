@@ -53,7 +53,7 @@ function EpCurve({
       <defs>
         <linearGradient id="cy-ep-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#15124d" stopOpacity="0.15" />
         </linearGradient>
       </defs>
       {ticks.map((tick) => {

@@ -162,6 +162,7 @@ export function defaultFormSignals(
     edrGapId?: string
     backupAnswer?: string
     backupSignal?: string
+    encryptionAnswer?: string
     vendorsAnswer?: string
   },
 ): FormSignal[] {
@@ -206,6 +207,12 @@ export function defaultFormSignals(
       label: 'Immutable / tested backups',
       answer: opts.backupAnswer ?? 'Pending review',
       signal: opts.backupSignal,
+    },
+    {
+      id: `${caseId}-fs-encrypt`,
+      moduleId: 'data_exposure',
+      label: 'Encryption in transit / at rest',
+      answer: opts.encryptionAnswer ?? 'Pending review',
     },
     {
       id: `${caseId}-fs-vendors`,

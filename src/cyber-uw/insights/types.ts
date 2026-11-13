@@ -42,7 +42,7 @@ export interface CyberDrillDownRow {
 }
 
 export const CHART_COLORS = {
-  blue: '#2563eb',
+  blue: '#1b1564',
   sky: '#0ea5e9',
   indigo: '#4f46e5',
   amber: '#ea580c',

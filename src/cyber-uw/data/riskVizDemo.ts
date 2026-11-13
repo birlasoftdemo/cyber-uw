@@ -35,7 +35,7 @@ export interface ConfidenceFinding {
   riskBand: RiskBand
 }
 
-const THREAT_COLORS = ['#eab308', '#64748b', '#2563eb', '#f97316', '#0ea5e9', '#7c3aed', '#059669']
+const THREAT_COLORS = ['#eab308', '#64748b', '#1b1564', '#f97316', '#0ea5e9', '#7c3aed', '#059669']
 
 /** Quantified inherent-risk points keyed by RiskActionItem.id */
 const HEALTHCARE_THREAT_VIZ: Record<string, Omit<ThreatVizPoint, 'threatId' | 'label' | 'color'>> = {
@@ -791,33 +791,33 @@ function buildDeskActuarial(input: {
         {
           id: 'open-fair',
           standard: 'Open FAIR',
-          title: 'Loss exposure identity',
-          formula: 'Loss exposure = loss event frequency × loss magnitude',
-          result: 'ALE withheld. This organization is outside the eligible classes, so the desk does not publish a loss.',
+          title: 'Annual loss identity',
+          formula: 'Annual loss = how often a loss happens × how large each loss is',
+          result: 'Annual loss withheld. This organization is outside the eligible classes, so the desk does not publish a loss.',
           status: 'withheld',
         },
         {
           id: 'poisson-mean',
-          standard: 'Compound Poisson',
-          title: 'Frequency-severity mean',
-          formula: 'E[L] = λ × SLE_privacy + λ × SLE_BI + 0.6λ × SLE_extortion',
-          result: 'Mean withheld with the annualized loss.',
+          standard: 'Loss model',
+          title: 'Expected loss',
+          formula: 'Expected loss adds privacy, interruption, and extortion. Each part is how often times how large.',
+          result: 'Expected loss withheld with the annual loss.',
           status: 'withheld',
         },
         {
           id: 'components',
-          standard: 'Desk additivity',
-          title: 'Component annual losses',
-          formula: 'ALE = privacy ALE + interruption ALE + extortion ALE',
-          result: 'Components withheld with the annualized loss.',
+          standard: 'Desk total',
+          title: 'The three parts add up',
+          formula: 'Annual loss = privacy + interruption + extortion',
+          result: 'Parts withheld with the annual loss.',
           status: 'withheld',
         },
         {
           id: 'exceedance',
-          standard: 'Compound Poisson',
-          title: 'Chance the annual loss exceeds the limit',
-          formula: 'P(L > limit) from independent Poisson counts and the three severities',
-          result: 'Exceedance withheld with the annualized loss.',
+          standard: 'Loss model',
+          title: 'Chance the loss beats the limit',
+          formula: 'Chance of any loss, and chance the loss is larger than the requested limit',
+          result: 'Chances withheld with the annual loss.',
           status: 'withheld',
         },
       ],
@@ -840,10 +840,10 @@ function buildDeskActuarial(input: {
   }
 
   const componentSum = input.privacyAle + input.biAle + input.extortionAle
-  const openFairResult = `LEF × LM = ${formatUsdShort(Math.round(meanUsd))}. Desk ALE = ${formatUsdShort(input.aleUsd)}.`
-  const poissonResult = `E[L] = ${formatUsdShort(Math.round(meanUsd))} at λ ${input.frequency} and extortion frequency ${input.extortionFrequency.toFixed(4)}.`
-  const componentResult = `${formatUsdShort(input.privacyAle)} + ${formatUsdShort(input.biAle)} + ${formatUsdShort(input.extortionAle)} = ${formatUsdShort(componentSum)}.`
-  const exceedanceResult = `P(annual loss > 0) = ${(probabilityAnyLoss * 100).toFixed(1)}%. P(annual loss > limit) = ${(probabilityOverLimit * 100).toFixed(1)}%. Annual spread σ = ${formatUsdShort(Math.round(stdDevUsd))}.`
+  const openFairResult = `How often × how large = ${formatUsdShort(Math.round(meanUsd))}. The desk annual loss is ${formatUsdShort(input.aleUsd)}.`
+  const poissonResult = `Expected loss is ${formatUsdShort(Math.round(meanUsd))} from the application’s event rates and loss sizes.`
+  const componentResult = `${formatUsdShort(input.privacyAle)} privacy + ${formatUsdShort(input.biAle)} interruption + ${formatUsdShort(input.extortionAle)} extortion = ${formatUsdShort(componentSum)}.`
+  const exceedanceResult = `Chance of any loss this year: ${(probabilityAnyLoss * 100).toFixed(1)}%. Chance it is larger than the limit: ${(probabilityOverLimit * 100).toFixed(1)}%.`
 
   return {
     seal,
@@ -857,32 +857,32 @@ function buildDeskActuarial(input: {
       {
         id: 'open-fair',
         standard: 'Open FAIR',
-        title: 'Loss exposure identity',
-        formula: 'Loss exposure = loss event frequency × loss magnitude',
+        title: 'Annual loss identity',
+        formula: 'Annual loss = how often a loss happens × how large each loss is',
         result: openFairResult,
         status: identityHolds ? 'matches' : 'withheld',
       },
       {
         id: 'poisson-mean',
-        standard: 'Compound Poisson',
-        title: 'Frequency-severity mean',
-        formula: 'E[L] = λ × SLE_privacy + λ × SLE_BI + 0.6λ × SLE_extortion',
+        standard: 'Loss model',
+        title: 'Expected loss',
+        formula: 'Expected loss adds privacy, interruption, and extortion. Each part is how often times how large.',
         result: poissonResult,
         status: identityHolds ? 'matches' : 'withheld',
       },
       {
         id: 'components',
-        standard: 'Desk additivity',
-        title: 'Component annual losses',
-        formula: 'ALE = privacy ALE + interruption ALE + extortion ALE',
+        standard: 'Desk total',
+        title: 'The three parts add up',
+        formula: 'Annual loss = privacy + interruption + extortion',
         result: componentResult,
         status: Math.abs(componentSum - input.aleUsd) <= 2 ? 'matches' : 'withheld',
       },
       {
         id: 'exceedance',
-        standard: 'Compound Poisson',
-        title: 'Chance the annual loss exceeds the limit',
-        formula: 'P(L > limit) from independent Poisson counts and the three severities',
+        standard: 'Loss model',
+        title: 'Chance the loss beats the limit',
+        formula: 'Chance of any loss, and chance the loss is larger than the requested limit',
         result: exceedanceResult,
         status: 'reported',
       },
