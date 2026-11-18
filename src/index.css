@@ -29,6 +29,25 @@
     --border: oklch(0.88 0.02 265);
     --divider: oklch(0.9 0.015 265);
     --muted: oklch(0.42 0.03 265);
+
+    /* Workbench status system (Console v2 chips) */
+    --wb-status-fg: #ffffff;
+    --wb-status-neutral-bg: #334155;
+    --wb-status-neutral-border: #1e293b;
+    --wb-status-current-bg: #1d4ed8;
+    --wb-status-current-border: #1e3a8a;
+    --wb-status-complete-bg: #15803d;
+    --wb-status-complete-border: #14532d;
+    --wb-status-pending-bg: #b45309;
+    --wb-status-pending-border: #92400e;
+    --wb-status-warning-bg: #c2410c;
+    --wb-status-warning-border: #9a3412;
+    --wb-status-danger-bg: #be123c;
+    --wb-status-danger-border: #9f1239;
+    --wb-status-human-bg: #6d28d9;
+    --wb-status-human-border: #5b21b6;
+    --wb-status-info-bg: #0369a1;
+    --wb-status-info-border: #075985;
   }
 }
 

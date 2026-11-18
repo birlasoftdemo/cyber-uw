@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type AuthRole = 'underwriter' | 'ops'
+export type AppScreen = 'workbench' | 'admin'
 
 export interface AuthUser {
   email: string
@@ -32,6 +33,7 @@ const SESSION_KEY = 'cyber-uw-auth-session'
 
 interface StoredSession {
   user: AuthUser
+  appScreen?: AppScreen
 }
 
 function loadSession(): StoredSession | null {
@@ -44,29 +46,33 @@ function loadSession(): StoredSession | null {
   }
 }
 
-function saveSession(user: AuthUser | null) {
+function saveSession(user: AuthUser | null, appScreen: AppScreen = 'workbench') {
   if (!user) {
     sessionStorage.removeItem(SESSION_KEY)
     return
   }
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user }))
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, appScreen }))
 }
 
 interface AuthState {
   user: AuthUser | null
   isAuthenticated: boolean
+  appScreen: AppScreen
   loginError: string | null
   hydrate: () => void
   login: (email: string, password: string) => boolean
   loginWithSso: (provider: 'google' | 'outlook') => boolean
   logout: () => void
+  enterAdminConsole: () => void
+  leaveAdminConsole: () => void
 }
 
 const stored = loadSession()
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: stored?.user ?? null,
   isAuthenticated: Boolean(stored?.user),
+  appScreen: stored?.user ? (stored.appScreen ?? 'workbench') : 'workbench',
   loginError: null,
 
   hydrate: () => {
@@ -75,6 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({
         user: session.user,
         isAuthenticated: true,
+        appScreen: session.appScreen ?? 'workbench',
       })
     }
   },
@@ -86,10 +93,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loginError: 'Invalid email or password.' })
       return false
     }
-    saveSession(account.user)
+    saveSession(account.user, 'workbench')
     set({
       user: account.user,
       isAuthenticated: true,
+      appScreen: 'workbench',
       loginError: null,
     })
     return true
@@ -97,10 +105,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   loginWithSso: (_provider) => {
     const account = DEMO_ACCOUNTS['uw@cyber.internal']
-    saveSession(account.user)
+    saveSession(account.user, 'workbench')
     set({
       user: account.user,
       isAuthenticated: true,
+      appScreen: 'workbench',
       loginError: null,
     })
     return true
@@ -111,7 +120,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user: null,
       isAuthenticated: false,
+      appScreen: 'workbench',
       loginError: null,
     })
+  },
+
+  enterAdminConsole: () => {
+    const { user } = get()
+    if (!user || user.role !== 'ops') return
+    saveSession(user, 'admin')
+    set({ appScreen: 'admin' })
+  },
+
+  leaveAdminConsole: () => {
+    const { user } = get()
+    if (!user) return
+    saveSession(user, 'workbench')
+    set({ appScreen: 'workbench' })
   },
 }))

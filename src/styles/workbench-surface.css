@@ -5657,4 +5657,74 @@
     outline: 2px solid #1e3a8a;
     outline-offset: 2px;
   }
+
+  /* Console v2 — status chips + table shell */
+  .wb-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 9999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    color: var(--wb-status-fg);
+    border: 1px solid transparent;
+    box-shadow: none;
+  }
+
+  .wb-status--neutral {
+    background: var(--wb-status-neutral-bg);
+    border-color: var(--wb-status-neutral-border);
+  }
+
+  .wb-status--human {
+    background: var(--wb-status-human-bg);
+    border-color: var(--wb-status-human-border);
+  }
+
+  .wb-status--info {
+    background: var(--wb-status-info-bg);
+    border-color: var(--wb-status-info-border);
+  }
+
+  .wb-status--pending {
+    background: var(--wb-status-pending-bg);
+    border-color: var(--wb-status-pending-border);
+  }
+
+  .wb-status--warning {
+    background: var(--wb-status-warning-bg);
+    border-color: var(--wb-status-warning-border);
+  }
+
+  .wb-status--danger {
+    background: var(--wb-status-danger-bg);
+    border-color: var(--wb-status-danger-border);
+  }
+
+  .wb-status--current {
+    background: var(--wb-status-current-bg);
+    border-color: var(--wb-status-current-border);
+  }
+
+  .wb-status--complete {
+    background: var(--wb-status-complete-bg);
+    border-color: var(--wb-status-complete-border);
+  }
+
+  .wb-table-shell {
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 0.75rem;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .wb-table-caption {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+  }
 }

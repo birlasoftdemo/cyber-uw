@@ -6,6 +6,7 @@ import {
   Inbox,
   LayoutGrid,
   Package,
+  Shield,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore, type AuthRole } from '../store/authStore'
@@ -89,6 +90,7 @@ function SidebarNav({
   onShellViewChange: (view: CyberShellView) => void
 }) {
   const role = useAuthStore((s) => s.user?.role)
+  const enterAdminConsole = useAuthStore((s) => s.enterAdminConsole)
   const referrals = useCyberUwStore((s) => s.referrals)
   const clearCaseSelection = useCyberUwStore((s) => s.clearCaseSelection)
   const activeCount = referrals.filter((r) => r.status !== 'resolved').length
@@ -111,6 +113,16 @@ function SidebarNav({
           />
         </div>
       ))}
+      {role === 'ops' ? (
+        <div className="relative">
+          <NavButton
+            expanded={expanded}
+            label="Console"
+            icon={Shield}
+            onPress={() => enterAdminConsole()}
+          />
+        </div>
+      ) : null}
     </nav>
   )
 }
