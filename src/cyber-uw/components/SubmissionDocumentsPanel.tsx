@@ -479,9 +479,8 @@ export function DocSheetExtractedFields({
 
   return (
     <div className="doc-extract">
-      <div className="doc-sheet__tools">
-        <p>Extracted fields</p>
-        {editable ? (
+      {editable ? (
+        <div className="doc-sheet__tools">
           <div>
             <button
               type="button"
@@ -497,8 +496,8 @@ export function DocSheetExtractedFields({
               Save
             </button>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <div className="spec-grid-wrap spec-grid-wrap--nested">
         <table className="spec-grid spec-grid--extract">
           <thead>

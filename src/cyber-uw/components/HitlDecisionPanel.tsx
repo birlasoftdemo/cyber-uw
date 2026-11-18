@@ -82,7 +82,7 @@ export function HitlDecisionPanel({ c, onDecide }: Props) {
             ))}
           </ol>
           <p className="hitl-ai__rule">
-            Referral rule: <strong>{bundle.referralRule}</strong>
+            Referral Recommended: <strong>{bundle.referralRule}</strong>
           </p>
         </div>
       </div>

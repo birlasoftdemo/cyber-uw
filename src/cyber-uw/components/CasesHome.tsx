@@ -150,7 +150,7 @@ export function CasesHome({
               <h2>Detailed Status</h2>
               <KpiPie
                 label="Detailed Status"
-                size={120}
+                size={72}
                 slices={SUBMISSION_STATUSES.map((status) => ({
                   key: status,
                   label: status,

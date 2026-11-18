@@ -182,49 +182,56 @@ export function intakeDocumentsForCase(c: CyberCase): IntakeDocumentRow[] {
       if (doc.id === 'loss-runs') status = 'Missing'
       if (doc.id === 'broker-corr') status = 'Review Required'
     }
-    // CYB-2408 Vanta Grid — positive path: clean package ready for analysis.
+    // CYB-2408 Vanta Grid — positive path: full package classified.
     if (c.id === 'CYB-2408') {
-      if (doc.id === 'cyber-app') status = 'Extracted'
-      if (doc.id === 'infosec') status = 'Extracted'
-      if (doc.id === 'irp') status = 'Extracted'
-      if (doc.id === 'loss-runs') status = 'Classified'
-      if (doc.id === 'broker-corr') status = 'Received'
+      status = 'Classified'
     }
     const brokerFollowUp: BrokerFollowUp =
       status === 'Missing' || status === 'Review Required' ? 'Required' : 'Not Required'
-    const confidence = confidenceForIntakeStatus(status)
-    const completenessPct = completenessForIntakeStatus(status)
+    const confidence = intakeConfidenceForDoc(c, doc.id, status)
+    const completenessPct = intakeCompletenessForDoc(c, doc.id, status)
     return { ...doc, status, brokerFollowUp, confidence, completenessPct }
   })
 }
 
-function confidenceForIntakeStatus(status: IntakeDocStatus): number {
-  switch (status) {
-    case 'Extracted':
-      return 96
-    case 'Classified':
-      return 88
-    case 'Received':
-      return 74
-    case 'Review Required':
-      return 52
-    case 'Missing':
-      return 0
-    default: {
-      const neverStatus: never = status
-      return neverStatus
-    }
+function clampPct(n: number) {
+  return Math.max(0, Math.min(100, Math.round(n)))
+}
+
+function extractExtras(c: CyberCase): Record<string, string> {
+  const raw = c.answerOverrides?.['extract::documents']
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object') return {}
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    )
+  } catch {
+    return {}
   }
 }
 
-function completenessForIntakeStatus(status: IntakeDocStatus): number {
+function formSignalFillRate(c: CyberCase): number {
+  const signals = c.formSignals ?? []
+  if (signals.length === 0) return 0
+  const filled = signals.filter((signal) => {
+    const answer = signal.answer?.trim() ?? ''
+    return answer.length > 0 && !/^not\s+extracted$/i.test(answer)
+  }).length
+  return filled / signals.length
+}
+
+function confidenceFloorForStatus(status: IntakeDocStatus): number {
   switch (status) {
     case 'Extracted':
-      return 100
+      return 93
     case 'Classified':
-      return 90
+      return 78
     case 'Received':
-      return 70
+      return 62
     case 'Review Required':
       return 40
     case 'Missing':
@@ -234,6 +241,177 @@ function completenessForIntakeStatus(status: IntakeDocStatus): number {
       return neverStatus
     }
   }
+}
+
+function confidenceCeilingForStatus(status: IntakeDocStatus): number {
+  switch (status) {
+    case 'Extracted':
+      return 99
+    case 'Classified':
+      return 92
+    case 'Received':
+      return 80
+    case 'Review Required':
+      return 60
+    case 'Missing':
+      return 0
+    default: {
+      const neverStatus: never = status
+      return neverStatus
+    }
+  }
+}
+
+/** Confidence from status band + document evidence quality (signals, extras, package). */
+function intakeConfidenceForDoc(
+  c: CyberCase,
+  docId: string,
+  status: IntakeDocStatus,
+): number {
+  if (status === 'Missing') return 0
+  const floor = confidenceFloorForStatus(status)
+  const ceiling = confidenceCeilingForStatus(status)
+  const fill = formSignalFillRate(c)
+  const extras = extractExtras(c)
+  let score = (floor + ceiling) / 2
+
+  switch (docId) {
+    case 'cyber-app':
+      // Structured application + identity fields → top of band.
+      score = floor + 6 + fill * 8
+      if (c.completenessPct >= 95) score += 3
+      if (c.completenessPct < 80) score -= 5
+      if (extras.organization && extras.contactName) score += 2
+      break
+    case 'infosec':
+      score = hasDoc(c, /infosec|questionnaire|architecture/i) ? floor + 4 + fill * 6 : floor + 2
+      if (c.formSignals.some((s) => /mfa|edr|backup/i.test(s.label) && s.answer)) score += 1
+      break
+    case 'irp': {
+      const irpFields = ['irpOwner', 'irpEmail', 'irpTested', 'irpRto', 'irpNotify']
+      const hit = irpFields.filter((key) => Boolean(extras[key]?.trim())).length
+      score = floor + 2 + hit * 1.5
+      if (!hasDoc(c, /incident|irp/i)) score -= 10
+      break
+    }
+    case 'loss-runs':
+      score = hasDoc(c, /loss/i) ? floor + 4 : floor
+      // Loss schedules are tabular / OCR-noisy vs structured apps.
+      score -= 2
+      if (c.completenessPct >= 90) score += 1
+      break
+    case 'broker-corr':
+      score = hasDoc(c, /broker|correspond|email|mail/i) ? floor + 2 : floor
+      if (extras.brokerEmail || extras.brokerContact) score += 2
+      // Unstructured correspondence trails application packs.
+      score -= 4
+      break
+    default: {
+      const neverId: never = docId as never
+      void neverId
+    }
+  }
+
+  return clampPct(Math.min(ceiling, Math.max(floor, score)))
+}
+
+/** Completeness from expected section coverage for each intake document type. */
+function intakeCompletenessForDoc(
+  c: CyberCase,
+  docId: string,
+  status: IntakeDocStatus,
+): number {
+  if (status === 'Missing') return 0
+  const extras = extractExtras(c)
+  const fill = formSignalFillRate(c)
+  let score = 0
+
+  switch (docId) {
+    case 'cyber-app': {
+      const checks = [
+        hasDoc(c, /application|cyber.?app/i),
+        Boolean(extras.organization?.trim()),
+        Boolean(extras.contactName?.trim() || extras.email?.trim()),
+        fill >= 0.5,
+        fill >= 0.85,
+        c.completenessPct >= 80,
+        c.completenessPct >= 95,
+        status === 'Extracted' || status === 'Classified',
+      ]
+      score = (checks.filter(Boolean).length / checks.length) * 100
+      break
+    }
+    case 'infosec': {
+      const checks = [
+        hasDoc(c, /infosec|questionnaire|architecture/i),
+        c.formSignals.some((s) => /mfa/i.test(s.label) && Boolean(s.answer?.trim())),
+        c.formSignals.some((s) => /edr|endpoint/i.test(s.label) && Boolean(s.answer?.trim())),
+        c.formSignals.some((s) => /backup|immutable/i.test(s.label) && Boolean(s.answer?.trim())),
+        c.formSignals.some((s) => /encrypt/i.test(s.label) && Boolean(s.answer?.trim())),
+        fill >= 0.7,
+        // Vendor / SOC schedule rarely fully parsed from the questionnaire alone.
+        c.formSignals.some((s) => /vendor|saas|cloud/i.test(s.label) && Boolean(s.answer?.trim())),
+        false,
+      ]
+      score = (checks.filter(Boolean).length / checks.length) * 100
+      break
+    }
+    case 'irp': {
+      const checks = [
+        hasDoc(c, /incident|irp/i),
+        Boolean(extras.irpOwner?.trim()),
+        Boolean(extras.irpEmail?.trim()),
+        Boolean(extras.irpTested?.trim()),
+        Boolean(extras.irpRto?.trim()),
+        Boolean(extras.irpNotify?.trim()),
+        // Notification matrix / playbook annex often separate from core IRP.
+        false,
+      ]
+      score = (checks.filter(Boolean).length / checks.length) * 100
+      break
+    }
+    case 'loss-runs': {
+      const checks = [
+        hasDoc(c, /loss/i),
+        status !== 'Review Required',
+        status === 'Classified' || status === 'Extracted' || status === 'Received',
+        c.completenessPct >= 70,
+        c.completenessPct >= 90,
+        // Valuations / reserve notes rarely fully extracted.
+        false,
+        false,
+      ]
+      score = (checks.filter(Boolean).length / checks.length) * 100
+      break
+    }
+    case 'broker-corr': {
+      const checks = [
+        hasDoc(c, /broker|correspond|email|mail/i),
+        Boolean(extras.brokerContact?.trim()),
+        Boolean(extras.brokerEmail?.trim()),
+        Boolean(extras.brokerPhone?.trim()),
+        Boolean(extras.brokerChannel?.trim()),
+        status === 'Classified' || status === 'Extracted',
+        // Free-text email body / thread history rarely fully extracted.
+        false,
+        false,
+      ]
+      score = (checks.filter(Boolean).length / checks.length) * 100
+      break
+    }
+    default: {
+      const neverId: never = docId as never
+      void neverId
+    }
+  }
+
+  // Status gates keep Missing/Review from looking fully complete.
+  if (status === 'Review Required') score = Math.min(score, 45)
+  if (status === 'Received') score = Math.min(score, 75)
+  if (status === 'Classified') score = Math.min(score, 94)
+  if (status === 'Extracted') score = Math.max(score, 92)
+
+  return clampPct(score)
 }
 
 /** True when the package still has missing intake docs or low completeness. */

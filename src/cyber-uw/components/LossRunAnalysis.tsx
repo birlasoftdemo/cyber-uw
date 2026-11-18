@@ -178,7 +178,7 @@ export function LossRunAnalysis({ c }: { c: CyberCase }) {
             Report lag in days
             <InfoTip text="Days from the loss date to the date the claim was reported. Open claims with no report date are blank." />
           </h5>
-          <ul className="lr-bars">
+          <ul className="lr-bars lr-bars--lag" aria-label="Report lag in days">
             {reading.claims.map((claim) => (
               <li key={claim.id}>
                 <div>
@@ -213,7 +213,7 @@ export function LossRunAnalysis({ c }: { c: CyberCase }) {
             <strong className="intake-metric__value">{formatExposureUsd(exposure.limitRequestedUsd)}</strong>
           </article>
         </div>
-        <div className="spec-grid-wrap spec-grid-wrap--nested">
+        <div className="spec-grid-wrap spec-grid-wrap--nested spec-grid-wrap--claims">
           <table className="spec-grid spec-grid--claims">
             <thead>
               <tr className="spec-grid__groups">
