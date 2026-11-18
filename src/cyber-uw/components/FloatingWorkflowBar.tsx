@@ -61,7 +61,6 @@ function PrimaryWorkflowCTA({
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <span className="cuw-float-cta__depth" aria-hidden />
       <Button
         variant="primary"
         className="cuw-float-cta__btn"
@@ -173,10 +172,10 @@ export function FloatingWorkflowBar({
       <>
         <WorkflowStatus
           title="Birlasoft Customer Insights"
-          detail="Review the summary, then continue into Submission Workbench."
+          detail="Review the summary, then continue into Adaptive Cyber Underwriting Intelligence."
         />
         <PrimaryWorkflowCTA
-          label="Continue to Submission Workbench →"
+          label="Continue to Adaptive Cyber Underwriting Intelligence →"
           onPress={() => {
             dismissCustomer360(c.id)
             document.getElementById('cuw-workbench-root')?.scrollIntoView({
@@ -369,7 +368,7 @@ export function FloatingWorkflowBar({
               ? `AI recommends ${c.recommendation.toUpperCase()}`
               : 'Complete financial sign off before Quote'
           }
-          detail={finOk ? 'Ready for policy admin' : 'Getting Ready to Quote'}
+          detail={finOk ? 'Ready for policy center' : 'Getting Ready to Quote'}
           tone={finOk ? 'ok' : 'warn'}
         />
         <div className="cuw-float-bar__decide" onClick={(e) => e.stopPropagation()}>

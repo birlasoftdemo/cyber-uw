@@ -5,6 +5,8 @@
 @import "./styles/customer-360.css";
 @import "./styles/value-compare.css";
 @import "./styles/video-polish.css";
+@import "./styles/visual-guidelines.css";
+@import "./styles/spec-shell.css";
 
 @layer theme {
   :root,
@@ -12,30 +14,46 @@
   [data-theme="light"] {
     color-scheme: light;
 
-    /* Birlasoft clean SaaS — slate blue primary (#2563eb) */
-    --accent: oklch(0.546 0.215 262.88);
-    --accent-foreground: oklch(0.99 0 0);
-    --focus: var(--accent);
-    --link: var(--accent);
+    /* Visual guidelines — navy primary, red secondary/danger, charcoal tertiary */
+    --accent: #1b1564;
+    --accent-hover: #271e8f;
+    --accent-foreground: #ffffff;
+    --focus: #1b1564;
+    --link: #1b1564;
 
-    --background: oklch(0.975 0.012 265);
-    --foreground: oklch(0.18 0.03 265);
+    --danger: #ff1f27;
+    --danger-hover: #ff3940;
+    --danger-foreground: #ffffff;
 
-    --surface: oklch(1 0 0);
+    --background: #f2f4f7;
+    --foreground: #1a1a1a;
+
+    --surface: #ffffff;
     --surface-foreground: var(--foreground);
-    --surface-secondary: oklch(0.965 0.012 265);
-    --surface-tertiary: oklch(0.945 0.016 265);
+    --surface-secondary: #f2f4f7;
+    --surface-tertiary: #e7e9eb;
 
-    --border: oklch(0.88 0.02 265);
-    --divider: oklch(0.9 0.015 265);
-    --muted: oklch(0.42 0.03 265);
+    --border: #d5d7da;
+    --separator: #e6e8eb;
+    --divider: #e6e8eb;
+    --muted: #63676a;
+
+    --field-border: #c5c6c7;
+    --field-border-width: 1px;
+    --field-background: #ffffff;
+    --field-foreground: #1a1a1a;
+    --field-placeholder: #8a8d8f;
+    --field-radius: 0.5rem;
+
+    --font-sans: "Mulish", ui-sans-serif, system-ui, sans-serif;
   }
 }
 
 @layer base {
   body {
     font-family: var(--font-ui);
-    font-size: 0.9375rem;
+    font-size: 16px;
+    line-height: 22px;
     background-color: var(--background);
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;

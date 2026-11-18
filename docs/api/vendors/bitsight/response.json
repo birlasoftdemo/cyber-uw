@@ -1,0 +1,62 @@
+{
+  "guid": "a1b2c3d4-0000-4000-8000-000000000001",
+  "name": "Demo Insured Holdings Ltd",
+  "industry": "Technology",
+  "rating": 720,
+  "rating_details": {
+    "botnet_infections": {
+      "name": "Botnet Infections",
+      "rating": 740,
+      "grade": "A",
+      "percentile": 82
+    },
+    "patching_cadence": {
+      "name": "Patching Cadence",
+      "rating": 690,
+      "grade": "B",
+      "percentile": 61
+    },
+    "open_ports": {
+      "name": "Open Ports",
+      "rating": 710,
+      "grade": "B",
+      "percentile": 68
+    },
+    "spf": {
+      "name": "SPF",
+      "rating": 800,
+      "grade": "A",
+      "percentile": 90
+    },
+    "tls_ssl_certificates": {
+      "name": "TLS/SSL Certificates",
+      "rating": 650,
+      "grade": "C",
+      "percentile": 45
+    }
+  },
+  "ratings": [
+    {
+      "rating_date": "2026-10-01",
+      "rating": 720,
+      "range": "Advanced"
+    },
+    {
+      "rating_date": "2026-07-01",
+      "rating": 705,
+      "range": "Advanced"
+    },
+    {
+      "rating_date": "2026-04-01",
+      "rating": 670,
+      "range": "Intermediate"
+    },
+    {
+      "rating_date": "2026-01-01",
+      "rating": 640,
+      "range": "Intermediate"
+    }
+  ],
+  "industry_average": 690,
+  "industry_percentile": 64
+}

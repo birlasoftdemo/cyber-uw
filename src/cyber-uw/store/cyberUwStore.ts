@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import {
   canLeavePolicyDocuments,
-  canLeaveRiskInformation,
   canOpsMarkReadyForUw,
   isFinancialSignOffComplete,
   isWithinJuniorAuthority,
@@ -32,7 +31,26 @@ import type {
   EnrichmentModelId,
   ReferralTicket,
   RiskJudgmentStatus,
+  SubmissionKind,
 } from '../types'
+
+export interface SubmissionInfoInput {
+  insured: string
+  broker: string
+  sector: string
+  insuredAddress: string
+  lobName: string
+  productName: string
+  productCode: string
+  productTenure: string
+  companyDescription: string
+  limitRequestedUsd: number
+  revenueUsd: number
+  policyStartAt: string
+  policyEndAt: string
+  submissionKind: SubmissionKind
+  tier: CyberTier
+}
 
 export type CyberRecFilter = 'all' | Exclude<CyberDecision, 'pending'>
 export type CyberDecisionFilter = 'all' | CyberDecision
@@ -70,6 +88,7 @@ export interface DiscussionReferralInput {
   target: import('../types').ReferralTarget
   assigneeLabel: string
   note: string
+  referredBy?: string
 }
 
 export type FinancialSignOffInput = Omit<
@@ -142,6 +161,7 @@ interface CyberUwState {
     termEffect?: string,
   ) => void
   submitDiscussionReferral: (input: DiscussionReferralInput) => void
+  requestBrokerInfo: (input: { caseId: string; note: string; referredBy: string }) => void
   resolveReferral: (ticketId: string, resolutionNote?: string) => void
   chaseReferral: (ticketId: string) => void
   returnReferral: (ticketId: string, resolutionNote?: string) => void
@@ -164,6 +184,10 @@ interface CyberUwState {
   advanceWorkflowStage: (id: string) => void
   /** Jump to a stage. */
   setWorkflowStage: (id: string, stage: number) => void
+  /** Persist corrections to submission / extracted intake fields. */
+  saveSubmissionInfo: (id: string, input: SubmissionInfoInput) => void
+  /** Allow navigation past Intake while package docs are still missing. */
+  acknowledgeIntakeOverride: (id: string, reason: string) => void
 }
 
 function cloneCases(): CyberCase[] {
@@ -187,6 +211,8 @@ function cloneCases(): CyberCase[] {
     enrichmentConsent: c.enrichmentConsent
       ? { ...c.enrichmentConsent, models: [...c.enrichmentConsent.models] }
       : undefined,
+    intakeOverride: c.intakeOverride ? { ...c.intakeOverride } : undefined,
+    missingDocs: c.missingDocs ? [...c.missingDocs] : undefined,
     riskJudgments: { ...c.riskJudgments },
     appetiteHits: [...c.appetiteHits],
     audit: [...c.audit],
@@ -533,16 +559,34 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
 
   pushToPas: (id) => {
     const current = get().cases.find((c) => c.id === id)
-    if (!current || current.decision === 'pending') {
+    if (!current) return
+    if (current.pasStatus === 'synced') {
       set({
-          toastMessage: 'Lock Getting Ready to Quote first (Quote / Escalate / Decline).',
-        toastTone: 'warn',
+        toastMessage: 'Already synced to Policy Center.',
+        toastTone: 'info',
       })
       return
     }
+    const now = new Date().toISOString()
     set((s) => ({
-      cases: s.cases.map((c) => (c.id === id ? { ...c, pasStatus: 'synced' as const } : c)),
-      toastMessage: 'Decision already locked.',
+      cases: s.cases.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              pasStatus: 'synced' as const,
+              workflowStage: Math.max(c.workflowStage, 3),
+              audit: [
+                ...c.audit,
+                {
+                  at: now,
+                  actor: 'Underwriter',
+                  action: 'Synced to Policy Center',
+                },
+              ],
+            }
+          : c,
+      ),
+      toastMessage: 'Synced to Policy Center.',
       toastTone: 'info',
       activeTab: 'workflow',
     }))
@@ -592,8 +636,14 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
                   at: new Date().toISOString(),
                   actor: 'Underwriter',
                   action: `Decision ${decision.toUpperCase()} — ${reason}`,
+                  evidenceSource: 'Integration · HITL',
+                  ruleModel: 'Human-in-the-loop',
+                  confidence: 95,
+                  humanOverride:
+                    c.recommendation !== 'pending' && c.recommendation !== decision,
                 },
               ],
+              workflowStage: 3,
             }
           : c,
       ),
@@ -788,6 +838,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
       note: input.note.trim(),
       status: input.target === 'broker' ? 'awaiting_broker' : 'open',
       createdAt: now,
+      referredBy: input.referredBy,
     }
 
     set((s) => {
@@ -851,7 +902,7 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
             ...next.audit,
             {
               at: now,
-              actor: 'Underwriter',
+              actor: input.referredBy || 'Underwriter',
               action: auditAction,
             },
           ],
@@ -868,6 +919,50 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
         toastTone: 'info' as const,
       }
     })
+  },
+
+  requestBrokerInfo: ({ caseId, note, referredBy }) => {
+    const current = get().cases.find((c) => c.id === caseId)
+    const request = note.trim()
+    if (!current || !request) return
+    const now = new Date().toISOString()
+    const ticket: ReferralTicket = {
+      id: nextReferralId(),
+      caseId,
+      kind: 'info',
+      sourceId: caseId,
+      sourceLabel: `Information required · ${current.insured}`,
+      target: 'broker',
+      assigneeLabel: current.broker,
+      note: request,
+      status: 'awaiting_broker',
+      createdAt: now,
+      referredBy,
+    }
+    const blocked =
+      current.decision === 'decline' || current.decision === 'quote' || current.pasStatus === 'synced'
+    set((s) => ({
+      referrals: [ticket, ...s.referrals],
+      cases: s.cases.map((c) =>
+        c.id === caseId
+          ? {
+              ...c,
+              audit: [
+                ...c.audit,
+                {
+                  at: now,
+                  actor: referredBy,
+                  action: `Requested information from ${current.broker} — ${request}`,
+                },
+              ],
+            }
+          : c,
+      ),
+      toastMessage: blocked
+        ? `Information request sent to ${current.broker}.`
+        : `Information request sent to ${current.broker}. Moved to Broker Follow-up.`,
+      toastTone: 'info' as const,
+    }))
   },
 
   resolveReferral: (ticketId, resolutionNote) => {
@@ -1359,13 +1454,6 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
           toastTone: 'warn' as const,
         }
       }
-      if (from === 1 && !canLeaveRiskInformation(current)) {
-        return {
-          ...s,
-          toastMessage: 'Approve, Escalate, or Ignore required triage findings before Risk Analysis.',
-          toastTone: 'warn' as const,
-        }
-      }
       if (from === 1 && !current.enrichmentConsent?.models.length) {
         return {
           ...s,
@@ -1395,6 +1483,81 @@ export const useCyberUwStore = create<CyberUwState>((set, get) => ({
         toastTone: 'info' as const,
       }
     })
+  },
+
+  saveSubmissionInfo: (id, input) => {
+    set((s) => ({
+      cases: s.cases.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              insured: input.insured.trim() || c.insured,
+              broker: input.broker.trim(),
+              sector: input.sector.trim(),
+              insuredAddress: input.insuredAddress.trim(),
+              lobName: input.lobName.trim() || c.lobName,
+              productName: input.productName.trim() || c.productName,
+              productCode: input.productCode.trim(),
+              productTenure: input.productTenure.trim(),
+              companyDescription: input.companyDescription.trim(),
+              limitRequestedUsd: input.limitRequestedUsd,
+              revenueUsd: input.revenueUsd,
+              policyStartAt: input.policyStartAt,
+              policyEndAt: input.policyEndAt,
+              submissionKind: input.submissionKind,
+              tier: input.tier,
+              audit: [
+                ...c.audit,
+                {
+                  at: new Date().toISOString(),
+                  actor: 'Underwriter',
+                  action: 'Corrected submission information',
+                },
+              ],
+            }
+          : c,
+      ),
+      toastMessage: 'Submission information saved',
+      toastTone: 'info' as const,
+    }))
+  },
+
+  acknowledgeIntakeOverride: (id, reason) => {
+    const current = get().cases.find((c) => c.id === id)
+    if (!current) return
+    if (current.intakeOverride) {
+      set({
+        toastMessage: 'Manual override already recorded for this package.',
+        toastTone: 'info',
+      })
+      return
+    }
+    const at = new Date().toISOString()
+    set((s) => ({
+      cases: s.cases.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              intakeOverride: {
+                at,
+                by: 'Underwriter',
+                reason: reason.trim() || 'Manual override to leave Intake with missing documents.',
+              },
+              audit: [
+                ...c.audit,
+                {
+                  at,
+                  actor: 'Underwriter',
+                  action: 'Recorded manual intake override (missing documents)',
+                },
+              ],
+            }
+          : c,
+      ),
+      toastMessage:
+        'Manual override recorded. You may leave Intake; risk metrics stay adverse until docs arrive.',
+      toastTone: 'info' as const,
+    }))
   },
 
   setWorkflowStage: (id, stage) => {

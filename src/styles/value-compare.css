@@ -38,10 +38,10 @@
     width: 2rem;
     height: 2rem;
     border-radius: 0.55rem;
-    color: #1d4ed8;
-    background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-    border: 1px solid rgba(147, 197, 253, 0.7);
-    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.12);
+    color: #15124d;
+    background: linear-gradient(180deg, #f4f3fb 0%, #e4e2f4 100%);
+    border: 1px solid rgba(147, 142, 199, 0.7);
+    box-shadow: 0 1px 2px rgba(27, 21, 100, 0.12);
     flex-shrink: 0;
   }
 
@@ -361,8 +361,8 @@
   }
 
   .wb-value-compare__source-btn:hover {
-    border-color: #93c5fd;
-    background: #eff6ff;
+    border-color: #938ec7;
+    background: #f4f3fb;
   }
 
   @media (max-width: 640px) {

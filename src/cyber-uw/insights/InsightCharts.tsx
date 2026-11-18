@@ -552,10 +552,10 @@ export function RiskThreatTrendChart({ onDrill }: { onDrill: OpenDrill }) {
 function heatmapColor(count: number, max: number): string {
   if (count <= 0) return '#f8fafc'
   const t = Math.min(1, count / max)
-  if (t < 0.35) return '#dbeafe'
-  if (t < 0.55) return '#93c5fd'
-  if (t < 0.75) return '#3b82f6'
-  return '#1d4ed8'
+  if (t < 0.35) return '#e4e2f4'
+  if (t < 0.55) return '#938ec7'
+  if (t < 0.75) return '#271e8f'
+  return '#15124d'
 }
 
 export function RiskMapHeatmapChart({ onDrill }: { onDrill: OpenDrill }) {

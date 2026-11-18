@@ -183,5 +183,6 @@ export function buildOpsDemoReferral(caseId: string, now: string): ReferralTicke
     note: 'Need console export confirming EDR on servers + workstations. Package incomplete.',
     status: 'awaiting_broker',
     createdAt: now,
+    referredBy: 'Sarah Chen',
   }
 }

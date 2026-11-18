@@ -6,14 +6,14 @@ import { missingDocsForCase } from '../utils/missingDocs'
 export const CYBER_FLOW_STAGES = [
   {
     key: 'intake',
-    title: 'Policy Documents',
-    subtext: 'Extracted package fields',
+    title: 'New Submission',
+    subtext: 'Submission overview',
     pain: 'P2.1 · P2.6 · P2.7',
   },
   {
     key: 'triage',
-    title: 'Risk Information',
-    subtext: 'Triage rules from ingested documents',
+    title: 'Triage Analysis',
+    subtext: 'Triage checks for this submission',
     pain: 'P1.2 · P1.4 · P2.11',
   },
   {
@@ -24,8 +24,8 @@ export const CYBER_FLOW_STAGES = [
   },
   {
     key: 'decide',
-    title: 'Getting Ready to Quote',
-    subtext: 'Financial sign off and disposition',
+    title: 'Sync to Policy Center',
+    subtext: 'Send the submission to policy center',
     pain: 'P2.4 · P2.5 · P2.12',
   },
 ] as const
@@ -56,7 +56,7 @@ export function cyberFlowFloor(c: {
 
 /**
  * Current stage index for stepper / cards.
- * Policy Documents → Risk Information → Risk Analysis → Getting Ready to Quote.
+ * New Submission → Triage Analysis → Risk Analysis → Sync to Policy Center.
  */
 export function cyberFlowIndex(c: {
   completenessPct: number

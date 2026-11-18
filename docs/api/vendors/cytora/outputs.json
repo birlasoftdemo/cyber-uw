@@ -1,0 +1,90 @@
+{
+  "_fixture": "illustrative",
+  "_note": "Hypothesized call outputs. Paths are observations from the Risk Console client. Methods and field names are a local model, not a published Cytora schema. The token body follows the ordinary OAuth client-credentials response.",
+  "calls": [
+    {
+      "name": "client-credentials-token",
+      "method": "POST",
+      "path": "https://cytora-prod.eu.auth0.com/oauth/token",
+      "request": {
+        "grant_type": "client_credentials",
+        "client_id": "demo-client-id",
+        "client_secret": "demo-client-secret",
+        "audience": "https://api.cytora.com"
+      },
+      "output": {
+        "access_token": "demo-token",
+        "token_type": "Bearer",
+        "expires_in": 86400
+      }
+    },
+    {
+      "name": "get-record",
+      "method": "GET",
+      "path": "/v2/workspaces/demo-cyber-workspace/inboxes/cyber-new-business/records/rec_demo_000001",
+      "output": {
+        "_fixture": "illustrative",
+        "record": {
+          "id": "rec_demo_000001",
+          "workspace": "demo-cyber-workspace",
+          "inbox": "cyber-new-business",
+          "received_at": "2026-10-20T09:15:00Z",
+          "insured_name": "Demo Insured Holdings Ltd",
+          "line_of_business": "cyber",
+          "extracted_fields": {
+            "revenue": 85000000,
+            "employees": 420,
+            "industry": "Technology"
+          }
+        },
+        "appetite": {
+          "decision": "refer",
+          "score": 0.64,
+          "reasons": [
+            "Revenue within target band",
+            "Open remote access exposure requires underwriter review"
+          ]
+        },
+        "risk_factors": [
+          { "name": "Multi-factor authentication", "value": "partial", "impact": "negative" },
+          { "name": "Backup maturity", "value": "tested quarterly", "impact": "positive" },
+          { "name": "Patching cadence", "value": "30-60 days", "impact": "neutral" }
+        ]
+      }
+    },
+    {
+      "name": "get-record-fields",
+      "method": "GET",
+      "path": "/v2/workspaces/demo-cyber-workspace/inboxes/cyber-new-business/records/rec_demo_000001/fields",
+      "output": {
+        "_fixture": "illustrative",
+        "record_id": "rec_demo_000001",
+        "fields": [
+          { "name": "revenue", "value": 85000000, "source": "submission" },
+          { "name": "employees", "value": 420, "source": "submission" },
+          { "name": "industry", "value": "Technology", "source": "submission" }
+        ]
+      }
+    },
+    {
+      "name": "get-record-actions",
+      "method": "GET",
+      "path": "/v2/workspaces/demo-cyber-workspace/inboxes/cyber-new-business/records/rec_demo_000001/actions",
+      "output": {
+        "_fixture": "illustrative",
+        "record_id": "rec_demo_000001",
+        "actions": [
+          {
+            "type": "appetite",
+            "decision": "refer",
+            "score": 0.64,
+            "reasons": [
+              "Revenue within target band",
+              "Open remote access exposure requires underwriter review"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

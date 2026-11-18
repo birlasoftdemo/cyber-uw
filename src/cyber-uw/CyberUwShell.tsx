@@ -1,27 +1,61 @@
-import { Button } from '@heroui/react'
-import { ArrowLeft, ArrowUpRight, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WorkbenchPageHeader } from '../shared/workbench/WorkbenchPageHeader'
-import { BirlasoftLogo } from './components/BirlasoftLogo'
-import { CyberAppSidebar } from './components/CyberAppSidebar'
+import { CaseActionsMenu } from './components/CaseActionsMenu'
+import { HeaderUserMenu } from './components/HeaderUserMenu'
+import { CasesHome } from './components/CasesHome'
 import { CyberNewSubmissionModal } from './components/CyberNewSubmissionModal'
-import { CyberShellToolbar } from './components/CyberShellToolbar'
-import { CyberCasesListPage } from './components/CyberWorkbenchDesk'
+import type { CyberShellView } from './components/CyberShellToolbar'
+import {
+  journeyStepForCase,
+  workflowStageForJourney,
+  type JourneyStepId,
+} from './constants/journeyNav'
+import { SpecSidebar, type SpecQueue } from './components/SpecSidebar'
 import {
   FormShippingCenter,
   type ReturnedOuttakePrefill,
 } from './components/FormShippingCenter'
+import { CaseContextHeader } from './components/CaseContextHeader'
 import { CaseWorkspace } from './components/CaseWorkspace'
+import { JourneyPrevNextBar } from './components/StageJourneyStepper'
+import { EnrichmentConsentModal } from './components/EnrichmentConsentModal'
+import { IntakeOverrideModal } from './components/IntakeOverrideModal'
 import {
   DiscussionReferModal,
   type DiscussionReferDraft,
 } from './components/DiscussionReferModal'
+import { InfoRequiredModal, type InfoRequestDraft } from './components/InfoRequiredModal'
 import { ReferralInbox } from './components/ReferralInbox'
-import { InsightsLanding } from './insights/InsightsLanding'
+import { ReportsDashboard } from './components/ReportsDashboard'
+import { packageIncompleteForCase } from './data/clientFeedbackDemo'
 import { useAuthStore } from './store/authStore'
 import { useCyberUwStore } from './store/cyberUwStore'
-import type { CyberShellView } from './components/CyberShellToolbar'
-import { CaseMetaChips, decisionTitle } from './components/CyberPrimitives'
+import type { CyberCase, ReferralTicket } from './types'
+
+function downloadCase(c: CyberCase) {
+  const body = [
+    c.insured,
+    c.id,
+    c.broker,
+    c.sector,
+    c.lobName,
+    c.productCode,
+  ].join('\n')
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${c.id}.txt`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function referrerFor(caseId: string, referrals: ReferralTicket[], fallback: string) {
+  const named = referrals.filter((ticket) => ticket.caseId === caseId && ticket.referredBy)
+  const open = named.filter((ticket) => ticket.status !== 'resolved')
+  const pool = open.length > 0 ? open : named
+  const latest = [...pool].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+  return latest?.referredBy ?? fallback
+}
 
 function defaultViewForRole(_role: 'underwriter' | 'ops' | undefined): CyberShellView {
   return 'workbench'
@@ -42,14 +76,25 @@ export function CyberUwShell() {
     setUploadOpen,
     referrals,
     submitDiscussionReferral,
+    requestBrokerInfo,
   } = useCyberUwStore()
-  const role = useAuthStore((s) => s.user?.role)
-  const pending = cases.filter((c) => c.decision === 'pending').length
+  const user = useAuthStore((s) => s.user)
+  const role = user?.role
   const activeReferrals = referrals.filter((r) => r.status !== 'resolved').length
   const [shellView, setShellView] = useState<CyberShellView>(() => defaultViewForRole(role))
+  const [queue, setQueue] = useState<SpecQueue>('all')
+  const [journeyStep, setJourneyStep] = useState<JourneyStepId>('intake')
   const [submissionPrefill, setSubmissionPrefill] = useState<ReturnedOuttakePrefill | null>(null)
-  const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({})
   const [referDraft, setReferDraft] = useState<DiscussionReferDraft | null>(null)
+  const [infoDraft, setInfoDraft] = useState<InfoRequestDraft | null>(null)
+  const [caseOrigin, setCaseOrigin] = useState<'tasks' | null>(null)
+  const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({})
+  const [enrichmentConsentOpen, setEnrichmentConsentOpen] = useState(false)
+  const [intakeOverrideOpen, setIntakeOverrideOpen] = useState(false)
+  const [pendingJourney, setPendingJourney] = useState<JourneyStepId | null>(null)
+  const setWorkflowStage = useCyberUwStore((s) => s.setWorkflowStage)
+  const recordEnrichmentConsent = useCyberUwStore((s) => s.recordEnrichmentConsent)
+  const acknowledgeIntakeOverride = useCyberUwStore((s) => s.acknowledgeIntakeOverride)
 
   useEffect(() => {
     setShellView(defaultViewForRole(role))
@@ -66,10 +111,13 @@ export function CyberUwShell() {
     setUploadOpen(true)
   }
 
-  const openInWorkbench = (caseId: string) => {
+  const openInWorkbench = (caseId: string, origin?: 'tasks') => {
+    setCaseOrigin(origin ?? null)
     selectCase(caseId)
     setTab('workflow')
     setShellView('workbench')
+    const opened = cases.find((row) => row.id === caseId)
+    if (opened) setJourneyStep(journeyStepForCase(opened))
   }
 
   const proceedToClosure = (prefill: ReturnedOuttakePrefill) => {
@@ -99,22 +147,24 @@ export function CyberUwShell() {
     shellView === 'shipping'
       ? 'Manage Submissions'
       : shellView === 'insights'
-        ? 'Cyber Insurance Overview'
+        ? 'Reports'
         : shellView === 'referrals'
           ? role === 'ops'
             ? 'Escalation Inbox'
             : 'Escalations'
-          : selectedCase
+            : selectedCase
             ? selectedCase.insured
-            : 'Open cases'
+            : 'Adaptive Cyber Underwriting Intelligence'
 
   const showCaseDetail = shellView === 'workbench' && Boolean(selectedId)
-  const caseSaved = selectedId ? Boolean(bookmarkedIds[selectedId]) : false
-  const dispositionLabel = selectedCase
-    ? selectedCase.decision === 'pending'
-      ? 'UW Pending'
-      : `UW ${decisionTitle(selectedCase.decision)}`
-    : ''
+  const showCasesHome = shellView === 'workbench' && !selectedId
+
+  const chooseQueue = (next: SpecQueue) => {
+    setCaseOrigin(null)
+    setQueue(next)
+    clearCaseSelection()
+    setShellView('workbench')
+  }
 
   const openSubmissionRefer = () => {
     if (!selectedCase) return
@@ -128,25 +178,99 @@ export function CyberUwShell() {
     })
   }
 
+  const openInfoRequest = () => {
+    if (!selectedCase) return
+    setInfoDraft({
+      caseId: selectedCase.id,
+      insured: selectedCase.insured,
+      broker: selectedCase.broker,
+    })
+  }
+
+  useEffect(() => {
+    const onInfo = () => {
+      if (!selectedCase) return
+      setInfoDraft({
+        caseId: selectedCase.id,
+        insured: selectedCase.insured,
+        broker: selectedCase.broker,
+      })
+    }
+    window.addEventListener('cuw-open-info-request', onInfo)
+    return () => window.removeEventListener('cuw-open-info-request', onInfo)
+  }, [selectedCase])
+
+  const referredByName = selectedCase
+    ? referrerFor(selectedCase.id, referrals, user?.name ?? 'Underwriter')
+    : null
+
+  const advanceJourney = (step: JourneyStepId) => {
+    if (
+      step === 'enrichment' &&
+      selectedCase &&
+      !(selectedCase.enrichmentConsent?.models.length)
+    ) {
+      setPendingJourney(step)
+      setEnrichmentConsentOpen(true)
+      return
+    }
+    setJourneyStep(step)
+    if (selectedId) setWorkflowStage(selectedId, workflowStageForJourney(step))
+  }
+
+  const goJourney = (step: JourneyStepId) => {
+    if (
+      selectedCase &&
+      step !== 'intake' &&
+      packageIncompleteForCase(selectedCase) &&
+      !selectedCase.intakeOverride
+    ) {
+      setPendingJourney(step)
+      setIntakeOverrideOpen(true)
+      setJourneyStep('intake')
+      return
+    }
+    advanceJourney(step)
+  }
+
   return (
     <div className="flex h-screen bg-[var(--background)]">
-      <CyberAppSidebar
+      <SpecSidebar
         shellView={shellView}
-        onShellViewChange={setShellView}
-        focusMode={showCaseDetail}
+        queue={queue}
+        caseOpen={showCaseDetail}
+        journeyStep={journeyStep}
+        onQueue={chooseQueue}
+        onJourney={goJourney}
+        onNavigate={(view) => {
+          if (view !== 'workbench') {
+            setCaseOrigin(null)
+            clearCaseSelection()
+          }
+          setShellView(view)
+        }}
       />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <main className="workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main
+          className={`workbench-page relative flex min-h-0 flex-1 flex-col overflow-hidden${
+            showCaseDetail ? ' cuw-case-open cuw-spec-case' : ''
+          }`}
+        >
+          {showCasesHome ? null : (
           <WorkbenchPageHeader
-              leading={<BirlasoftLogo />}
-              title={pageTitle}
-              count={
-                shellView === 'workbench' && !selectedId
-                  ? pending
-                  : shellView === 'referrals'
-                    ? activeReferrals
-                    : undefined
+              leading={
+                showCaseDetail && selectedCase ? (
+                  <button type="button" className="spec-back-btn" onClick={() => {
+                    setCaseOrigin(null)
+                    clearCaseSelection()
+                  }}>
+                    <span aria-hidden>‹</span>
+                    Back to Dashboard
+                  </button>
+                ) : undefined
               }
+              title={pageTitle}
+              count={shellView === 'referrals' ? activeReferrals : undefined}
               countLabel={
                 shellView === 'referrals'
                   ? role === 'ops'
@@ -154,70 +278,37 @@ export function CyberUwShell() {
                     : 'open escalation'
                   : 'open case'
               }
-              subtitle={
-                showCaseDetail && selectedCase ? (
-                  <>
-                    <span className="wb-ref-pill">{selectedCase.id}</span>
-                    <CaseMetaChips
-                      lob={selectedCase.sector}
-                      name={selectedCase.broker}
-                      limitUsd={selectedCase.limitRequestedUsd}
-                    />
-                    <span className="text-xs font-medium text-slate-500">{dispositionLabel}</span>
-                  </>
-                ) : undefined
-              }
-              meta={
-                shellView === 'workbench' && !selectedId ? (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="ai-cta"
-                      onPress={() => openNewSubmission()}
-                    >
-                      <Sparkles size={14} />
-                      New Submission
-                    </Button>
-                  </div>
-                ) : undefined
-              }
-              actions={
-                showCaseDetail && selectedCase ? (
-                  <>
-                    <Button variant="primary" size="sm" onPress={clearCaseSelection}>
-                      <ArrowLeft size={14} />
-                      Open cases
-                    </Button>
-                    {role === 'underwriter' ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onPress={openSubmissionRefer}
-                        aria-label="Refer submission to underwriter"
-                      >
-                        <ArrowUpRight size={14} />
-                        Refer to Underwriter
-                      </Button>
-                    ) : null}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onPress={() =>
-                        setBookmarkedIds((cur) => ({
-                          ...cur,
-                          [selectedCase.id]: !cur[selectedCase.id],
-                        }))
-                      }
-                    >
-                      {caseSaved ? 'Bookmarked' : 'Save for later'}
-                    </Button>
-                  </>
-                ) : shellView === 'workbench' && !selectedId ? (
-                  <CyberShellToolbar shellView={shellView} onShellViewChange={setShellView} />
-                ) : undefined
-              }
+              actions={<HeaderUserMenu />}
             />
+          )}
+          {showCaseDetail && selectedCase ? (
+            <>
+              <CaseContextHeader c={selectedCase} />
+              <JourneyPrevNextBar
+                journeyStep={journeyStep}
+                onJourney={goJourney}
+                actions={
+                  <CaseActionsMenu
+                    fromTasks={caseOrigin === 'tasks'}
+                    referredBy={referredByName}
+                    bookmarked={Boolean(bookmarks[selectedCase.id])}
+                    onRefer={openSubmissionRefer}
+                    onInfo={openInfoRequest}
+                    onCopy={() => {
+                      void navigator.clipboard.writeText(`${selectedCase.insured} · ${selectedCase.id}`)
+                    }}
+                    onDownload={() => downloadCase(selectedCase)}
+                    onBookmark={() =>
+                      setBookmarks((current) => ({
+                        ...current,
+                        [selectedCase.id]: !current[selectedCase.id],
+                      }))
+                    }
+                  />
+                }
+              />
+            </>
+          ) : null}
 
           {shellView === 'shipping' ? (
             <div className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-hidden p-3 md:p-4">
@@ -226,7 +317,7 @@ export function CyberUwShell() {
               </div>
             </div>
           ) : shellView === 'insights' ? (
-            <InsightsLanding onOpenCase={openInWorkbench} personaLens={role ?? 'underwriter'} />
+            <ReportsDashboard onOpenCase={openInWorkbench} />
           ) : shellView === 'referrals' ? (
             <ReferralInbox
               onOpenCase={openInWorkbench}
@@ -239,13 +330,16 @@ export function CyberUwShell() {
                 id="cyber-main"
                 className="wb-panel min-h-0 min-w-0 overflow-hidden rounded-none border-0"
               >
-                <CaseWorkspace />
+                <CaseWorkspace journeyStep={journeyStep} />
               </div>
             </div>
           ) : (
-            <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-hidden p-3 md:p-4">
-              <CyberCasesListPage onSelect={selectCase} />
-            </div>
+            <CasesHome
+              queue={queue}
+              onQueue={chooseQueue}
+              onSelect={openInWorkbench}
+              onNew={() => openNewSubmission()}
+            />
           )
           )}
         </main>
@@ -265,8 +359,64 @@ export function CyberUwShell() {
         draft={referDraft}
         onCancel={() => setReferDraft(null)}
         onConfirm={(input) => {
-          submitDiscussionReferral(input)
+          submitDiscussionReferral({ ...input, referredBy: user?.name ?? 'Underwriter' })
           setReferDraft(null)
+        }}
+      />
+
+      <InfoRequiredModal
+        draft={infoDraft}
+        onCancel={() => setInfoDraft(null)}
+        onConfirm={(note) => {
+          if (!infoDraft) return
+          requestBrokerInfo({
+            caseId: infoDraft.caseId,
+            note,
+            referredBy: user?.name ?? 'Underwriter',
+          })
+          setInfoDraft(null)
+        }}
+      />
+
+      <IntakeOverrideModal
+        caseItem={selectedCase ?? null}
+        open={intakeOverrideOpen}
+        onCancel={() => {
+          setIntakeOverrideOpen(false)
+          setPendingJourney(null)
+          setJourneyStep('intake')
+        }}
+        onConfirm={() => {
+          if (!selectedCase) return
+          acknowledgeIntakeOverride(
+            selectedCase.id,
+            'Proceed with incomplete package — missing docs still block affirmative risk scoring.',
+          )
+          const next = pendingJourney
+          setIntakeOverrideOpen(false)
+          setPendingJourney(null)
+          if (next && next !== 'intake') advanceJourney(next)
+        }}
+      />
+
+      <EnrichmentConsentModal
+        caseItem={selectedCase ?? null}
+        open={enrichmentConsentOpen}
+        onCancel={() => {
+          setEnrichmentConsentOpen(false)
+          setPendingJourney(null)
+        }}
+        onConfirm={(models) => {
+          if (!selectedCase || !user) return
+          recordEnrichmentConsent(selectedCase.id, models, {
+            userId: user.email,
+            userName: user.name,
+          })
+          const next = pendingJourney ?? 'enrichment'
+          setJourneyStep(next)
+          setWorkflowStage(selectedCase.id, workflowStageForJourney(next))
+          setEnrichmentConsentOpen(false)
+          setPendingJourney(null)
         }}
       />
 

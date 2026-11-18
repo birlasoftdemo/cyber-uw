@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cyber UW · Client feedback preview</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1a1a1a;
+        --navy: #1b1564;
+        --line: #e6e9f0;
+        --wash: #f4f6f9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 15px/1.45 Mulish, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: linear-gradient(180deg, #eef2fb, var(--wash) 240px);
+      }
+      header {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px 20px 8px;
+      }
+      h1 { margin: 0 0 6px; color: var(--navy); font-size: 28px; }
+      p { margin: 0; color: #5c6570; }
+      .grid {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px 20px 48px;
+        display: grid;
+        gap: 18px;
+      }
+      figure {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgb(16 24 40 / 5%);
+      }
+      figcaption {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        font-weight: 700;
+        color: var(--navy);
+      }
+      figcaption span { color: #667085; font-weight: 500; font-size: 13px; }
+      img { display: block; width: 100%; height: auto; background: #fff; }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 900px) {
+        .pair { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Client feedback preview</h1>
+      <p>
+        Side-by-side desktop (1440) and laptop (1280) captures from Playwright after implementing the
+        client feedback list. Open the feature branch app locally with <code>npm run dev</code> for a
+        live walkthrough. Full traceability:
+        <a href="../feedback-implementation-report.md">feedback-implementation-report.md</a>.
+      </p>
+    </header>
+    <main class="grid" id="gallery"></main>
+    <script>
+      const screens = [
+        ['01-home', 'Home / submissions'],
+        ['02-case-header', 'Persistent case header'],
+        ['03-intake', 'Submission intake documents + match'],
+        ['04-evidence', 'Evidence Verification (MFA contradiction)'],
+        ['05-enrichment', 'External findings + Simulated providers'],
+        ['06-risk-measures', 'Five risk / appetite measures'],
+        ['07-hitl', 'Human-in-the-loop decision'],
+      ]
+      const root = document.getElementById('gallery')
+      for (const [id, title] of screens) {
+        const figure = document.createElement('figure')
+        figure.innerHTML = `
+          <figcaption><strong>${title}</strong><span>${id}</span></figcaption>
+          <div class="pair">
+            <img src="./screenshots/desktop-${id}.png" alt="Desktop ${title}" />
+            <img src="./screenshots/laptop-${id}.png" alt="Laptop ${title}" />
+          </div>`
+        root.appendChild(figure)
+      }
+    </script>
+  </body>
+</html>

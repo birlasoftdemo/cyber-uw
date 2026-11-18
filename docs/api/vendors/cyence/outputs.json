@@ -1,0 +1,63 @@
+{
+  "_fixture": "illustrative",
+  "_note": "Hypothesized call outputs. The host, paths, and field names are a local model of published Cyence Rapid Assessment concepts, not a Guidewire schema.",
+  "calls": [
+    {
+      "name": "create-rapid-assessment",
+      "method": "POST",
+      "path": "/rapid-assessments",
+      "request": {
+        "companyName": "Demo Insured Holdings Ltd",
+        "domain": "demo-insured.example",
+        "country": "US"
+      },
+      "output": {
+        "id": "ra_demo_000001",
+        "status": "processing",
+        "companyName": "Demo Insured Holdings Ltd",
+        "domain": "demo-insured.example"
+      }
+    },
+    {
+      "name": "get-rapid-assessment",
+      "method": "GET",
+      "path": "/rapid-assessments/ra_demo_000001",
+      "output": {
+        "_fixture": "illustrative",
+        "id": "ra_demo_000001",
+        "status": "complete",
+        "company": {
+          "name": "Demo Insured Holdings Ltd",
+          "domain": "demo-insured.example",
+          "industry": "Technology"
+        },
+        "risk_rating": {
+          "score": 62,
+          "band": "Moderate"
+        },
+        "probability_of_incident": {
+          "annualized": 0.087
+        },
+        "peer_comparison": {
+          "peer_group": "Technology, mid-market",
+          "percentile": 58
+        },
+        "exposure_signals": {
+          "total": 31,
+          "samples": [
+            { "name": "Exposed remote desktop service", "category": "Network", "status": "present" },
+            { "name": "Outdated web server software", "category": "Patching", "status": "present" },
+            { "name": "Missing DMARC policy", "category": "Email", "status": "absent" },
+            { "name": "Expired TLS certificate", "category": "Encryption", "status": "absent" },
+            { "name": "Credentials found in public leak", "category": "Credentials", "status": "present" }
+          ]
+        },
+        "loss_estimates": {
+          "currency": "USD",
+          "expected": 450000,
+          "tail": 4200000
+        }
+      }
+    }
+  ]
+}

@@ -5,6 +5,32 @@ export type CyberTier = 1 | 2 | 3 | 4 | 5
 export type GapSeverity = 'critical' | 'high' | 'medium' | 'info'
 export type GapDisposition = 'open' | 'resolved' | 'referred'
 export type PasStatus = 'idle' | 'pushing' | 'synced' | 'error'
+
+export type IntegrationTarget = 'policy_admin' | 'rating_pricing' | 'broker_crm'
+export type IntegrationHandoffStatus =
+  | 'Pending Approval'
+  | 'Validated'
+  | 'Submitted'
+  | 'Success'
+  | 'Failed'
+  | 'Retrying'
+
+export interface IntegrationHandoff {
+  target: IntegrationTarget
+  label: string
+  status: IntegrationHandoffStatus
+  updatedAt?: string
+}
+
+export interface AuditTrailEntry {
+  at: string
+  actor: string
+  action: string
+  evidenceSource?: string
+  ruleModel?: string
+  confidence?: number
+  humanOverride?: boolean
+}
 export type SignalStatus = 'idle' | 'scanning' | 'ready'
 
 export type RiskJudgmentStatus = 'pending' | 'accepted' | 'escalated' | 'noted'
@@ -17,7 +43,7 @@ export type PlatformCardType =
 export type PlatformSignOff = 'pending' | 'ignore' | 'block' | 'escalate'
 export type PlatformOutcome = 'pending' | 'clear' | 'ignore' | 'escalate' | 'blocks'
 
-export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest' | 'submission'
+export type ReferralKind = 'gap' | 'risk' | 'platform' | 'ingest' | 'submission' | 'info'
 export type ReferralTarget = 'specialist' | 'broker' | 'senior_uw'
 export type ReferralStatus = 'open' | 'awaiting_broker' | 'resolved' | 'returned'
 
@@ -32,6 +58,8 @@ export interface ReferralTicket {
   note: string
   status: ReferralStatus
   createdAt: string
+  /** Person who sent the referral, shown when the case is opened from Tasks. */
+  referredBy?: string
   resolvedAt?: string
   resolutionNote?: string
 }
@@ -176,6 +204,11 @@ export interface CyberCase {
   riskJudgments: Record<string, RiskJudgment>
   /** Docs still needed before package is decision ready */
   missingDocs?: string[]
+  /**
+   * UW acknowledged an incomplete package and may leave Intake.
+   * Risk metrics stay suppressed while docs are still missing.
+   */
+  intakeOverride?: { at: string; by: string; reason: string }
   packageDocs: PackageDoc[]
   formSignals: FormSignal[]
   dossierSummary: string
@@ -199,5 +232,7 @@ export interface CyberCase {
   answerOverrides?: Record<string, string>
   /** When true, skip Customer Insights and open workflow stages. */
   customer360Dismissed?: boolean
-  audit: { at: string; actor: string; action: string }[]
+  /** Controlled handoffs on the Integration journey step. */
+  integrationHandoffs?: IntegrationHandoff[]
+  audit: AuditTrailEntry[]
 }

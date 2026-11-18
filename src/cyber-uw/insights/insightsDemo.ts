@@ -181,7 +181,7 @@ export const topExposures: {
   sector: string
 }[] = [
   {
-    insured: 'Airbnb',
+    insured: 'Northline Stays',
     caseId: MOCK_CYBER_CASES[0]?.id ?? null,
     amountUsd: 50_000_000,
     trending: 'up',

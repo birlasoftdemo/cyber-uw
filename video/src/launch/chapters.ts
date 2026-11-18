@@ -232,7 +232,7 @@ export const LAUNCH_CHAPTERS: LaunchChapter[] = [
     voFile: "vo/10.m4a",
     eyebrow: "Sync · Closure",
     title: "Approve before send.",
-    caption: "Push to policy admin when you’re ready.",
+    caption: "Push to policy center when you’re ready.",
     screen: "walkthrough/07-uw-decision-desk.png",
     zoomFrom: 1.0,
     zoomTo: 1.04,

@@ -1,4 +1,5 @@
 import { inferBucketFromControl } from '../constants/qualificationBuckets'
+import { DESK_BOOK } from './deskBook'
 import { defaultFormSignals, packageDocsFromNames } from './dossierPackage'
 import { buildPlatformCards } from './platformDemo'
 import { CYBER_PRODUCT_DEFAULTS } from './productIdentity'
@@ -25,12 +26,12 @@ function signedPackage(caseId: string, docCount: number, at: string): PackageSig
 export const MOCK_CYBER_CASES: CyberCase[] = [
   {
     id: 'CYB-2401',
-    insured: 'Airbnb',
+    insured: 'Northline Stays',
     broker: 'Marsh Specialty',
     sector: 'Travel / Hospitality Marketplace',
-    insuredAddress: '888 Brannan Street, San Francisco, CA 94103',
+    insuredAddress: '400 Market Street, San Francisco, CA 94105',
     companyDescription:
-      'Global marketplace connecting travelers with hosts for short-term stays and local experiences worldwide.',
+      'Travel marketplace for short-term stays and local experiences across North America.',
     ...CYBER_PRODUCT_DEFAULTS,
     productCode: 'CYB-LIAB-PLAT',
     productName: 'Cyber Liability — Marketplace Platform',
@@ -51,20 +52,20 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     riskJudgments: {},
     packageSignOff: signedPackage('CYB-2401', 7, '2026-07-20T09:10:00Z'),
     packageDocs: packageDocsFromNames('CYB-2401', [
-      'Airbnb_Cyber_Application_2026.pdf',
-      'Airbnb_Architecture_diagram.pdf',
-      'Airbnb_SOC2_TypeII.pdf',
-      'Airbnb_Incident_Response_Plan.pdf',
-      'Airbnb_DR_Drill_report_2026.pdf',
-      'Airbnb_ISO27001_report.pdf',
-      'Airbnb_PCI_DSS_attestation.pdf',
+      'Northline_Cyber_Application_2026.pdf',
+      'Northline_Architecture_diagram.pdf',
+      'Northline_SOC2_TypeII.pdf',
+      'Northline_Incident_Response_Plan.pdf',
+      'Northline_DR_Drill_report_2026.pdf',
+      'Northline_ISO27001_report.pdf',
+      'Northline_PCI_DSS_attestation.pdf',
     ]),
     formSignals: defaultFormSignals('CYB-2401', {
-      insured: 'Airbnb',
+      insured: 'Northline Stays',
       sector: 'Travel / Hospitality Marketplace',
       limitUsd: 25_000_000,
-      mfaAnswer: 'Yes — all privileged accounts',
-      mfaSignal: 'Exposed admin bastion without MFA challenge on 2 hosts',
+      mfaAnswer: 'MFA applies to all users',
+      mfaSignal: 'Evidence shows MFA on privileged users only; two admin bastions lack challenge',
       mfaGapId: 'g1',
       edrAnswer: 'Endpoint detection and response on 100% of endpoints',
       edrSignal: 'Endpoint detection and response telemetry coverage ~78% of discovered assets',
@@ -77,8 +78,8 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
       gap({
         id: 'g1',
         control: 'MFA on external admin',
-        attested: 'Yes — all privileged accounts',
-        signal: 'Exposed admin bastion without MFA challenge on 2 hosts',
+        attested: 'MFA applies to all users',
+        signal: 'Evidence shows MFA on privileged users only; two admin bastions lack challenge',
         severity: 'critical',
         rfiDraft:
           'Please confirm MFA enforcement on all external admin paths and remediate exposed bastions, or provide compensating controls + 30-day plan.',
@@ -118,7 +119,7 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
         ruleId: 'CTRL-MFA-01',
         label: 'MFA floor on external admin',
         outcome: 'refer',
-        detail: 'Critical gap on multi-factor authentication — cannot straight-through process.',
+        detail: 'MFA coverage below minimum threshold',
       },
     ],
     vendors: [
@@ -143,9 +144,33 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
     dossierSummary:
       'Large travel marketplace platform with high guest/host PII and payment adjacency. Strong revenue and package completeness, but critical multi-factor authentication signal contradiction and endpoint detection and response deployment gap. Recommend refer with request-for-information pack; Tier 4 pending remediation evidence.',
     audit: [
-      { at: '2026-07-20T08:14:00Z', actor: 'Intake Agent', action: 'Normalized app + attachments' },
-      { at: '2026-07-20T08:16:00Z', actor: 'Signal Mock', action: 'ASM scan complete — field diffs ready' },
-      { at: '2026-07-20T08:17:00Z', actor: 'Appetite Engine', action: 'Recommend REFER — APP-PLAT-02, CTRL-MFA-01' },
+      {
+        at: '2026-07-20T08:14:00Z',
+        actor: 'Intake Agent',
+        action: 'Normalized app + attachments',
+        evidenceSource: 'Cyber Application',
+        ruleModel: 'Intake classifier',
+        confidence: 90,
+        humanOverride: false,
+      },
+      {
+        at: '2026-07-20T08:16:00Z',
+        actor: 'Signal Mock',
+        action: 'ASM scan complete — field diffs ready',
+        evidenceSource: 'BitSight · Simulated',
+        ruleModel: 'ASM scanner',
+        confidence: 82,
+        humanOverride: false,
+      },
+      {
+        at: '2026-07-20T08:17:00Z',
+        actor: 'Appetite Engine',
+        action: 'Recommend REFER — APP-PLAT-02, CTRL-MFA-01',
+        evidenceSource: 'Appetite rules',
+        ruleModel: 'CTRL-MFA-01',
+        confidence: 91,
+        humanOverride: false,
+      },
     ],
   },
   {
@@ -447,4 +472,5 @@ export const MOCK_CYBER_CASES: CyberCase[] = [
       { at: '2026-07-20T09:59:00Z', actor: 'Appetite Engine', action: 'Recommend REFER — CTRL-MFA-MAIL' },
     ],
   },
+  ...DESK_BOOK,
 ]
